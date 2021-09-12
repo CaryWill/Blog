@@ -3,7 +3,7 @@
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		<link rel="stylesheet" type="text/css" href="css/style.css" />
+	<link rel="stylesheet" type="text/css" href="../../css/style.css" />
 		<title>2021.09.01 Regular Expression 101</title>
 	</head>
 <body>
@@ -533,11 +533,17 @@
 
 <blockquote>
 <p>Capturing group: Matches x and remembers the match. For example, /(foo)/ matches and remembers "foo" in "foo bar". </p>
+</blockquote>
 
+<blockquote>
 <p>A regular expression may have multiple capturing groups. In results, matches to capturing groups typically in an array whose members are in the same order as the left parentheses in the capturing group. This is usually just the order of the capturing groups themselves. This becomes important when capturing groups are nested. Matches are accessed using the index of the result's elements ([1], ..., [n]) or from the predefined RegExp object's properties ($1, ..., $9).</p>
+</blockquote>
 
+<blockquote>
 <p>Capturing groups have a performance penalty. If you don't need the matched substring to be recalled, prefer non-capturing parentheses (see below).</p>
+</blockquote>
 
+<blockquote>
 <p>String.match() won't return groups if the /.../g flag is set. However, you can still use String.matchAll() to get all matches.</p>
 </blockquote>
 
