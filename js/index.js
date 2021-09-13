@@ -11,7 +11,7 @@
         <a href="/index.html">Home</a>
       </li>
       <li>
-        <span>Articles</span>
+        <a href="/articles.html">Articles</a>
       </li>
       <li>
         <a href="/about/">About</a>
