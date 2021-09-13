@@ -226,8 +226,13 @@ ul li {
   list-style-type: square;
 }
 
+@font-face {
+  font-family: "code";
+  src: url("./fonts//MonoLisa.woff2") format("woff2"),
+}
+
 code {
-  font-family: "Courier", monospace;
+  font-family: code, monospace;
   font-size: 80%;
   color: white;
 
