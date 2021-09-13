@@ -409,14 +409,14 @@ body > header {
   justify-content: space-between;
   margin: 0;
   padding: 0;
-  position: absolute;
+  /* position: absolute;
   left: 0;
   top: 0;
-  background: white;
+  background: white; */
 }
-body > header + h1 {
+/* body > header + h1 {
   margin-top: 105px;
-}
+} */
 body > header .header-bar {
   align-items: baseline;
   background-color: white;
