@@ -235,7 +235,7 @@ div.pull-quote {
 }
 div.pull-quote:before,
 div.pull-quote:after {
-  background-color: #0d70f2;
+  background-color: seagreen;
   content: "";
   height: 2px;
   margin: 0 auto;
@@ -535,22 +535,22 @@ p.update {
 a:link,
 a:visited {
   background-color: transparent;
-  color: #1b70de;
+  color: seagreen;
   text-decoration: none;
 }
 a:link *,
 a:visited * {
-  color: #1b70de;
+  color: seagreen;
   text-decoration: inherit;
 }
 a:hover,
 a:active {
   background-color: transparent;
-  color: #2e89ff;
+  color: seagreen;
 }
 a:hover *,
 a:active * {
-  color: #2e89ff;
+  color: seagreen;
 }
 a:hover img,
 a:active img {
@@ -814,7 +814,7 @@ table.cell-border th {
   color: #009926;
 }
 .s1 {
-  color: #d01040;
+  color: #c499a4;
 }
 .ss {
   color: #990073;
@@ -906,8 +906,8 @@ pre code {
 }
 .button:hover,
 .button:active {
-  background-color: #2e89ff;
-  border: 1px solid #2e89ff;
+  background-color: seagreen;
+  border: 1px solid seagreen;
   color: white;
 }
 .about-links {
@@ -1010,12 +1010,12 @@ body > header .site-id a:visited * {
 }
 body > header .site-id a:hover,
 body > header .site-id a:active {
-  background-color: #1b70de;
+  background-color: seagreen;
   color: white;
 }
 body > header .site-id a:hover *,
 body > header .site-id a:active * {
-  background-color: #1b70de;
+  background-color: seagreen;
   color: white;
 }
 body > header .site-id h1 {
@@ -1066,12 +1066,12 @@ body > header ol.links > li a:visited * {
 }
 body > header ol.links > li a:hover,
 body > header ol.links > li a:active {
-  background-color: #1b70de;
+  background-color: seagreen;
   color: white;
 }
 body > header ol.links > li a:hover *,
 body > header ol.links > li a:active * {
-  background-color: #1b70de;
+  background-color: seagreen;
   color: white;
 }
 body > header ol.links > li:first-child {
@@ -1137,11 +1137,11 @@ body > footer a:visited * {
 body > footer a:hover,
 body > footer a:active {
   background-color: transparent;
-  color: #2e89ff;
+  color: seagreen;
 }
 body > footer a:hover *,
 body > footer a:active * {
-  color: #2e89ff;
+  color: seagreen;
 }
 body > footer a:hover img,
 body > footer a:active img {
@@ -1388,7 +1388,7 @@ body > footer .private-notice {
   .home-section-content-article-list-item-excerpt
   .article-excerpt-more-link:active {
   background-color: transparent;
-  color: #2e89ff;
+  color: seagreen;
 }
 .home-section
   .home-section-content
@@ -1404,7 +1404,7 @@ body > footer .private-notice {
   .home-section-content-article-list-item-excerpt
   .article-excerpt-more-link:active
   * {
-  color: #2e89ff;
+  color: seagreen;
 }
 .home-section
   .home-section-content
@@ -1507,11 +1507,11 @@ body.article article div.footnotes a:visited * {
 body.article article div.footnotes a:hover,
 body.article article div.footnotes a:active {
   background-color: transparent;
-  color: #2e89ff;
+  color: seagreen;
 }
 body.article article div.footnotes a:hover *,
 body.article article div.footnotes a:active * {
-  color: #2e89ff;
+  color: seagreen;
 }
 body.article article div.footnotes a:hover img,
 body.article article div.footnotes a:active img {
