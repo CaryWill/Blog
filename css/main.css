@@ -951,6 +951,7 @@ body {
 }
 body > header {
   width: 100%;
+  max-width: 768px;
 }
 body > main.content-container {
   box-sizing: border-box;
