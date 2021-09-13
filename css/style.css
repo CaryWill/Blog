@@ -1,6 +1,6 @@
 @font-face {
-  font-family: "code";
-  src: url("./fonts/MonoLisa.woff2") format("woff2"),
+  font-family: 'mycode';
+  src:  url('./fonts/MonoLisa.woff2') format('woff2'),
 }
 
 * {
@@ -234,7 +234,7 @@ ul li {
 
 
 code {
-  font-family: code, monospace;
+  font-family: mycode, monospace;
   font-size: 80%;
   color: white;
 

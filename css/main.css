@@ -1,3 +1,7 @@
+@font-face {
+  font-family: "mycode";
+  src: url("/css/fonts/MonoLisa.ttf");
+}
 html,
 body,
 div,
@@ -92,6 +96,7 @@ html {
   background: white;
   font-size: 19px;
   line-height: 1.4;
+  font-family: mycode;
 }
 @media screen and (max-width: 767px) {
   html {
