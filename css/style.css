@@ -157,7 +157,8 @@ blockquote {
 
 blockquote p {
   text-indent: 0 !important;
-  /* font-style: italic; */
+  font-style: italic;
+  font-size: 90%;
 }
 
 blockquote small {
