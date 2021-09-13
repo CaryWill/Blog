@@ -143,6 +143,7 @@ blockquote {
   border-left: 5px solid #eee;
   padding-left: 1.2em;
   margin: 1em 0;
+  color: gray;
 }
 
 blockquote p {
@@ -215,6 +216,10 @@ figure + p {
 }
 
 /* Code Highlighting */
+
+li {
+  list-style-type: square;
+}
 
 code {
   font-family: "Courier", monospace;
