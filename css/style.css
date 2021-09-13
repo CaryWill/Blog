@@ -389,6 +389,8 @@ body.article article.draft > footer {
 }
 body > header {
   width: 100%;
+  max-width: 768px;
+  margin: auto;
 }
 body > main.content-container {
   box-sizing: border-box;
