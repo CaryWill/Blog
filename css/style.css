@@ -222,7 +222,7 @@ figure + p {
 
 /* Code Highlighting */
 
-ol li {
+ul li {
   list-style-type: square;
 }
 
