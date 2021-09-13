@@ -15,7 +15,7 @@ html {
 body {
   text-align: center;
   color: #000;
-  font-size: 120%;
+  font-size: 105%;
   line-height: 1.6;
   margin: 0;
   padding: 2em 2em 5em;
@@ -158,7 +158,6 @@ blockquote {
 blockquote p {
   text-indent: 0 !important;
   font-style: italic;
-  font-size: 90%;
 }
 
 blockquote small {
@@ -239,12 +238,12 @@ code {
   color: white;
 
   padding: 0.3em 0.5em;
-  background: seagreen;
+  background: black;
   border-radius: 5px;
 }
 
 pre > code {
-  padding: none;
+  padding: 0;
   background: none;
   border: none;
 }
@@ -254,7 +253,7 @@ pre {
   text-align: left;
   line-height: 1.2em;
   overflow-x: scroll;
-  background: seagreen;
+  background: black;
   padding: 20pt;
   margin: 20pt 0;
   border-radius: 3pt;
