@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <link href="/css/style.css" rel="stylesheet" />
+    <script src="/js/index.js" defer></script>
+    >
+    <title>The Git Parable</title>
+  </head>
+  <body>
+    <h1>The Git Parable</h1>
+
+    <p><strong>By cary / Sep 15, 2021</strong></p>
+
+    <p>
+      <a href="https://tom.preston-werner.com/2009/05/19/the-git-parable.html"
+        >The Git Parable</a
+      >
+      的阅读笔记，一起食用效果更佳。
+    </p>
+
+    <p>
+      用寓言的形式介绍了 git 的底层原理，看完了之后对于 git
+      命令的学习感觉十分的顺畅。
+    </p>
+
+    <h2>Snapshots</h2>
+
+    <p><strong>working</strong> 目录，你平常的开发都是在这个目录下。</p>
+
+    <p>
+      当你需要创建一个快照的时候，复制一份工作目录，将其重新命名为
+      <em>snapshot-0</em>，<em>snapshot-1</em>
+      等即可，然后在工作目录上继续开发。
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">.
+├── snapshot-0
+│&nbsp;&nbsp; ├── index.js
+│&nbsp;&nbsp; ├── message
+│&nbsp;&nbsp; └── utils
+│&nbsp;&nbsp;     └── index.js
+├── snapshot-1
+│&nbsp;&nbsp; ├── index.js
+│&nbsp;&nbsp; ├── message
+│&nbsp;&nbsp; └── utils
+│&nbsp;&nbsp;     └── index.js
+└── working
+    ├── app.js
+    ├── bugfix.js
+    ├── index.js
+    └── print.js</code></pre>
+
+    <h2>Branches</h2>
+
+    <p>遇到第一个 bug 的时候，你发现线性的版本管理系统已经不够用了。</p>
+
+    <figure><img src="DraggedImage.tiff" /></figure>
+
+    <p>
+      在你发布的时候的快照版本是
+      <em>snapshot-99</em>，发布完你着手新的功能开发，又创建了 10
+      个快照，最新的快照是 <em>snapshot-109</em>，这个时候收到一个 bug
+      反馈，你在 <strong>working</strong> 目录下修复了这个 bug。
+    </p>
+
+    <p>
+      想要创建快照的时候，发现问题来了，基于现有的命名规则的话，应该直接创建一个名为
+      <em>snapshot-110</em> 快照的话，但是这样的话，看名字这个快照应该是基于
+      <em>snapshot-109</em> 这个版本产生的，但是，它其实是基于
+      <em>snapshot-99</em> 这个快照产生的，所以如果你直接命名它为
+      <em>snapshot-110</em>
+      的话，光看名字就分不出这个快照是基于哪个快照生成的了。
+    </p>
+
+    <p>那我们可以改名字啊，改成 <em>snapshot-99-1</em> 不就可以了吗？</p>
+
+    <p>
+      不行！那么 <em>snapshot-100</em> 看名字就会被认为是基于
+      <em>snapshot-99-1</em> 来的了，其实是基于
+      <em>snapshot-99</em> 来的，还是有问题。
+    </p>
+
+    <p>
+      所以我们还是需要比现有的线性版本控制系统（linear vcs）更强大的 something…
+    </p>
+
+    <p><strong>Tree</strong> 🌲</p>
+
+    <p>
+      还记得之前每个快照都有一个
+      <strong>message</strong>
+      文件吗，用来记录这个快照变更了什么，变更日期是何时。
+    </p>
+
+    <p>
+      既然线性版本管理系统的看名字找该快照所基于的快照已经不管用了，我们可以直接从快照本身入手，直接在快照的
+      <strong>message</strong>
+      文件里面加一个字段用来标记这个快照基于的是哪个快照不就可以了吗？
+      可以！！！
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">Date: 2021-09-19 11:39:00
+Message: add app.js file, about to releas, version 1.0
+Parent: snapshot-99</code></pre>
+
+    <p>这样基于 tree 结构的版本管理系统，我们就引入了分支的概念。</p>
+
+    <h2>Branch Names</h2>
+
+    <p>
+      虽然我们从线性转换成了树状结构的版本管理系统，但是只是
+      mentally，我们实际的目录还是长这样，只是我们不可以根据某个快照的名称来找到其基于的快照了。
+    </p>
+
+    <figure><img src="DraggedImage.png" /></figure>
+
+    <p>
+      上次我们基于 <strong>snapshot-99</strong> 发了一个 bugfix
+      快照，我现在想看看那个 bugfix 快照到底做了什么，我该怎么办呢？
+    </p>
+
+    <p>
+      因为我还记得那个快照叫
+      <strong>snapshot-110</strong
+      >，不然光看这个列表我根本看不出来是哪个快照，有什么办法能帮忙快速定位某个<strong>分支</strong>上最新的快照吗？
+    </p>
+
+    <p>方法一：</p>
+
+    <p>
+      直接给快照加分支前缀来命名。这样配合数字命名方式就可以找到对应的分支和最新的快照了。比如，<em>bugfix-snapshot-110</em>，<em>
+        wip-snapshot-109</em
+      >。
+    </p>
+
+    <p>
+      但是快照数量一多，分支数量一多，我们还是没办法<strong>快速</strong>定位。
+    </p>
+
+    <p>该方案驳回。</p>
+
+    <p>方法二：</p>
+
+    <p>
+      之前的分支名都还没有哪里可以体现出来，我们创建
+      <strong>snapshot-110</strong> 这个 bugfix
+      快照的时候，也只是脑中自动给了个分支名，<em>bugfix</em>。我们可以利用下分支名，我们直接在快照所在根目录下创建一个文件
+      <strong>branches</strong
+      >（后缀什么的随便），在里面记录下我们脑中的分支名，以及在该分支上最新的快照，这样不就可以帮忙快速定位了吗？
+    </p>
+
+    <p>Good idea！！！</p>
+
+    <figure><img src="DraggedImage-1.png" /></figure>
+
+    <h2>Tags</h2>
+
+    <p>
+      在收到 <strong>snapshot-99</strong> 的 bug 反馈的之前，我们的
+      <strong>branches</strong> 文件长这样，
+    </p>
+
+    <figure><img src="DraggedImage-2.png" /></figure>
+
+    <p>
+      在收到 <strong>snapshot-99</strong> 的 bug
+      反馈之后，我们通过查阅各个快照的 message 文件发现，<strong
+        >snapshot-99</strong
+      >
+      这个快照是最新的发布快照（但是并不是 working
+      分支上的最新快照），我们需要基于这个快照进行 bugfix。
+    </p>
+
+    <p>为了方便后面查阅，我们在 branches 文件中写下了这么一行，</p>
+
+    <pre><code class="code-highlighted code-PlainText">release1.0 - snapshot-99</code></pre>
+
+    <p>
+      但是我们创建分支的意图是用来追踪我们的开发中的分支的，像上面这种分支上的最新快照永远不会变的分支，只是基于我们的兴趣打标进行创建的分支我们可以在
+      branches 文件旁边在创建一个文件 tags 来另外进行记录，这样会更清楚一点。
+    </p>
+
+    <figure><img src="DraggedImage-3.png" /></figure>
+
+    <h2>Distributed</h2>
+
+    <p>
+      当你和 zoe
+      进行协同开发的时候，因为使用的是同一套数字命名规则，就导致合并代码的时候快照重名了，你们都创建了一个叫
+      <strong>snapshot-115</strong> 的快照。
+    </p>
+
+    <p>我们需要另一套命名规范来保证每一个内容不同的快照的唯一性。</p>
+
+    <p>
+      为了区分快照是谁开发的，我们在快照的 message 文件里面加了一个 author
+      字段。
+    </p>
+
+    <p>
+      快照的命名，我们可以通过获取 message 文件的 sha1
+      值，给快照进行命名。毕竟，快照的日期是不会相同的（如果你一个人开发的话），就算相同（两个人进行开发），我们有新增的
+      author 字段来保证两个 message 文件的内容是不一样的，这样就可以保证 sha1
+      值是不一样的，就可以保证快照的名称的唯一性。
+    </p>
+
+    <p>
+      这样我们合并 zoe
+      的快照的时候，直接将她的所有快照复制到我们的根目录就可以了。重名的说明是旧的，不重名说明是
+      zoe 新增的，这样一合并我们就有了所有的快照了。
+    </p>
+
+    <figure><img src="DraggedImage-4.png" /></figure>
+
+    <h2>Merges</h2>
+
+    <p>
+      你和 Zoe 都的 math 分支上开发，两人开发前，<strong>branches</strong>
+      文件长得一样，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">math - 4583941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>
+      过了一段时间开发，两人都创建了一堆快照，现在我的
+      <strong>branches</strong> 文件里，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">math - 1583941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>Zoe 的 <strong>branches</strong> 文件，</p>
+
+    <pre><code class="code-highlighted code-PlainText">math - 9583941a98943d8d0eb6ec728f0cf5726c7031d9</code></pre>
+
+    <p>
+      现在合并代码，你将 zoe 的所有快照都拷了过来，清空了 working
+      目录后，你将你的 math 分支上的最新快照
+      <em>1583941a98943d8d0eb6ec728f0cf5726c7031d1</em> 复制了一份到 working
+      目录，然后将 zoe 的 math 分支上最新的快照
+      <em>9583941a98943d8d0eb6ec728f0cf5726c7031d9</em>
+      也复制了一份放到了working
+      目录，然后一个合并快照就生成了，但是你发现这个快照有点特殊，这个快照是基于两个快照产生的，所以你在这个快照的
+      message 文件里这样写道，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">Date: 2021-09-22 11:39:00
+Message: merge
+Author: zoe &amp; cary
+Parent: 9583941a98943d8d0eb6ec728f0cf5726c7031d9  1583941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>
+      然后复制了份 working 目录并用 message 的 sha1 值
+      1233941a98943d8d0eb6ec728f0cf5726c7031d1 对其进行了重命名，并更新了下
+      <strong>branches</strong> 文件里 math 的最新快照，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">bugfix - snapshot-110
+working - snapshot-109
+math - 1233941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>最后 Zoe 也做了相同的操作，两个人的代码就保持一致了。</p>
+
+    <h2>Rewriting History</h2>
+
+    <p>
+      你昨晚喝醉了，基于
+      <em>1233941a98943d8d0eb6ec728f0cf5726c7031d1</em> 这个快照你创建了个分支
+      <strong>drunk</strong>，然后开发了 3 个快照。
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">drunk - 1233941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>
+      你想如果用 drunk 来表示最新的那个快照的话，那么
+      <strong>drunk^</strong> 可以用来表示 drunk 的 parent 快照，<strong
+        >drunk^^</strong
+      >
+      可以表示 drunk 的 parent parent 快照，以此类推，这样描述起来很方便。
+    </p>
+
+    <p>
+      昨晚新增的第三个快照（最新） drunk，修复了 <strong>drunk^^</strong> 快照的
+      bug。
+    </p>
+
+    <p>昨晚新增的第二个快照 drunk^，新增了一个文件。</p>
+
+    <p>昨晚新增的第一个快照 drunk^^，修改了已有的一个函数，但是包含 bug。</p>
+
+    <p>
+      你想将上面的三个快照合并成两个快照，一个是修改已有函数，一个是新增的文件。
+    </p>
+
+    <p>
+      你清空了 working 目录，并将第三个快照复制到了 working
+      这个目录下，删掉了第二个快照里面新增的文件，这样 working
+      文件夹只包含昨晚的第一和第三个快照，这样我们的第一个新快照就完成了，你复制了一份
+      working 目录并修改了 message 文件，并用其 sha1 值
+      <em>9233941a98943d8d0eb6ec728f0cf5726c7031d1</em> 对快照进行了命名，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">Date: 2021-09-23 11:39:00
+Message: modify exsiting function
+Parent: 1233941a98943d8d0eb6ec728f0cf5726c7031d1
+Author: cary</code></pre>
+
+    <p>并更新了 branches 文件，</p>
+
+    <pre><code class="code-highlighted code-PlainText">drunk - 9233941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>
+      然后你清空了 working 文件夹，复制了
+      <em>9233941a98943d8d0eb6ec728f0cf5726c7031d1</em> 快照到 working
+      目录下，并添加了昨晚添加的新文件，然后创建了个新的快照，并修改了 message
+      文件，并用其 sha1 值
+      <em>1033941a98943d8d0eb6ec728f0cf5726c7031d1</em> 对快照进行了命名，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">Date: 2021-09-23 11:39:00
+Message: modify exsiting function
+Parent: 9233941a98943d8d0eb6ec728f0cf5726c7031d1
+Author: cary</code></pre>
+
+    <p>并更新了 branches 文件，</p>
+
+    <pre><code class="code-highlighted code-PlainText">drunk - 1033941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>这样就重写了我们 drunk 分支的快照历史记录了。</p>
+
+    <p>但是我们昨晚写的那三个快照还是在的，如果我们不删除的话，问题不大。</p>
+
+    <h2>Staging Area</h2>
+
+    <p>我们现在的分支长这样，</p>
+
+    <pre><code class="code-highlighted code-PlainText">math - 1233941a98943d8d0eb6ec728f0cf5726c7031d1</code></pre>
+
+    <p>
+      现在我们准备在 math 分支上继续开发，于是我们复制了 math 分支上的最新快照
+      <em>1233941a98943d8d0eb6ec728f0cf5726c7031d1</em> 到 working
+      目录下，准备开发和 math 分支相关的功能，开发过程中一走神开发了部分和 music
+      相关的功能，开发完的时候我们想发布创建一个快照了，但是我们的 working
+      目录里除了有和 math 相关的代码还有和 math
+      无关的代码（music），那么怎么创建一个只有和 math 相关的代码的快照呢？
+    </p>
+
+    <p>很容易想到的是<em>临时文件夹</em>。</p>
+
+    <p>
+      现在的 working 目录是基于
+      <em>1233941a98943d8d0eb6ec728f0cf5726c7031d1</em>
+      快照的，所以我们可以再复制一份
+      <em>1233941a98943d8d0eb6ec728f0cf5726c7031d1</em>
+      这个快照到一个临时文件夹，我们叫它 staging 好了，这样我们如果想要发布 math
+      相关功能快照的话，将 working 目录下和 math 相关的功能代码复制一份到
+      staging 目录下就可以了，和 math 无关的代码留在 working
+      目录里就行了，这样我们基于 staging 目录创建一个快照不就可以了。
+    </p>
+
+    <h2>Diffs</h2>
+
+    <p>
+      开发过程中，你可能会需要查看 working 目录和 staging
+      目录以及最新的快照之间到底变更了什么。
+    </p>
+
+    <h2>Eliminating Duplication</h2>
+
+    <p>
+      我们每次创建一个快照都是<strong>复制</strong>前一个快照，做一些改动，然后生成另一个新快照，这样的话，新快照和旧快照之间会有很多相同的文件，这样会占用很多的内存。
+    </p>
+
+    <p>
+      一个比较好的办法是，我们给文件创建一个哈希表，这样每一个文件都有一个自己的
+      hash，这样如果发现有重复的文件的话，直接引用这个文件就可以了，而不是复制一份。
+    </p>
+
+    <p>
+      我们需要哈希的包括，<em>文件</em>，<em>目录结构</em>，一个快照在转换完毕后将拥有一个唯一的
+      hash，我们通过这个 hash 可以找到这个 hash
+      所对应的文件，这个文件里面记录了这个快照所对应的树状结构，树可以包含树，到最后肯定会对应到一堆<em>文件</em>，我们有一个专门用来缓存文件的目录
+      <em>objects</em>，在其中我们可以根据对应的 hash 找到对应的文件来重组目录。
+    </p>
+
+    <p>
+      我们从第一个快照开始进行转换，找到这个快照最深的一层目录，这里是
+      <strong>utils</strong> 目录，先从它里面的文件开始，
+    </p>
+
+    <figure><img src="DraggedImage-5.png" /></figure>
+
+    <pre><code class="code-highlighted code-bash">shasum snapshot-0/utils/index.js
+// 004242f0655f80d0bd99228ce84674af6ac684dd  snapshot-0/utils/index.js</code></pre>
+
+    <p>
+      在该目录下创建一个叫 <em>temp</em> 的临时文件用来记录，一行分为三列，如果
+      hash 对应的是文件第一列写上 blob(binary large object)，如下，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">blob 004242f0655f80d0bd99228ce84674af6ac684dd index.js</code></pre>
+
+    <p>
+      然后将这个 <em>index.js</em> 文件<strong>复制</strong>一份到
+      <em>objects</em> 这个目录下，并用其 sha1 值(hash)将其命名。
+    </p>
+
+    <figure><img src="DraggedImage-6.png" /></figure>
+
+    <p>
+      因为 <em>utils</em> 目录下就一个
+      <em>index.js</em> 文件，所以这个目录就算转换完了，我们再计算下这个
+      <em>temp</em> 文件的 sha1
+      值并用该值对其进行重命名，并将这个文件<strong>移动</strong>到
+      <em>objects</em> 目录中。
+    </p>
+
+    <p>
+      接下来往上一层目录走，<strong> snapshot-0</strong>，首先先创建一个 temp
+      文件用来记录，第一个文件是一个目录 <em>utils</em>，这个目录对应的 hash
+      就是我们上次在 <em>utils</em> 里面创建的 temp 文件的 hash 值
+      <em>71ebfd9858fadc6a9714cb857f642b12cd6d94bb</em>，记录到 temp
+      文件中，因为 <em>utils</em> 是个目录，所以 temp 文件第一列写上
+      <strong>tree</strong>，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">tree 71ebfd9858fadc6a9714cb857f642b12cd6d94bb utils</code></pre>
+
+    <p>
+      下一个文件是 <em>index.js</em> 文件，记录到 temp
+      文件中，并<strong>复制</strong>到 objects 目录下并用其 hash
+      对其进行重命名，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">tree 71ebfd9858fadc6a9714cb857f642b12cd6d94bb utils
+blob 47301eaf9cfac12c153aff5bab6071a9d0ef56bc index.js</code></pre>
+
+    <p>再下一个是 <em>message</em> 文件，操作同上，</p>
+
+    <pre><code class="code-highlighted code-PlainText">tree 71ebfd9858fadc6a9714cb857f642b12cd6d94bb utils
+blob 47301eaf9cfac12c153aff5bab6071a9d0ef56bc index.js
+blob 0d95c9a054d85cc83da46e4c99ac17eb9294b4d message</code></pre>
+
+    <p>
+      然后是 <em>temp</em> 文件的 sha1 值，重命名后<strong>移动</strong>到
+      objects 目录下，这个 sha1 值就是这个快照的 hash
+      了，我们可以给我们的快照重命名下。
+    </p>
+
+    <p>
+      <strong>snapshot-0</strong> -&gt;
+      <strong> ee4f61f0e1e20513e5c448619130cd3922ed3ecd</strong>
+    </p>
+
+    <p>接下来是第二个快照，这个快照是基于第一个快照的。</p>
+
+    <p>
+      也是从 <em>utils</em> 目录开始，这个目录和第一个快照的
+      <em>utils</em> 目录内容完全一样，所以生成的 <em>temp</em> 文件也一样，既然
+      <em>objects</em> 目录下已经有这个 <em>temp</em> 文件了，就不会<strong
+        >移到</strong
+      >
+      <em>objects</em> 目录去了，这里我们删掉就可以了，
+    </p>
+
+    <p>然后到上一层目录，同样先创建一个新的 <em>temp</em> 临时文件用来记录，</p>
+
+    <pre><code class="code-highlighted code-PlainText">tree 71ebfd9858fadc6a9714cb857f642b12cd6d94bb utils
+blob 47301eaf9cfac12c153aff5bab6071a9d0ef56bc index.js</code></pre>
+
+    <p>
+      然后是 <em>message</em> 文件，这里将第一个快照的 sha1 值， 写到 parent
+      字段去，这样方便回溯快照的历史记录，
+    </p>
+
+    <figure><img src="DraggedImage-7.png" /></figure>
+
+    <p>然后对 <em>message</em> 做 sha1 值处理并记录到 <em>temp</em> 文件中，</p>
+
+    <pre><code class="code-highlighted code-PlainText">tree 71ebfd9858fadc6a9714cb857f642b12cd6d94bb utils
+blob 47301eaf9cfac12c153aff5bab6071a9d0ef56bc index.js
+blob 2d7b2a619b7c975adae1c7359e9b75ee25f6563a message</code></pre>
+
+    <p>然后是 <em>new.js</em>，</p>
+
+    <pre><code class="code-highlighted code-PlainText">tree 71ebfd9858fadc6a9714cb857f642b12cd6d94bb utils
+blob 47301eaf9cfac12c153aff5bab6071a9d0ef56bc index.js
+blob 2d7b2a619b7c975adae1c7359e9b75ee25f6563a message
+blob 186047e5f7b3e48bbad85c9d32113b39b2b393e7 new.js</code></pre>
+
+    <p>
+      然后是整个快照的 sha1 值，也就是这个新 temp 文件的 sha1 值
+      <em>f07a5114fef8c9dda568c896f493e6bf0522b243</em>， 重命名后移动到
+      <em>objects</em> 目录下，顺便用该 sha1 值重命名快照，
+    </p>
+
+    <figure><img src="DraggedImage-8.png" /></figure>
+
+    <p>这样就转完完毕了。</p>
+
+    <p>
+      这样，只是文件 de-dupe OK了，我们开发中和快照联系起来的是分支，我们更新下
+      <em>branches</em> 文件，
+    </p>
+
+    <figure><img src="DraggedImage-9.png" /></figure>
+
+    <p>
+      将 snapshot-1 改为第二个快照现在的名字
+      <em>f07a5114fef8c9dda568c896f493e6bf0522b243</em
+      >，因为我们后面需要根据值去
+      <em>objects</em> 里面寻找文件来重新构建快照目录。
+    </p>
+
+    <p>tags 文件也更新下。</p>
+
+    <p>更新完之后，你将第一个快照和第二个快照删掉也没事，</p>
+
+    <p>
+      比如你删掉了第一个和第二个快照，你看了下你的 branches 文件，发现 math
+      分支的最新快照是
+      <em>f07a5114fef8c9dda568c896f493e6bf0522b243</em>
+      其实就是刚才删掉的第二个快照，然后你去 <em>objects</em> 目录下找文件名是
+      <em>f07a5114fef8c9dda568c896f493e6bf0522b243</em>
+      的文件，然后发现它里面的内容是，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">tree 71ebfd9858fadc6a9714cb857f642b12cd6d94bb utils
+blob 47301eaf9cfac12c153aff5bab6071a9d0ef56bc index.js
+blob 2d7b2a619b7c975adae1c7359e9b75ee25f6563a message
+blob 186047e5f7b3e48bbad85c9d32113b39b2b393e7 new.js</code></pre>
+
+    <p>
+      根据这些信息你可以自动创建一个名为
+      <em>f07a5114fef8c9dda568c896f493e6bf0522b243</em>
+      的目录（快照名），其中有一个 sha1 值为
+      <em>71ebfd9858fadc6a9714cb857f642b12cd6d94bb</em> 的
+      <em>utils</em> 的目录，根据该目录的 sha1 值去
+      <em>objects</em> 里面找对应文件，里面写着，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">blob 004242f0655f80d0bd99228ce84674af6ac684dd index.js</code></pre>
+
+    <p>
+      因为这条记录记录的是一条 blob 的记录（not tree），所以你在
+      <em>utils</em>目录下创建了一个 <em>index.js</em> 的文件，然后你拿着这个
+      <em>index.js</em> 的 sha1 值去
+      <em>objects</em> 目录下找对应的文件，里面写着，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">// util</code></pre>
+
+    <p>
+      然后你将这段内容写到了
+      <em>index.js</em> 里面去了，重复这个操作，你就构建出了这个快照的整个目录。
+    </p>
+
+    <h2>个人笔记</h2>
+
+    <p>
+      有了上面的寓言故事，其实你可以发现，你删除了分支其实并不会删除快照，你只要重新找到那个快照然后创建一个新分支在
+      <em>branches</em> 里就可以了。
+    </p>
+
+    <p>
+      Git 里的
+      <code>reflog</code> 命令可以帮助你找到删除的分支的最新的快照（commit）。
+    </p>
+  </body>
+</html>
