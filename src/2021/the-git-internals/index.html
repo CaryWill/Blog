@@ -1,36 +1,48 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta charset="utf-8" />
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
     <link href="/css/style.css" rel="stylesheet" />
-		<script src="/js/index.js" defer></script>
-		<title>The Git Internals</title>
-	</head>
-<body>
-<h1>The Git Internals</h1>
+    <script src="/js/index.js" defer></script>
+    <title>The Git Internals</title>
+  </head>
+  <body>
+    <h1>The Git Internals</h1>
 
-<p>学完了 git 的<a href="https://carytalk.netlify.app/src/2021/the-git-parable/the-git-parable.html">底层原理</a>后，底气是有了，但是还是不够，毕竟这只是别人讲的寓言故事，这和 git 的真正底层原理差距大不大，自己也不知道。</p>
+    <p>
+      学完了 git 的<a
+        href="https://carytalk.netlify.app/src/2021/the-git-parable/the-git-parable.html"
+        >底层原理</a
+      >后，底气是有了，但是还是不够，毕竟这只是别人讲的寓言故事，这和 git
+      的真正底层原理差距大不大，自己也不知道。
+    </p>
 
-<p>然后想起了 <strong>.git</strong>，文件夹，，点进去一看，这不就和刚才讲的一摸一样吗？狂喜。</p>
+    <p>
+      然后想起了
+      <strong>.git</strong
+      >，文件夹，，点进去一看，这不就和刚才讲的一摸一样吗？狂喜。
+    </p>
 
-<p>然后搜了下官方文档，整理了下，将寓言故事中的用词官方化了下，首先创建了个空项目，创建了几个文件，大致如下，</p>
+    <p>
+      然后搜了下官方文档，整理了下，将寓言故事中的用词官方化了下，首先创建了个空项目，创建了几个文件，大致如下，
+    </p>
 
-<pre><code class="code-highlighted code-PlainText">.
+    <pre><code class="code-highlighted code-PlainText">.
 ├── README.md
 ├── newFile.js
 └── src
     └── index.js</code></pre>
 
-<p>创建了两个分支，现在在 <em>dev</em> 分支上，</p>
+    <p>创建了两个分支，现在在 <em>dev</em> 分支上，</p>
 
-<pre><code class="code-highlighted code-PlainText">* dev
+    <pre><code class="code-highlighted code-PlainText">* dev
   master
 (END)</code></pre>
 
-<p><strong>.git 目录如下，</strong> </p>
+    <p><strong>.git 目录如下，</strong></p>
 
-<pre><code class="code-highlighted code-PlainText">.git
+    <pre><code class="code-highlighted code-PlainText">.git
 ├── COMMIT_EDITMSG
 ├── HEAD
 ├── config
@@ -83,15 +95,24 @@
     │&nbsp;&nbsp; └── master
     └── tags</code></pre>
 
-<h2>Snapshots</h2>
+    <h2>Snapshots</h2>
 
-<p><a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">官方的说法</a>是 <strong>commit</strong> 或者 <strong>commit object</strong>。</p>
+    <p>
+      <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects"
+        >官方的说法</a
+      >是 <strong>commit</strong> 或者 <strong>commit object</strong>。
+    </p>
 
-<p>我们可以通过 git 提供的 <code>git cat-file -p</code> 命令来查看我们在 <em>objects</em> 目录下创建的文件。之前在寓言故事中提到的，temp 文件，blob 文件，tree 文件等，这些都复制到了 <em>objects</em> 目录下了，我们可以根据对应的 hash 值找到对应的文件。</p>
+    <p>
+      我们可以通过 git 提供的 <code>git cat-file -p</code> 命令来查看我们在
+      <em>objects</em> 目录下创建的文件。之前在寓言故事中提到的，temp 文件，blob
+      文件，tree 文件等，这些都复制到了
+      <em>objects</em> 目录下了，我们可以根据对应的 hash 值找到对应的文件。
+    </p>
 
-<p>我们再来看下 <em>objects</em> 目录，</p>
+    <p>我们再来看下 <em>objects</em> 目录，</p>
 
-<pre><code class="code-highlighted code-PlainText">├── objects
+    <pre><code class="code-highlighted code-PlainText">├── objects
 │&nbsp;&nbsp; ├── 30
 │&nbsp;&nbsp; │&nbsp;&nbsp; └── d74d258442c7c65512eafab474568dd706c430
 │&nbsp;&nbsp; ├── 38
@@ -111,53 +132,76 @@
 │&nbsp;&nbsp; ├── info
 │&nbsp;&nbsp; └── pack</code></pre>
 
-<p>我们当前所在的分支是 <em>dev</em> 分支，HEAD（最新的 <em>commit</em>） 是 <strong> 9d2d0f1144c1e667277d35210c77d08ff0906d8a</strong>，我们在 <em>objects</em> 里面看了下，没看到这个名字的文件。。。有点奇怪。。。</p>
+    <p>
+      我们当前所在的分支是 <em>dev</em> 分支，HEAD（最新的 <em>commit</em>） 是
+      <strong> 9d2d0f1144c1e667277d35210c77d08ff0906d8a</strong>，我们在
+      <em>objects</em> 里面看了下，没看到这个名字的文件。。。有点奇怪。。。
+    </p>
 
-<p>原来 <em>objects</em> 下面的文件（object）的 hash 是<strong>子目录的名字</strong>（sha1 值的头两个字符）加 <strong>子目录下的文件的 hash（sha1 的 后38个字符）</strong>，这样我们就找到了，</p>
+    <p>
+      原来 <em>objects</em> 下面的文件（object）的 hash
+      是<strong>子目录的名字</strong>（sha1 值的头两个字符）加
+      <strong>子目录下的文件的 hash（sha1 的 后38个字符）</strong
+      >，这样我们就找到了，
+    </p>
 
-<pre><code class="code-highlighted code-PlainText">│&nbsp;&nbsp; ├── 9d
+    <pre><code class="code-highlighted code-PlainText">│&nbsp;&nbsp; ├── 9d
 │&nbsp;&nbsp; │&nbsp;&nbsp; └── 2d0f1144c1e667277d35210c77d08ff0906d8a</code></pre>
 
-<p>来看下内容，</p>
+    <p>来看下内容，</p>
 
-<pre><code class="code-highlighted code-bash">git cat-file -p 9d2d0f1144c1e667277d35210c77d08ff0906d8a</code></pre>
+    <pre><code class="code-highlighted code-bash">git cat-file -p 9d2d0f1144c1e667277d35210c77d08ff0906d8a</code></pre>
 
-<pre><code class="code-highlighted code-PlainText">tree 3c147b108e14c129e6e2a0c90938c9995b8287c0
+    <pre><code class="code-highlighted code-PlainText">tree 3c147b108e14c129e6e2a0c90938c9995b8287c0
 parent e93c50fa7f4c83e145a3a943d9b747df8e4c2dd1
 author cary &lt;CaryWill.K@gmail.com&gt; 1632184865 +0800
 committer cary &lt;CaryWill.K@gmail.com&gt; 1632184865 +0800
 
 fix: new file</code></pre>
 
-<p>大致的字段都和我们在寓言中学到的是一样的。</p>
+    <p>大致的字段都和我们在寓言中学到的是一样的。</p>
 
-<p>上面看到的发现是一个 <em>tree</em>，我们继续打印这个树里面的内容，</p>
+    <p>上面看到的发现是一个 <em>tree</em>，我们继续打印这个树里面的内容，</p>
 
-<pre><code class="code-highlighted code-bash">git cat-file -p 3c147b108e14c129e6e2a0c90938c9995b8287c0</code></pre>
+    <pre><code class="code-highlighted code-bash">git cat-file -p 3c147b108e14c129e6e2a0c90938c9995b8287c0</code></pre>
 
-<pre><code class="code-highlighted code-PlainText">100644 blob 30d74d258442c7c65512eafab474568dd706c430	README.md
+    <pre><code class="code-highlighted code-PlainText">100644 blob 30d74d258442c7c65512eafab474568dd706c430	README.md
 100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	newFile.js
 040000 tree 43920febd360c7c656fb482f4dc7d294447d1b60	src</code></pre>
 
-<p>原来我们刚才那个 <em>commit</em> 是项目的根目录，你可以看到上面根目录里的内容对应的是这个，</p>
+    <p>
+      原来我们刚才那个
+      <em>commit</em> 是项目的根目录，你可以看到上面根目录里的内容对应的是这个，
+    </p>
 
-<pre><code class="code-highlighted code-PlainText">├── README.md
+    <pre><code class="code-highlighted code-PlainText">├── README.md
 ├── newFile.js
 └── src</code></pre>
 
-<p>然后 <strong>src</strong> 对应的是一个 tree 文件，我们继续打印，</p>
+    <p>然后 <strong>src</strong> 对应的是一个 tree 文件，我们继续打印，</p>
 
-<pre><code class="code-highlighted code-bash">git cat-file -p 43920febd360c7c656fb482f4dc7d294447d1b60</code></pre>
+    <pre><code class="code-highlighted code-bash">git cat-file -p 43920febd360c7c656fb482f4dc7d294447d1b60</code></pre>
 
-<pre><code class="code-highlighted code-PlainText">100644 blob 75fa785de707a4ce962f00cfa716e7627f24c0ff	index.js</code></pre>
+    <pre><code class="code-highlighted code-PlainText">100644 blob 75fa785de707a4ce962f00cfa716e7627f24c0ff	index.js</code></pre>
 
-<p>这样我们就可以看到整个目录了，想看各个 blob 文件里面的内容，可以继续打印，这个就不继续打印了。</p>
+    <p>
+      这样我们就可以看到整个目录了，想看各个 blob
+      文件里面的内容，可以继续打印，这个就不继续打印了。
+    </p>
 
-<p>还有一个点，你会发现每一个 <em>commit</em> 都是这个项目在某一个时间点完整的快照，并不是这个 <em>commit</em> 带来的 <strong>change</strong>。</p>
+    <p>
+      还有一个点，你会发现每一个
+      <em>commit</em> 都是这个项目在某一个时间点完整的快照，并不是这个
+      <em>commit</em> 带来的 <strong>change</strong>。
+    </p>
 
-<p>还有一个点不同的是，寓言故事里面，<em>message</em> 文件是在每个 <em>commit</em> 目录里面的，现在所有的 commit 的 message统一放在 <strong>.git</strong> 目录下的 logs 目录下去了。</p>
+    <p>
+      还有一个点不同的是，寓言故事里面，<em>message</em> 文件是在每个
+      <em>commit</em> 目录里面的，现在所有的 commit 的 message统一放在
+      <strong>.git</strong> 目录下的 logs 目录下去了。
+    </p>
 
-<pre><code class="code-highlighted code-PlainText">├── logs
+    <pre><code class="code-highlighted code-PlainText">├── logs
 │&nbsp;&nbsp; ├── HEAD
 │&nbsp;&nbsp; └── refs
 │&nbsp;&nbsp;     ├── heads
@@ -167,34 +211,50 @@ fix: new file</code></pre>
 │&nbsp;&nbsp;         └── origin
 │&nbsp;&nbsp;             ├── dev</code></pre>
 
-<h2>Branches &amp; Tags</h2>
+    <h2>Branches &amp; Tags</h2>
 
-<pre><code class="code-highlighted code-PlainText">├── HEAD
+    <pre><code class="code-highlighted code-PlainText">├── HEAD
 └── refs
     ├── heads
     │&nbsp;&nbsp; ├── dev
     │&nbsp;&nbsp; └── master
     └── tags</code></pre>
 
-<p>分支的话，我们之前是存在根目录下的 <em>branches</em> 文件里面的，</p>
+    <p>分支的话，我们之前是存在根目录下的 <em>branches</em> 文件里面的，</p>
 
-<figure><img src="DraggedImage.png"/></figure>
+    <figure><img src="DraggedImage.png" /></figure>
 
-<p>现在是放在 <em>.git</em> 目录下的 <em> refs</em> 目录下的 <em> heads</em> 目录下，顾名思义，里面就是存放了一堆 head（最新的 commit 的 hash），</p>
+    <p>
+      现在是放在 <em>.git</em> 目录下的 <em> refs</em> 目录下的
+      <em> heads</em> 目录下，顾名思义，里面就是存放了一堆 head（最新的 commit
+      的 hash），
+    </p>
 
-<figure><img src="DraggedImage-1.png"/></figure>
+    <figure><img src="DraggedImage-1.png" /></figure>
 
-<p>每个文件对应的是 <em>head</em> 的 <em>hash</em>，文件名是分支名，和我们寓言故事里面讲的大同小异。</p>
+    <p>
+      每个文件对应的是 <em>head</em> 的
+      <em>hash</em>，文件名是分支名，和我们寓言故事里面讲的大同小异。
+    </p>
 
-<p>里面还有 <em>tags</em> 目录，和我们之前讲的也一样。</p>
+    <p>里面还有 <em>tags</em> 目录，和我们之前讲的也一样。</p>
 
-<p>不过 <em>.git</em> 目录里还多了个 <em>HEAD</em> 文件，这个就是表示当前所指向的 commit，如果我们是直接 <code>git checkout dev</code> 到 dev 分支上的话， 那么这个就是 <em>refs/heads/dev</em> 的引用，表示其分支上的最新的 <em>commit</em>，这时 HEAD 的具体内容长这样，</p>
+    <p>
+      不过 <em>.git</em> 目录里还多了个
+      <em>HEAD</em> 文件，这个就是表示当前所指向的 commit，如果我们是直接
+      <code>git checkout dev</code> 到 dev 分支上的话， 那么这个就是
+      <em>refs/heads/dev</em> 的引用，表示其分支上的最新的 <em>commit</em>，这时
+      HEAD 的具体内容长这样，
+    </p>
 
-<pre><code class="code-highlighted code-PlainText">ref: refs/heads/dev</code></pre>
+    <pre><code class="code-highlighted code-PlainText">ref: refs/heads/dev</code></pre>
 
-<p>但是像是你直接切到某一个 <em>commit</em> 上的话，比如，目前 <strong>dev</strong> 分支上有两个 <em>commit</em>，</p>
+    <p>
+      但是像是你直接切到某一个 <em>commit</em> 上的话，比如，目前
+      <strong>dev</strong> 分支上有两个 <em>commit</em>，
+    </p>
 
-<pre><code class="code-highlighted code-PlainText">commit 9d2d0f1144c1e667277d35210c77d08ff0906d8a (HEAD -&gt; dev)
+    <pre><code class="code-highlighted code-PlainText">commit 9d2d0f1144c1e667277d35210c77d08ff0906d8a (HEAD -&gt; dev)
 Author: cary &lt;CaryWill.K@gmail.com&gt;
 Date:   Tue Sep 21 08:41:05 2021 +0800
 
@@ -207,11 +267,15 @@ Date:   Mon Sep 20 22:49:41 2021 +0800
     first commit
 (END)</code></pre>
 
-<p>我们 <code>git checkout 9d2d0f1144c1e667277d35210c77d08ff0906d8a </code> 到第一个 <em>commit</em> 上去的话，你现在就不属于任何一个分支，</p>
+    <p>
+      我们
+      <code>git checkout 9d2d0f1144c1e667277d35210c77d08ff0906d8a </code>
+      到第一个 <em>commit</em> 上去的话，你现在就不属于任何一个分支，
+    </p>
 
-<pre><code class="code-highlighted code-bash">git checkout e93c50fa7f4c83e145a3a943d9b747df8e4c2dd1</code></pre>
+    <pre><code class="code-highlighted code-bash">git checkout e93c50fa7f4c83e145a3a943d9b747df8e4c2dd1</code></pre>
 
-<pre><code class="code-highlighted code-PlainText">Note: switching to &#39;e93c50fa7f4c83e145a3a943d9b747df8e4c2dd1&#39;.
+    <pre><code class="code-highlighted code-PlainText">Note: switching to &#39;e93c50fa7f4c83e145a3a943d9b747df8e4c2dd1&#39;.
 
 You are in &#39;detached HEAD&#39; state. You can look around, make experimental
 changes and commit them, and you can discard any commits you make in this
@@ -230,21 +294,30 @@ Turn off this advice by setting config variable advice.detachedHead to false
 
 HEAD is now at e93c50f first commit</code></pre>
 
-<p>来看下这个时候的 <strong>HEAD</strong> 文件的内容，</p>
+    <p>来看下这个时候的 <strong>HEAD</strong> 文件的内容，</p>
 
-<pre><code class="code-highlighted code-PlainText">e93c50fa7f4c83e145a3a943d9b747df8e4c2dd1</code></pre>
+    <pre><code class="code-highlighted code-PlainText">e93c50fa7f4c83e145a3a943d9b747df8e4c2dd1</code></pre>
 
-<p>对就是该<em>commit</em> 的 <strong>hash</strong>。</p>
+    <p>对就是该<em>commit</em> 的 <strong>hash</strong>。</p>
 
-<p>如果我们在将分支推送到 github 上的仓库里的话，那么在 <em>refs</em> 目录下还会多出一个 <em>remotes</em> 目录，里面是关于远程分支的信息，先基于 <em>dev</em> 分支 <code>git checkout branch main</code> 创建一个 <em>main</em> 分支，然后推送到 github 仓库去，</p>
+    <p>
+      如果我们在将分支推送到 github 上的仓库里的话，那么在
+      <em>refs</em> 目录下还会多出一个
+      <em>remotes</em> 目录，里面是关于远程分支的信息，先基于 <em>dev</em> 分支
+      <code>git checkout branch main</code> 创建一个
+      <em>main</em> 分支，然后推送到 github 仓库去，
+    </p>
 
-<pre><code class="code-highlighted code-bash">git remote add origin git@github.com:CaryWill/git-intervals-playground.git
+    <pre><code class="code-highlighted code-bash">git remote add origin git@github.com:CaryWill/git-intervals-playground.git
 git branch main
 git push -u origin main</code></pre>
 
-<p><a href="https://github.com/CaryWill/git-intervals-playground">推送</a>完后，再看下 <em>refs</em> 目录，</p>
+    <p>
+      <a href="https://github.com/CaryWill/git-intervals-playground">推送</a
+      >完后，再看下 <em>refs</em> 目录，
+    </p>
 
-<pre><code class="code-highlighted code-PlainText">└── refs
+    <pre><code class="code-highlighted code-PlainText">└── refs
     ├── heads
     │&nbsp;&nbsp; ├── main
     │&nbsp;&nbsp; └── master
@@ -253,17 +326,155 @@ git push -u origin main</code></pre>
     │&nbsp;&nbsp; └── origin
     │&nbsp;&nbsp;     └── main</code></pre>
 
-<p>结论，上一篇的寓言故事和真实的 git 底层原理几乎是一摸一样的，平常使用 git 命令的时候，可以用 git 寓言故事作为参考，加深对命令的记忆。</p>
+    <p>
+      结论，上一篇的寓言故事和真实的 git 底层原理几乎是一摸一样的，平常使用 git
+      命令的时候，可以用 git 寓言故事作为参考，加深对命令的记忆。
+    </p>
 
-<p>比如，<code>git branch development</code> 命令可以用来创建一个分支，这其实就只是在 <em>refs</em> 目录下多加了个文件而已，用来记录当前新增的分支及其对应的最新的 <em>commit hash</em>。</p>
+    <p>
+      比如，<code>git branch development</code>
+      命令可以用来创建一个分支，这其实就只是在
+      <em>refs</em>
+      目录下多加了个文件而已，用来记录当前新增的分支及其对应的最新的
+      <em>commit hash</em>。
+    </p>
 
-<h2>参考</h2>
+    <p>
+      如果我们使用了
+      <code>git stash</code> 命令的话，那么这里面还有一个文件，<strong
+        >stash</strong
+      >
+      文件，我先现在在根目录下创建一个文件，然后将它 stash 起来，
+    </p>
 
-<ol>
-	<li><a href="https://git-scm.com/book/en/v2/Git-Internals-Plumbing-and-Porcelain">Git-Internals-Plumbing-and-Porcelain</a></li>
-	<li><a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">Git Internals - Git Objects</a></li>
-</ol>
+    <pre><code class="code-highlighted code-bash">touch newFile5.js
+git stash</code></pre>
 
-</body>
+    <p>然后这给文件就出来了，</p>
+
+    <pre><code class="code-highlighted code-PlainText">.git/refs
+├── heads
+│&nbsp;&nbsp; ├── dev
+│&nbsp;&nbsp; ├── main
+│&nbsp;&nbsp; └── master
+├── remotes
+│&nbsp;&nbsp; └── origin
+│&nbsp;&nbsp;     ├── dev
+│&nbsp;&nbsp;     └── main
+├── stash
+└── tags</code></pre>
+
+    <p>这个 <strong>stash</strong> 文件里面的内容长这样，</p>
+
+    <pre><code class="code-highlighted code-PlainText">209506d2de3c762adb3d24b61058c45dee4ab889</code></pre>
+
+    <p>
+      就一个 hash，使用 <code>git cat-files -p</code> 来查看这个
+      hash，我们发现，这就是一个 commit，来看下它的<a
+        href="https://git-scm.com/docs/git-stash"
+        >定义</a
+      >
+      就很清楚了，
+    </p>
+
+    <blockquote>
+      <p>
+        Use git stash when you want to record the current state of the working
+        directory and the index, but want to go back to a clean working
+        directory. The command saves your local modifications away and reverts
+        the working directory to match the HEAD commit.
+      </p>
+    </blockquote>
+
+    <p>
+      基于当前 working 目录/ staging状态创建一个 commit，创建完成后再将 working
+      目录和 staging 回退到当前分支的 HEAD commit 上，起到的就是一个暂存的作用。
+    </p>
+
+    <p>
+      大家都知道 stash 可以反复 stash，stash 是一个 list of
+      commits，有没有想过为什么 stash 文件里就存了一个最新 stash 的 commit 的
+      hash 呢？
+    </p>
+
+    <p>感兴趣的小伙伴可以思考下。</p>
+
+    <h2>Staging Area</h2>
+
+    <p>
+      这个其实就是 <strong>.git</strong> 目录下的 index 文件，它就相当于一个
+      commit 的拷贝，
+    </p>
+
+    <pre><code class="code-highlighted code-PlainText">.git
+├── index</code></pre>
+
+    <p>
+      可以使用 <code>git ls-files</code> 命令来查看 index 文件的内容，先看下
+      staging 里有啥，
+    </p>
+
+    <pre><code class="code-highlighted code-bash">git ls-files --stage</code></pre>
+
+    <pre><code class="code-highlighted code-PlainText">100644 20030f2cd5c96dc15b95a3b6160be07811032891 0	README.md
+100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 0	newFile.js
+100644 75fa785de707a4ce962f00cfa716e7627f24c0ff 0	src/index.js</code></pre>
+
+    <p>
+      然后我们项目的根目录下新建一个文件，随便取一个名字，叫
+      <strong>newFile2.js</strong> 好了，
+    </p>
+
+    <pre><code class="code-highlighted code-bash">touch newFile2.js</code></pre>
+
+    <pre><code class="code-highlighted code-PlainText">.
+├── README.md
+├── newFile.js
+├── newFile2.js
+└── src
+    └── index.js</code></pre>
+
+    <p>然后将它加入到 staging 去，</p>
+
+    <pre><code class="code-highlighted code-bash">git add newFile2.js</code></pre>
+
+    <p>然后在查看下 staging(index) 里的东西，</p>
+
+    <pre><code class="code-highlighted code-bash">git ls-files --stage</code></pre>
+
+    <pre><code class="code-highlighted code-PlainText">100644 20030f2cd5c96dc15b95a3b6160be07811032891 0	README.md
+100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 0	newFile.js
+100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 0	newFile2.js
+100644 75fa785de707a4ce962f00cfa716e7627f24c0ff 0	src/index.js</code></pre>
+
+    <h2>其他</h2>
+
+    <p>可以通过 <strong>man</strong> 命令查看 git 命令的使用方法，比如，</p>
+
+    <pre><code class="code-highlighted code-bash">man git-stash
+man git-add
+man git-reset</code></pre>
+
+    <h2>参考</h2>
+
+    <ol>
+      <li>
+        <a
+          href="https://git-scm.com/book/en/v2/Git-Internals-Plumbing-and-Porcelain"
+          >Git-Internals-Plumbing-and-Porcelain</a
+        >
+      </li>
+      <li>
+        <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects"
+          >Git Internals - Git Objects</a
+        >
+      </li>
+      <li>
+        <a href="The%20Git%20index%20file%20has%20the%20following%20format"
+          >The git index file</a
+        >
+      </li>
+      <li><a href="https://git-scm.com/docs/git-ls-files">git ls-files</a></li>
+    </ol>
+  </body>
 </html>
-
