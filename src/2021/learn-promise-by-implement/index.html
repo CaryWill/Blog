@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>手写 Promise 及原理解析</title>
+	</head>
+<body>
+<h1> 手写 Promise 及原理解析</h1>
+
+<p><strong>2021.09.28</strong></p>
+
+<h2>原理</h2>
+
+<p>参考规范和资料手写了个<a href="https://github.com/CaryWill/MyPromise">promise</a>并跑通了 Promise A+ 规范的测试，可以对着看。</p>
+
+<p>Promise 的出现是为了解决 <em>callback hell</em>，解决办法是通过 promise chaining 链式调用。</p>
+
+<p>实现要点有 3 个，</p>
+
+<ol>
+	<li>chaining</li>
+	<li>callback register</li>
+	<li>callback invoke <em>asynchronously</em> in right <em>order</em></li>
+</ol>
+
+<h3>Chaining</h3>
+
+<p>可以在调用 <code>.then</code> 的时候直接返回一个新的 promise，这样就可以达到 <code>promise.then().then()</code> 的 chaining 效果了。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-entity">MyPromise</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">prototype</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">then</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">then</span>(<span class="syntax-all syntax-parameter">onFulfilled</span>, <span class="syntax-all syntax-parameter">onRejected</span>) {
+	<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">promise</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">MyPromise</span>((<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  		<span class="syntax-all syntax-keyword">...</span>
+	});
+	<span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">promise</span>;
+}</code></pre>
+
+<h3>Callback Register</h3>
+
+<p>根据 <code>promise.then(cb)</code> 里 promise 的状态，决定怎么注册 callback，</p>
+
+<ul>
+	<li>promise 为 <em>fulfilled</em> 状态的时候直接在微任务队列中添加一个微任务，并且 <em>onFulfilled</em> 会接收到 promise 的 <em>resolve</em> 时的 value 值。
+
+<pre><code class="code-highlighted code-js">  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">State</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">FULFILLED</span>) {
+	<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">promise</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">MyPromise</span>((<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+	  <span class="syntax-all syntax-constant">setTimeout</span>(() <span class="syntax-all syntax-keyword">=&gt;</span> {
+    	<span class="syntax-all syntax-keyword">try</span> {
+    	  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">_value</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">onFulfilled</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+    	  <span class="syntax-all syntax-variable">resolvePromise</span>(<span class="syntax-all syntax-parameter">promise</span>, <span class="syntax-all syntax-parameter">_value</span>, <span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>);
+    	} <span class="syntax-all syntax-keyword">catch</span> (<span class="syntax-all syntax-parameter">error</span>) {
+    	  <span class="syntax-all syntax-variable">reject</span>(<span class="syntax-all syntax-parameter">error</span>);
+    	}
+	  }, <span class="syntax-all syntax-constant">0</span>);
+	});
+	<span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">promise</span>;
+  }</code></pre></li>
+	<li>promise 为 <em>rejected</em> 状态的时候和 <em>fulfilled</em> 时的情况类似，只是 <em>onRejected</em> 会接受到 promise 的 <em>reject</em> 时的 reason 值。</li>
+	<li>pending 的时候会将 <code>.then(cb1, cb2)</code> 里的 cb1 注册到 promise 里的 onFulfilledCallbacks， cb2 注册到 onRejectedCallbacks 中去，等到 promise <em>settle</em> 的时候，如果是 <em>fulfilled</em>，那么<em>onFulfilledCallbacks</em> 这个 callback list 将被遍历，然后将其中的每一 callback 创建一个微任务加入到微任务队列中来保证异步调用。
+
+<pre><code class="code-highlighted code-js">  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">State</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">PENDING</span>) {
+	<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">promise</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">MyPromise</span>((<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+	  <span class="syntax-all syntax-comment">// 包一层然后加入到 callback list 中等待 this 被 settle
+</span>	  <span class="syntax-all syntax-comment">// 包一层是因为有可能 onFulfilled() 返回 promise
+</span>	  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">onFulfilledCallbacks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(() <span class="syntax-all syntax-keyword">=&gt;</span> {
+    	<span class="syntax-all syntax-keyword">try</span> {
+    	  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">_value</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">onFulfilled</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+    	  <span class="syntax-all syntax-variable">resolvePromise</span>(<span class="syntax-all syntax-parameter">promise</span>, <span class="syntax-all syntax-parameter">_value</span>, <span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>);
+    	} <span class="syntax-all syntax-keyword">catch</span> (<span class="syntax-all syntax-parameter">error</span>) {
+    	  <span class="syntax-all syntax-variable">reject</span>(<span class="syntax-all syntax-parameter">error</span>);
+    	}
+	  });
+
+	  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">onRejectedCallbacks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(() <span class="syntax-all syntax-keyword">=&gt;</span> {
+    	<span class="syntax-all syntax-keyword">try</span> {
+    	  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">_reason</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">onRejected</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">reason</span>);
+    	  <span class="syntax-all syntax-variable">resolvePromise</span>(<span class="syntax-all syntax-parameter">promise</span>, <span class="syntax-all syntax-parameter">_reason</span>, <span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>);
+    	} <span class="syntax-all syntax-keyword">catch</span> (<span class="syntax-all syntax-parameter">error</span>) {
+    	  <span class="syntax-all syntax-variable">reject</span>(<span class="syntax-all syntax-parameter">error</span>);
+    	}
+	  });
+	});
+	<span class="syntax-all syntax-comment">// 直接返回以便 promise chaining
+</span>	<span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">promise</span>;
+  }</code></pre></li>
+</ul>
+
+<h3>Callback invoke asynchronously in right order</h3>
+
+<p>一句话总结的话，就是将用来 resolve/reject <code>then</code> 返回的 promise 的方法暴露给 <code>then</code> 的 <em>onFulfilled/onRejected</em> callback，在 promise settle 的时候，遍历后一个 <code>then</code> 往该 promise 身上注册的 callbacks，即（onFulfilledCallbacks/onRejectedCallbacks）并将 callback一个个加入到微任务中。</p>
+
+<p>举个例子，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Promise</span>((<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-constant">setTimeout</span>(() <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;resolve1&#39;</span>);
+    <span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-constant">1</span>);
+  }, <span class="syntax-all syntax-constant">1000</span>);
+})
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>((<span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Promise</span>((<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-constant">setTimeout</span>(() <span class="syntax-all syntax-keyword">=&gt;</span> {
+        <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;resolve2&#39;</span>);
+        <span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-constant">2</span>);
+      }, <span class="syntax-all syntax-constant">2000</span>);
+    })
+  })
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>((<span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">res</span>);
+  });</code></pre>
+
+<p>我们将第一个 <code>new Promise()</code> 返回的会在 1s 后 <em>resolve</em> 的 promise 记为 promise1，第一个 <code>.then(onFulfill)</code> 返回的 promise 记为 promise2，第一个 <code>then</code> 的 <em>onFulfill</em> 返回的 promise 记为 promise3，将第二个<code>.then(onFulfill)</code> 返回的 promise 记为 promise4。</p>
+
+<p>一步步分析，</p>
+
+<ul>
+	<li>返回一个 pending 的 promise1，其将在 1s 后 resolve。</li>
+	<li>第一个 <code>.then(onFulfill)</code> 调用的时候，<code>.then</code> 会通过 <code>new Promise(executor)</code> 新建一个 promise2 并立刻将其返回，这样第二个 <code>then</code> 就可以继续注册 callback 了。在创建 promise2 的时候，因为第一个 <code>.then(onFulfilled)</code> 的 <em> onFulfilled</em> 返回的是一个 promise3，这就需要保证 promise1 和 promise3 同时 settle 的时候才能 settle promise2，这样就能保证在调用第二个 <code>then</code> 时注册的 callback 一定会在调用第一个 <code>then</code> 时注册的 callback 之后调用。因为 promise1 此时的状态还是 pending，所以第一个 <code>then</code> 身上的 <em>onFulfill</em> callback 会被注册到 promise1 的 <em>onFulfilledCallbacks</em> 身上，并且 <em>onFulfill</em> 被包了一层（将 settle promise2 的 resolve/reject 方法暴露给 <em>onFulfill</em> 方法）后才被注册到 promise1 身上，因为 promise2 的 settle 依赖 promise3 的 settle。</li>
+	<li>因为第一个 <code>then</code> 是 2s 后 settle 的，所以当第二个 <code>then</code> 调用的时候，promise2 还是 pending 的状态，所以 callback 被包了一层注册到 promise2 的 callback list 上。</li>
+	<li>1s 后，promise1 先 settle，开始遍历 promise1 的 <em>onFulfilledCallbacks</em>，这里面只有第一个 <code>.then</code> 注册进去的一个 callback，而这个 callback 被调用的时候，返回的 promise3 还是 pending 的状态，所以 promise2 也还是 pending 状态，只有这个 callback settle 的时候，才会调用之前暴露的 resolve/reject 方法来 settle promise2。</li>
+	<li>又过了1s，promise3 settle 了，调用 promise2 暴露的 resolve 函数将 promise2 settle 了，promise2 一 settle，就开始遍历 promise2 身上的 <em>onFulfilledCallbacks</em> 了，也就是第二个 <code>then</code> 注册的 callback。通过这种将 settle 的方法暴露出去来保证正确的执行顺序。</li>
+</ul>
+
+<h2>其他</h2>
+
+<h3>macrotask/microtask 官方叫法是？</h3>
+
+<p>在<a href="http://262.ecma-international.org/6.0/#sec-jobs-and-job-queues">ECMA 规范</a>里，</p>
+
+<p>macrotask 叫做 <em> ScriptJobs</em>，</p>
+
+<blockquote>
+<p>Jobs that validate and evaluate ECMAScript Script and Module source text.</p>
+</blockquote>
+
+<p>microtask 叫做 <em> PromiseJobs</em>,</p>
+
+<blockquote>
+<p>Jobs that are responses to the settlement of a Promise</p>
+</blockquote>
+
+<h3>执行 <code>.then()</code> 的时候会发生什么？</h3>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>之前看到一篇文章<a href="https://github.com/dennis-jiang/Front-End-Knowledges/blob/master/Examples/JavaScript/Promise/MyPromise.js"> 手写一个Promise/A+,完美通过官方872个测试用例 </a>，里面的做法和上面有一点不一样虽然测试也是跑通了。文章里提到的做法是，在通过 <code>then</code> 方法加入的 callback，再用 <em>setTimeout</em> 包了一层，这样后面在调用 <em>executor</em> 里面的 <em>resolve</em> 方法的时候就不用手动一个个创建 PromiseJobs，而是直接调用 callback 就可以了，而 callback 在调用的时候自己会创建 PromiseJobs。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">that</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">onFulfilledCallbacks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-keyword">function</span> () {
+        <span class="syntax-all syntax-constant">setTimeout</span>(<span class="syntax-all syntax-keyword">function</span> () {
+          <span class="syntax-all syntax-keyword">try</span> {
+            <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">onFulfilled</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&#39;function&#39;</span>) {
+              <span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-parameter">that</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+            } <span class="syntax-all syntax-keyword">else</span> {
+              <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">x</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">realOnFulfilled</span>(<span class="syntax-all syntax-parameter">that</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+              <span class="syntax-all syntax-variable">resolvePromise</span>(<span class="syntax-all syntax-parameter">promise2</span>, <span class="syntax-all syntax-parameter">x</span>, <span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>);
+            }
+          } <span class="syntax-all syntax-keyword">catch</span> (<span class="syntax-all syntax-parameter">error</span>) {
+            <span class="syntax-all syntax-variable">reject</span>(<span class="syntax-all syntax-parameter">error</span>);
+          }
+        }, <span class="syntax-all syntax-constant">0</span>);
+      });</code></pre>
+
+<p>注册的 callback 被调用的时候自带自动创建微任务功能，不需要 <em>resolve</em> 函数在遍历 callback list 的时候为每一个 callback 手动创建微任务加入到微任务队列中。</p>
+
+<hr />
+
+<p>理解原理只是第一步，手写一个 Promise 能帮助你理解的更深，可以试一下手写一个。</p>
+
+<p>按照上面的思路写， 半个小时就写完了，虽然有报错，但是主逻辑没错的，后面对照 PromiseA+ 规范改了下就测试全跑通了。</p>
+
+<figure><img src="DraggedImage-1.png"/></figure>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://promisesaplus.com/#notes">Promise Spec - PromiseA+</a></li>
+	<li><a href="https://github.com/dennis-jiang/Front-End-Knowledges/blob/master/Examples/JavaScript/Promise/MyPromise.js"> 手写一个Promise/A+,完美通过官方872个测试用例 </a></li>
+	<li><a href="http://262.ecma-international.org/6.0/#sec-performpromisethen">http://262.ecma-international.org/6.0/#sec-performpromisethen</a></li>
+	<li><a href="https://stackoverflow.com/questions/55676922/javascript-promises-the-event-loop-and-the-job-queue">javascript-promises-the-event-loop-and-the-job-queue</a></li>
+	<li><a href="https://262.ecma-international.org/6.0/#sec-promise-constructor">promise-constructor - ecma</a></li>
+	<li><a href="https://modernjavascript.blogspot.com/2013/08/promisesa-understanding-by-doing.html">promisesa-understanding-by-doing - RhysBB </a></li>
+</ol>
+
+</body>
+</html>
+
