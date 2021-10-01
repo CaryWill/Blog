@@ -6,7 +6,7 @@ class List extends React.Component {
   render() {
     const list = outline.reduce((all, item) => {
       const key = Object.keys(item)[0];
-      all.concat(item[key]);
+      all = all.concat(item[key]);
       return all;
     }, []);
     return list.slice(0, 5).map((item) => {
