@@ -9,6 +9,16 @@
     <title>Cary</title>
     <link href="/css/main.css" rel="stylesheet" />
     <script src="/js/index.js" defer></script>
+    <script src="/js/outline.js"></script>
+    <script
+      src="https://unpkg.com/react@17/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script type="text/babel" src="/js/main.js"></script>
   </head>
   <body class="home" id="dummybodyid">
     <main class="content-container">
@@ -20,86 +30,7 @@
       <section class="home-section">
         <h1 class="home-section-title">Recent Articles</h1>
         <div class="home-section-content">
-          <ol class="home-section-content-article-list">
-            <li class="home-section-content-article-list-item">
-              <article>
-                <h1 class="home-section-content-article-list-item-title">
-                  <a href="/src/2021/learn-promise-by-implement/index.html"
-                    >手写 Promise 及原理解析</a
-                  >
-                </h1>
-                <p class="home-section-content-article-list-item-excerpt">
-                  通过手写一个 promise 来帮你理解 promise 的原理
-                  <a
-                    class="article-excerpt-more-link"
-                    href="/src/2021/learn-promise-by-implement/index.html"
-                    >More&nbsp;&gt;</a
-                  >
-                </p>
-                <p class="home-section-content-article-list-item-date">
-                  Sept 28, 2021
-                </p>
-              </article>
-            </li>
-            <li class="home-section-content-article-list-item">
-              <article>
-                <h1 class="home-section-content-article-list-item-title">
-                  <a href="/src/2021/the-git-internals/index.html"
-                    >The git internals</a
-                  >
-                </h1>
-                <p class="home-section-content-article-list-item-excerpt">
-                  对比寓言故事里提到的 git 底层原理和实际的 git 底层原理的差异
-                  <a
-                    class="article-excerpt-more-link"
-                    href="/src/2021/the-git-internals/index.html"
-                    >More&nbsp;&gt;</a
-                  >
-                </p>
-                <p class="home-section-content-article-list-item-date">
-                  Sept 20, 2021
-                </p>
-              </article>
-            </li>
-            <li class="home-section-content-article-list-item">
-              <article>
-                <h1 class="home-section-content-article-list-item-title">
-                  <a href="/src/2021/the-git-parable/the-git-parable.html"
-                    >The git parable</a
-                  >
-                </h1>
-                <p class="home-section-content-article-list-item-excerpt">
-                  用一则寓言故事来帮助你了解 git 背后的原理以及命令的使用。
-                  <a
-                    class="article-excerpt-more-link"
-                    href="/src/2021/the-git-parable/the-git-parable.html"
-                    >More&nbsp;&gt;</a
-                  >
-                </p>
-                <p class="home-section-content-article-list-item-date">
-                  Sept 15, 2021
-                </p>
-              </article>
-            </li>
-            <li class="home-section-content-article-list-item">
-              <article>
-                <h1 class="home-section-content-article-list-item-title">
-                  <a href="/src/2021/regex101.html">Regex 101</a>
-                </h1>
-                <p class="home-section-content-article-list-item-excerpt">
-                  Regular expression 101
-                  <a
-                    class="article-excerpt-more-link"
-                    href="/src/2021/regex101.html"
-                    >More&nbsp;&gt;</a
-                  >
-                </p>
-                <p class="home-section-content-article-list-item-date">
-                  Sept 01, 2021
-                </p>
-              </article>
-            </li>
-          </ol>
+          <ol class="home-section-content-article-list" id="outline-list"></ol>
         </div>
         <div class="home-section-nav">
           <a href="./articles.html" class="button" title="Blog Archive"

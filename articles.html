@@ -8,6 +8,16 @@
   <link href="/css/main.css" rel="stylesheet" />
   <script src="/js/index.js" defer></script>
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <script src="/js/outline.js"></script>
+  <script
+    src="https://unpkg.com/react@17/umd/react.development.js"
+    crossorigin
+  ></script>
+  <script
+    src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"
+    crossorigin
+  ></script>
+  <script type="text/babel" src="/js/main.js"></script>
 </head>
 <body class="archive">
   <main class="content-container">
@@ -21,67 +31,7 @@
       <ol class="years">
         <li>
           <h1>2021</h1>
-          <ol class="articles">
-            <li>
-              <article>
-                <a href="/src/2021/the-git-internals/index.html">
-                  <div class="title">
-                    <h1>The git internals</h1>
-                  </div>
-                </a>
-                <div class="date">
-                  Sept 20, 2021
-                </div>
-              </article>
-            </li>
-            <li>
-              <article>
-                <a href="/src/2021/learn-promise-by-implement/index.html">
-                  <div class="title">
-                    <h1>手写 Promise 及原理解析</h1>
-                  </div>
-                </a>
-                <div class="date">
-                  Sept 28, 2021
-                </div>
-              </article>
-            </li>
-            <li>
-              <article>
-                <a href="/src/2021/the-git-internals/index.html">
-                  <div class="title">
-                    <h1>The git internals</h1>
-                  </div>
-                </a>
-                <div class="date">
-                  Sept 20, 2021
-                </div>
-              </article>
-            </li>
-            <li>
-              <article>
-                <a href="/src/2021/the-git-parable/the-git-parable.html">
-                  <div class="title">
-                    <h1>The git parable</h1>
-                  </div>
-                </a>
-                <div class="date">
-                  Sept 15, 2021
-                </div>
-              </article>
-            </li>
-            <li>
-              <article>
-                <a href="/src/2021/regex101.html">
-                  <div class="title">
-                    <h1>Regex 101</h1>
-                  </div>
-                </a>
-                <div class="date">
-                  Sept 01, 2021
-                </div>
-              </article>
-            </li>
+          <ol class="articles" id='articles'>
           </ol>
         </li>
         </ul>
