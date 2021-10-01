@@ -9,7 +9,7 @@ class List extends React.Component {
         <article>
           <a href={item.href}>
             <div class="title">
-              <h1>{item.name}</h1>
+              <h1>{item.title}</h1>
             </div>
           </a>
           <div class="date">{item.date}</div>

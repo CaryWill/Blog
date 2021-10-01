@@ -5,10 +5,10 @@ const e = React.createElement;
 class List extends React.Component {
   render() {
     return outline.slice(0, 5).map((item) => (
-      <li key={item.name} class="home-section-content-article-list-item">
+      <li key={item.title} class="home-section-content-article-list-item">
         <article>
           <h1 class="home-section-content-article-list-item-title">
-            <a href={item.href}>{item.name}</a>
+            <a href={item.href}>{item.title}</a>
           </h1>
           <p class="home-section-content-article-list-item-excerpt">
             {item.desc}
