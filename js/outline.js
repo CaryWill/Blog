@@ -1,5 +1,11 @@
 var outline = [
   {
+    title: "Event loop",
+    desc: "通过手写一个 promise 来帮你理解 promise 的原理",
+    date: "Sept 28, 2021",
+    href: "/src/2021/event-loop/index.html",
+  },
+  {
     title: "手写 Promise 及原理解析",
     desc: "通过手写一个 promise 来帮你理解 promise 的原理",
     date: "Sept 28, 2021",
