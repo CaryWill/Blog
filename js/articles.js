@@ -4,20 +4,30 @@ const e = React.createElement;
 
 class List extends React.Component {
   render() {
-    return outline.map((item) => (
-      <li>
-        <article>
-          <a href={item.href}>
-            <div class="title">
-              <h1>{item.title}</h1>
-            </div>
-          </a>
-          <div class="date">{item.date}</div>
-        </article>
-      </li>
-    ));
+    return outline.map((item) => {
+      const year = Object.keys(item)[0];
+      return (
+        <li>
+          <h1>{year}</h1>
+          <ol class="articles" id="articles">
+            {item[year].map((article) => (
+              <li>
+                <article>
+                  <a href={article.href}>
+                    <div class="title">
+                      <h1>{article.title}</h1>
+                    </div>
+                  </a>
+                  <div class="date">{article.date}</div>
+                </article>
+              </li>
+            ))}
+          </ol>
+        </li>
+      );
+    });
   }
 }
 
-const domContainer = document.getElementById("articles");
+const domContainer = document.getElementById("years");
 ReactDOM.render(e(List), domContainer);
