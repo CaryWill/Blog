@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <link href="/css/style.css" rel="stylesheet" />
+    <script src="/js/index.js" defer></script>
+    <title>手写一个深拷贝</title>
+  </head>
+  <body>
+    <h1>手写一个深拷贝</h1>
+
+    <p><strong>2021.10.02</strong></p>
+
+    <p>先来看下两者的定义，</p>
+
+    <p>浅拷贝(shallow copy)</p>
+
+    <blockquote>
+      <p>
+        创建一个新对象，这个对象有着原始对象属性值的一份精确拷贝。如果属性是基本类型，拷贝的就是基本类型的值，如果属性是引用类型，拷贝的就是内存地址
+        ，所以修改新拷贝的对象会影响原对象。
+      </p>
+    </blockquote>
+
+    <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">obj</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-string">x</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">1</span>, <span class="syntax-all syntax-string">y</span><span class="syntax-all syntax-constant">:</span> { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">123</span> } };
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">objShallowCopy</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">obj</span> };
+
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">objShallowCopy</span>); <span class="syntax-all syntax-comment">// { x: 1, y: { key: 123 } }
+</span>
+<span class="syntax-all syntax-parameter">obj</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">y</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">key</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">456</span>;
+
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">objShallowCopy</span>); <span class="syntax-all syntax-comment">// { x: 1, y: { key: 456 } 
+</span></code></pre>
+
+    <p>深拷贝(deep copy)</p>
+
+    <blockquote>
+      <p>
+        将一个对象从内存中完整的拷贝一份出来,从堆内存中开辟一个新的区域存放新对象,且修改新对象不会影响原对象
+      </p>
+    </blockquote>
+
+    <hr />
+
+    <p>
+      要实现深拷贝我们需要解决的就是上面拷贝引用的问题以及浅拷贝本身会遇到的问题，
+    </p>
+
+    <ul>
+      <li>解决拷贝引用</li>
+      <li>解决循环引用</li>
+      <li>解决相同引用</li>
+    </ul>
+
+    <p>循环引用是指 a 对象引用 b 对象，b 对象同时又引用了 a 对象，</p>
+
+    <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">a</span> <span class="syntax-all syntax-keyword">=</span> {}, <span class="syntax-all syntax-parameter">b</span> <span class="syntax-all syntax-keyword">=</span> {};
+<span class="syntax-all syntax-parameter">a</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">b</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">b</span>
+<span class="syntax-all syntax-parameter">b</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">a</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">a</span></code></pre>
+
+    <p>相同引用是指 a 对象和 b 对象同时引用了同一个 c 对象。</p>
+
+    <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">arr</span> <span class="syntax-all syntax-keyword">=</span> [<span class="syntax-all syntax-constant">1</span>,<span class="syntax-all syntax-constant">2</span>,<span class="syntax-all syntax-constant">3</span>]
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">obj</span> <span class="syntax-all syntax-keyword">=</span> {}
+<span class="syntax-all syntax-parameter">obj</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">arr1</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">arr</span>
+<span class="syntax-all syntax-parameter">obj</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">arr2</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">arr</span></code></pre>
+
+    <h2>思路</h2>
+
+    <p>
+      我们将遇到的引用值存起来，如果发现下次遇到的引用值被我们之前存过，那么就说明循环引用或相同引用发生了。
+    </p>
+
+    <h3>递归实现</h3>
+
+    <p>
+      实现引用值的存取的方法很多，这里我们用 <em>WeakMap</em>，源码在<a
+        href="https://github.com/CaryWill/Frontend/blob/master/deepClone/index.js"
+        >这</a
+      >。
+    </p>
+
+    <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// TODO: Date, RegexExp, function clone
+</span><span class="syntax-all syntax-comment">// 这里没有对函数做深拷贝，因为函数更多的是完成提供处理数据的能力，所以不需要做深拷贝（根据需要来
+</span><span class="syntax-all syntax-comment">// 递归式
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">deepCopy</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">map</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">WeakMap</span>();
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">result</span>;
+  <span class="syntax-all syntax-comment">// 循环引用或者相同引用的时候直接使用之前缓存的值
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">has</span>(<span class="syntax-all syntax-parameter">value</span>)) <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">value</span>);
+
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">isArray</span>(<span class="syntax-all syntax-parameter">value</span>)) {
+    <span class="syntax-all syntax-parameter">result</span> <span class="syntax-all syntax-keyword">=</span> [];
+    <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">value</span>, <span class="syntax-all syntax-parameter">result</span>);
+    <span class="syntax-all syntax-parameter">value</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">v</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-parameter">result</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-variable">deepCopy</span>(<span class="syntax-all syntax-parameter">v</span>));
+    });
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">result</span>;
+  } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;object&quot;</span>) {
+    <span class="syntax-all syntax-parameter">result</span> <span class="syntax-all syntax-keyword">=</span> {};
+    <span class="syntax-all syntax-comment">// 将我们克隆的值存起来，用原来的引用值做 key
+</span>    <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">value</span>, <span class="syntax-all syntax-parameter">result</span>);
+    <span class="syntax-all syntax-comment">// 暂未处理 key 为 Symbol 的情况
+</span>    <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">key</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-parameter">value</span>) {
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">value</span>[<span class="syntax-all syntax-parameter">key</span>] <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-constant">null</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">value</span>[<span class="syntax-all syntax-parameter">key</span>] <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;object&quot;</span>) {
+        <span class="syntax-all syntax-parameter">result</span>[<span class="syntax-all syntax-parameter">key</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">deepCopy</span>(<span class="syntax-all syntax-parameter">value</span>[<span class="syntax-all syntax-parameter">key</span>]);
+      } <span class="syntax-all syntax-keyword">else</span> {
+        <span class="syntax-all syntax-parameter">result</span>[<span class="syntax-all syntax-parameter">key</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">result</span>;
+      }
+    }
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">result</span>;
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">value</span>;
+  }
+};</code></pre>
+
+    <h3>迭代实现</h3>
+
+    <p>如果对象的嵌套层级够深则可能出现爆栈的情况，解决办法使用迭代。</p>
+
+    <p>
+      实现参考了下
+      <a href="https://juejin.cn/post/6896777237397012493">迭代实现深拷贝</a
+      >，原理是根据原始值的类型来初始化对应的引用值，并创建一个队列用来循环填充初始化的引用值。
+    </p>
+
+    <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 该版本只实现了数组和对象的深拷贝
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">IterableDeepcopy</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">obj</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-comment">// 如果是 primitive（不是 null 或者 object） 那么直接返回
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">obj</span> <span class="syntax-all syntax-keyword">||</span> <span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">obj</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&quot;object&quot;</span>) <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">obj</span>;
+
+  <span class="syntax-all syntax-comment">// 创建一个空拷贝，后面迭代的时候往里面加值
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">createEmptyCopyBasedOn</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">isArray</span>(<span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-keyword">?</span> [] : {};
+  };
+
+  <span class="syntax-all syntax-comment">// 所有的需要深拷贝的需要放到这边来 loop 给 v 的 拷贝赋值
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">tasks</span> <span class="syntax-all syntax-keyword">=</span> [];
+
+  <span class="syntax-all syntax-comment">// 根据 value 的 type 初始化一个值，在 loop tasks 的时候往里面填充内容
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">copy</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">createEmptyCopyBasedOn</span>(<span class="syntax-all syntax-parameter">obj</span>);
+
+  <span class="syntax-all syntax-comment">// 和之前一样还是用来解决循环依赖的问题
+</span>  <span class="syntax-all syntax-comment">// 但是这里面的值作为并不表示填充完成的值 在 loop完成前只是拿到对应的引用用来填充 在 loop 结束后才是深拷贝完成的值
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">map</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">WeakMap</span>();
+
+  <span class="syntax-all syntax-parameter">tasks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">obj</span>);
+  <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">obj</span>, <span class="syntax-all syntax-parameter">copy</span>);
+
+  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">tasks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">source</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">tasks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">shift</span>();
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">target</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">source</span>);
+
+    <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">const</span> [<span class="syntax-all syntax-parameter">k</span>, <span class="syntax-all syntax-parameter">v</span>] <span class="syntax-all syntax-keyword">of</span> <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">entries</span>(<span class="syntax-all syntax-parameter">source</span>)) {
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">v</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">v</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;object&quot;</span>) {
+        <span class="syntax-all syntax-comment">// check 是否有循环引用/相同引用
+</span>        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">has</span>(<span class="syntax-all syntax-parameter">v</span>)) {
+          <span class="syntax-all syntax-comment">// 有的话直接使用之前在 map 里缓存过的值
+</span>          <span class="syntax-all syntax-parameter">target</span>[<span class="syntax-all syntax-parameter">k</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">v</span>);
+          <span class="syntax-all syntax-comment">// 该属性拷贝结束 下一个迭代
+</span>          <span class="syntax-all syntax-keyword">continue</span>;
+        }
+
+        <span class="syntax-all syntax-comment">// 数组，对象等
+</span>        <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">vCopy</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">createEmptyCopyBasedOn</span>(<span class="syntax-all syntax-parameter">v</span>);
+        <span class="syntax-all syntax-parameter">tasks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">v</span>);
+        <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">v</span>, <span class="syntax-all syntax-parameter">vCopy</span>);
+        <span class="syntax-all syntax-parameter">target</span>[<span class="syntax-all syntax-parameter">k</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">vCopy</span>; <span class="syntax-all syntax-comment">// 设置引用，在下个迭代会拿出这个引用继续往上面添加内容，最终目的还是填充 copy 的值
+</span>      } <span class="syntax-all syntax-keyword">else</span> {
+        <span class="syntax-all syntax-parameter">target</span>[<span class="syntax-all syntax-parameter">k</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">v</span>;
+      }
+    }
+  }
+
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">copy</span>;
+};</code></pre>
+
+    <h2>参考</h2>
+
+    <ol>
+      <li>
+        <a
+          href="https://stackoverflow.com/questions/40291987/javascript-deep-clone-object-with-circular-references"
+          >javascript-deep-clone-object-with-circular-references - MDN</a
+        >
+      </li>
+      <li>
+        <a
+          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap"
+          >WeakMap - MDN</a
+        >
+      </li>
+      <li>
+        <a href="https://juejin.cn/post/6896777237397012493">迭代实现深拷贝 </a>
+      </li>
+    </ol>
+  </body>
+</html>

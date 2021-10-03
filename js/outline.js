@@ -2,9 +2,15 @@ var outline = [
   {
     2021: [
       {
+        title: "手写一个深拷贝",
+        desc: "通过递归和迭代两种方式实现深拷贝",
+        date: "Oct 03, 2021",
+        href: "/src/2021/deep-copy/index.html",
+      },
+      {
         title: "Event loop",
-        desc: "通过手写一个 promise 来帮你理解 promise 的原理",
-        date: "Sept 28, 2021",
+        desc: "JavaScript 是单线程的，一般 API 请求是异步的，那么既然只有一个线程，请求回来后的回调是在怎么时候执行呢？",
+        date: "Sept 30, 2021",
         href: "/src/2021/event-loop/index.html",
       },
       {
