@@ -542,3 +542,58 @@ body > header > div.nav-container > nav {
   width: 100%;
   display: none;
 }
+
+@keyframes highfade {
+  0% {
+    background-color: none;
+  }
+  20% {
+    background-color: yellow;
+  }
+  100% {
+    background-color: none;
+  }
+}
+
+@-webkit-keyframes highfade {
+  0% {
+    background-color: none;
+  }
+  20% {
+    background-color: yellow;
+  }
+  100% {
+    background-color: none;
+  }
+}
+
+a:target,
+ol#footnotes li:target,
+sup a:target {
+  animation-name: highfade;
+  animation-duration: 2s;
+  animation-iteration-count: 1;
+  animation-timing-function: ease-in-out;
+  -webkit-animation-name: highfade;
+  -webkit-animation-duration: 2s;
+  -webkit-animation-iteration-count: 1;
+  -webkit-animation-timing-function: ease-in-out;
+}
+
+@media screen and (max-width: 736px) {
+  body {
+    padding: 1em 20px 1em 20px;
+    font-size: 120%;
+  }
+  h1 {
+    font-size: 250%;
+  }
+  h2 {
+    font-size: 150%;
+  }
+  h3,
+  h4,
+  h5 {
+    font-size: 140%;
+  }
+}
