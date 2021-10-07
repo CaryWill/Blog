@@ -28,6 +28,4 @@ const rss = `<?xml version="1.0"?>
   </channel>
 </rss>`;
 
-
 fs.writeFileSync(path.join("./rss.xml"), rss);
-// console.log(path);
