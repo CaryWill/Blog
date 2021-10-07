@@ -231,6 +231,16 @@ ul li {
   list-style-type: square;
 }
 
+/* 嵌套 2*/
+ul li ul li {
+  list-style-type: circle;
+}
+
+/* 嵌套 3*/
+ul li ul li ul li {
+  list-style-type: square;
+}
+
 code {
   font-family: mycode, monospace;
   font-size: 80%;
