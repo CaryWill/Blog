@@ -58,16 +58,21 @@ walk(path.join("./src"), function (err, results) {
   if (err) throw err;
   results.forEach((p) => {
     if (p.includes(".html")) {
+      const css = `<link href="/css/style.css" rel="stylesheet" />`;
+      const js = `<script src="/js/index.js" defer></script>`;
+
       var data = fs.readFileSync(p, "utf-8");
-      fs.writeFileSync(
-        p,
-        data +
-          `<link href="/css/style.css" rel="stylesheet" />
-      <script src="/js/index.js" defer></script>`,
-        "utf-8"
-      );
+      while (data.includes(css) || data.includes(js)) {
+        data = data.replace(css, "");
+        data = data.replace(js, "");
+      }
+      data += css;
+      data += js;
+      fs.writeFileSync(p, data, "utf-8");
     }
   });
 });
 
+// 参考
 // https://www.codegrepper.com/code-examples/javascript/recursively+loop+through+files+nodejs
+// https://stackoverflow.com/questions/21253019/change-a-file-using-node-js
