@@ -9,7 +9,7 @@ class List extends React.Component {
       return (
         <li>
           <h1>{year}</h1>
-          <ol class="articles" id="articles">
+          <ol className="articles" id="articles">
             {item[year].map((article) => (
               <li>
                 <article>
@@ -18,7 +18,7 @@ class List extends React.Component {
                       <h1>{article.title}</h1>
                     </div>
                   </a>
-                  <div class="date">{article.date}</div>
+                  <div className="date">{article.date}</div>
                 </article>
               </li>
             ))}

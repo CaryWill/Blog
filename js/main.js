@@ -11,18 +11,18 @@ class List extends React.Component {
     }, []);
     return list.slice(0, 5).map((item) => {
       return (
-        <li key={item.title} class="home-section-content-article-list-item">
+        <li key={item.title} className="home-section-content-article-list-item">
           <article>
-            <h1 class="home-section-content-article-list-item-title">
+            <h1 className="home-section-content-article-list-item-title">
               <a href={item.href}>{item.title}</a>
             </h1>
-            <p class="home-section-content-article-list-item-excerpt">
+            <p className="home-section-content-article-list-item-excerpt">
               {item.desc}
-              <a class="article-excerpt-more-link" href={item.href}>
+              <a className="article-excerpt-more-link" href={item.href}>
                 More&nbsp;&gt;
               </a>
             </p>
-            <p class="home-section-content-article-list-item-date">
+            <p className="home-section-content-article-list-item-date">
               {item.date}
             </p>
           </article>

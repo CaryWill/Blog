@@ -1,4 +1,3 @@
-// TODO: generte tree from folder structure
 (function () {
   const header = `
   <div class="header-bar">
