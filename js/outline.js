@@ -40,3 +40,5 @@ var outline = [
     ],
   },
 ];
+
+module.exports = outline;
