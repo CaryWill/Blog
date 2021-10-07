@@ -1,7 +1,7 @@
 var fs = require("fs");
 var path = require("path");
 
-// 添加 RSS 
+// 添加 RSS
 var outline = require("../js/outline.js");
 const articles = outline.reduce((all, item) => {
   const key = Object.keys(item)[0];
@@ -30,7 +30,6 @@ const rss = `<?xml version="1.0"?>
 </rss>`;
 
 fs.writeFileSync(path.join("./rss.xml"), rss);
-
 
 // 自动添加 ulysses 的 css 和每个文章的主 js 文件用来添加 header 和 comment
 var walk = function (dir, done) {
@@ -69,7 +68,7 @@ walk(path.join("./src"), function (err, results) {
         data = data.replace(css, "");
         data = data.replace(js, "");
       }
-      data += css;
+      data = css + data;
       data += js;
       fs.writeFileSync(p, data, "utf-8");
     }
