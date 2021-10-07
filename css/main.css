@@ -88,6 +88,10 @@ nav,
 section {
   display: block;
 }
+
+* {
+  box-sizing: border-box;
+}
 html {
   background: white;
   font-size: 19px;
