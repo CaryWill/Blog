@@ -29,3 +29,45 @@ const rss = `<?xml version="1.0"?>
 </rss>`;
 
 fs.writeFileSync(path.join("./rss.xml"), rss);
+
+var walk = function (dir, done) {
+  var results = [];
+  fs.readdir(dir, function (err, list) {
+    if (err) return done(err);
+    var i = 0;
+    (function next() {
+      var file = list[i++];
+      if (!file) return done(null, results);
+      file = path.resolve(dir, file);
+      fs.stat(file, function (err, stat) {
+        if (stat && stat.isDirectory()) {
+          walk(file, function (err, res) {
+            results = results.concat(res);
+            next();
+          });
+        } else {
+          results.push(file);
+          next();
+        }
+      });
+    })();
+  });
+};
+
+walk(path.join("./src"), function (err, results) {
+  if (err) throw err;
+  results.forEach((p) => {
+    if (p.includes(".html")) {
+      var data = fs.readFileSync(p, "utf-8");
+      fs.writeFileSync(
+        p,
+        data +
+          `<link href="/css/style.css" rel="stylesheet" />
+      <script src="/js/index.js" defer></script>`,
+        "utf-8"
+      );
+    }
+  });
+});
+
+// https://www.codegrepper.com/code-examples/javascript/recursively+loop+through+files+nodejs
