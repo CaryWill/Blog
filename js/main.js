@@ -9,6 +9,7 @@ class List extends React.Component {
       all = all.concat(item[key]);
       return all;
     }, []);
+  
     return list.slice(0, 5).map((item) => {
       return (
         <li key={item.title} className="home-section-content-article-list-item">

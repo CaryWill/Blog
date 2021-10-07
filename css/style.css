@@ -276,7 +276,7 @@ pre {
   text-align: left;
   line-height: 1.2em;
   overflow-x: scroll;
-  background: black;
+  background: rgb(13, 17, 23);
   padding: 20pt;
   margin: 20pt 0;
   border-radius: 3pt;
@@ -288,44 +288,44 @@ pre {
 }
 
 .syntax-entity {
-  color: orange;
+  color: rgb(114, 180, 240);
 }
 
 .syntax-tag {
-  color: #d01040;
+  color: rgb(254, 122, 114);
 }
 
 .syntax-keyword {
-  color: #d01040;
+  color: rgb(254, 122, 114);
 }
 
 .syntax-parameter {
-  color: #a6e22e;
+  color: rgb(192, 200, 208);
 }
 
 .syntax-string {
-  color: gold;
+  color: rgb(149, 192, 229);
 }
 
 .syntax-constant {
-  color: #9effff;
+  color: rgb(116, 183, 244);
 }
 
 .syntax-variable {
-  color: #a6e22e;
+  color: rgb(201, 209, 217);
 }
 
 .syntax-escape {
-  color: #ae81ff;
+  color: rgb(149, 192, 229);
 }
 
 .syntax-comment {
-  color: lightgray;
+  color: rgb(139, 148, 158);
 }
 
 .syntax-error {
   color: #f8f8f0;
-  background: #d01040;
+  background: rgb(254, 122, 114);
   padding: 2px 6px;
 }
 
