@@ -9,8 +9,7 @@ const articles = outline.reduce((all, item) => {
 }, []);
 
 const content = articles.reduce((all, next) => {
-  all += `
-<item>
+  all += `<item>
     <title>${next.title}</title>
     <link>${next.href}</link>
     <description>${next.desc}</description>
@@ -19,8 +18,7 @@ const content = articles.reduce((all, next) => {
   return all;
 }, "");
 
-const rss = `
-<?xml version="1.0"?>
+const rss = `<?xml version="1.0"?>
 <rss version="2.0">
   <channel>
     <title>CaryTalk</title>
