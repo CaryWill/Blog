@@ -241,6 +241,20 @@ ul li ul li ul li {
   list-style-type: square;
 }
 
+ol li {
+  list-style-type: decimal;
+}
+
+/* 嵌套 2*/
+ol li ol li {
+  list-style-type: lower-latin;
+}
+
+/* 嵌套 3*/
+ol li ol li ol li {
+  list-style-type: lower-roman;
+}
+
 code {
   font-family: mycode, monospace;
   font-size: 80%;
