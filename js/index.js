@@ -22,7 +22,7 @@
   div.innerHTML = header;
   document.body.prepend(div, document.body.firstChild);
 
-  if (window.noComment) {
+  if (!window.noComment) {
     // comment
     const container = `<div id="disqus_thread" style='margin-top: 66px'></div>`;
     const commentContainer = document.createElement("div");
