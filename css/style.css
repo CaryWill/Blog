@@ -228,7 +228,7 @@ figure + p {
 /* Code Highlighting */
 
 ul li {
-  list-style-type: square;
+  list-style-type: disc;
 }
 
 /* 嵌套 2*/
