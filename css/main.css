@@ -202,7 +202,9 @@ blockquote {
   margin-right: 1.5em;
   padding-left: 1.5em;
   padding-right: 1.5em;
+  font-size: 90% !important; 
 }
+
 @media screen and (max-width: 767px) {
   blockquote {
     border-left: 4px solid #96bae9;
