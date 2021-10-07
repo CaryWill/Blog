@@ -41,4 +41,6 @@ var outline = [
   },
 ];
 
-module.exports = outline;
+if (module) {
+  module.exports = outline;
+}
