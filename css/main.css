@@ -736,7 +736,7 @@ table.cell-border th {
   color: #009999;
 }
 .s {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .na {
   color: #008080;
@@ -793,28 +793,28 @@ table.cell-border th {
   color: #009999;
 }
 .sb {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .sc {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .sd {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .s2 {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .se {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .sh {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .si {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .sx {
-  color: rgb(254,122,114);;
+  color: rgb(254, 122, 114);
 }
 .sr {
   color: #009926;
@@ -1382,6 +1382,7 @@ body > footer .private-notice {
   color: #6b6b6b;
   font-size: 0.85rem;
   text-transform: uppercase;
+  margin-left: 5px;
 }
 .home-section
   .home-section-content
