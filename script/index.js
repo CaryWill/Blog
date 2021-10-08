@@ -14,7 +14,8 @@ const content = articles.reduce((all, next) => {
     <title>${next.title}</title>
     <link>${next.href}</link>
     <description>${next.desc}</description>
-    <pubDate>${next.date}</pubDate>
+    <pubDate>${new Date(next.date)}</pubDate>
+    <lastBuildDate>${new Date(next.date)}</lastBuildDate>
   </item>`;
   return all;
 }, "");
