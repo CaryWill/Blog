@@ -60,14 +60,15 @@ walk(path.join("./src"), function (err, results) {
   if (err) throw err;
   results.forEach((p) => {
     if (p.includes(".html")) {
-      const css = `<link href="/css/style.css" rel="stylesheet" />`;
-      const js = `<script src="/js/index.js" defer></script>`;
-
       var data = fs.readFileSync(p, "utf-8");
-      while (data.includes(css) || data.includes(js)) {
-        data = data.replace(css, "");
-        data = data.replace(js, "");
-      }
+      // post style
+      const css = `<link href="/css/style.css" rel="stylesheet" />`;
+      // comment+header
+      const js = `<script src="/js/index.js" defer></script>`;
+      data = data.replaceAll(
+        /(<link href="\/css\/style\.css" rel="stylesheet" \/>)|(<script src="\/js\/index\.js" defer><\/script>)/gm,
+        ""
+      );
       data = css + data;
       data += js;
       fs.writeFileSync(p, data, "utf-8");
