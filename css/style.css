@@ -42,7 +42,7 @@ a:link {
 }
 
 a:visited {
-  color: #008fff;
+  color: rgb(116, 183, 244);
 }
 
 a:hover {
@@ -50,7 +50,7 @@ a:hover {
 }
 
 a:active {
-  color: #008fff;
+  color: rgb(116, 183, 244);
   outline: none;
 }
 
