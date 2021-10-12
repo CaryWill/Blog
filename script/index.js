@@ -66,10 +66,10 @@ walk(path.join("./src"), function (err, results) {
       const css = `<link href="/css/style.css" rel="stylesheet" />`;
       // comment+header
       const js = `<script src="/js/index.js" defer></script>`;
-      data = data.replaceAll(
-        /(<link href="\/css\/style\.css" rel="stylesheet" \/>)|(<script src="\/js\/index\.js" defer><\/script>)/gm,
-        ""
-      );
+      // 移除之前有的 script
+      data = data.replaceAll(css, "");
+      data = data.replaceAll(js, "");
+      // 添加一个 script 来保证只有一个
       data = css + data;
       data += js;
       fs.writeFileSync(p, data, "utf-8");
