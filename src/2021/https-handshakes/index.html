@@ -70,7 +70,7 @@
 
 <p>虽然别人解密不了，但是阻止不了别人复制你的数据流（不需要看里面有什么数据）再往服务器发送你的数据啊，这种攻击方式称为 <a href="https://security.stackexchange.com/a/218492">replay attack</a>。</p>
 
-<figure><img src="DraggedImage.tiff" alt="https://en.wikipedia.org/wiki/Replay_attack"/><figcaption>https://en.wikipedia.org/wiki/Replay_attack</figcaption></figure>
+<figure><img src="DraggedImage-1.png" alt="https://en.wikipedia.org/wiki/Replay_attack"/><figcaption>https://en.wikipedia.org/wiki/Replay_attack</figcaption></figure>
 
 <p>比如你发送了一条请求用来购买一个 iPhone13，别人看到你发的请求后直接复制你的数据流重新发送，在新的连接（connection）里，你们还是使用了之前的 pre-master key，这样虽然别人看不到你发了什么，但是服务器理解你的请求，因为它也有你给的 pre-master key，这样请求就成功了，你又<strong>喜提</strong>一个 iPhone13。</p>
 
