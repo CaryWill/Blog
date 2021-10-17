@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>HTTPS 三次握手</title>
+	</head>
+<body>
+<h1>HTTPS 三次握手</h1>
+
+<p><strong>2021.10.17</strong></p>
+
+<p>前几天有同事问我，如何在 iOS 模拟器上代理页面资源，工具使用的是 <em>lightProxy</em>，但是之前我一直用的是 <em>charles</em>，但是都一样吧本质上，但是他没有代理成功，SSL 报错 ，我说需要装证书的，他说他之前没装也可以跑起来。。。 借（cèng）此机会我们来重新回顾下 <em>HTTPS</em>。</p>
+
+<p>HTTP 是明文传输的，而 HTTPS 是加密传输的，HTTPS 是 HTTP over SSL 的缩写，所以核心要点就是这里的 <a href="https://howhttps.works/the-handshake/">SSL</a>。</p>
+
+<p>下面来具体讲解下 SSL，</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<ol>
+	<li>Client Hello. 
+
+		<p>客户端向服务器发送一条 <em>”hello”</em> 消息，里面包含客户端可以支持的 TLS 版本，支持的加密方式（ciphersuit）以及一段客户端随机生成的字符串（client random）。</p></li>
+	<li>Server Hello. 
+
+		<p>服务器向客户端发送一条 <em>”hello”</em> 消息，里面包含证书（certificate），服务器选择的 TLS 版本，服务器要使用的加密算法，以及一段服务器随机生成的字符串（server random）。</p></li>
+	<li>Client key exchange.
+
+		<p>交换 premaster key。客户端验证服务器发过来的证书，验证服务器拥有该域名，证书里面包含 public key，然后客户端会生成一个 pre-master key 并用 public key 加密该 key 后发送给服务器。</p></li>
+	<li>Change Cipher Spec.
+
+		<p>改变密码标准协议。在这之前我们都是明文传输的，到这一步，客户端，服务器都有了 pre-master key, client random, server random，客户端和服务器会使用这三个值，通过 <em> PRF</em> 函数计算出一个 master key 作为对称加密的密钥进行接下来的加密的数据传输。</p></li>
+</ol>
+
+<p>总结一下，原理大概是这样的，首先服务器端有 SSL 证书，和非对称加密的 public</p>
+
+<p> key 和 private key。我们的目的很简单，客户端和服务端有一个共享的加密密钥就行。客户端生成一个<em>准主密钥</em>并通过服务器给的公钥加密给到服务器，服务器用私钥解密这个<em>准主密钥</em>，然后客户端和服务端以<em>准主密钥</em>，客户端随机数，服务端随机数为入参计算出一个<em>主密钥</em>，这个时候客户端和服务端就以这个<em>主密钥</em>以对称加密的方式进行加密传输。</p>
+
+<p>难点其实就是在于客户端如何将对称密钥在不被人破解的情况下传输给后端。</p>
+
+<p>怎么样原理还是很简单的吧，既然知道了 HTTPS 的实现原理，那么怎么破解呢？</p>
+
+<p><strong>思考题</strong>：如何使用 MITM 的方式破解 HTTPS。</p>
+
+<h2>Q&amp;A</h2>
+
+<h3>对称加密和非对称加密的区别？</h3>
+
+<p>对称加密：你用 key A 加密，就可以用 key A 解密。</p>
+
+<p>非对称加密：你用 key A 加密，你得用 keyB 解密。</p>
+
+<h3>为什么要通过非对称加密的方式传递共享密钥？</h3>
+
+<p>如果密钥放在客户端，那么如何将密钥传给后端呢？HTTP 是明文的，所以你如果通过客户端传输密钥给服务器，那么密钥就可能被人截获，如果使用非对称加密的话，别人就算截获了也没有，因为它需要用另一个 key 来解密。</p>
+
+<h3>SSL 和 TLS 的区别？</h3>
+
+<p>两个本质上是同一个东西， SSL 一开始是网景公司维护的，后面交给 IETF 维护了，然后改了个名字。</p>
+
+<h3>客户端如何验证证书的有效性？</h3>
+
+<p>通过验证证书的签发机构，如果签发机构不是 <a href="https://howhttps.works/certificate-authorities/">Root CA</a>，那么验证该签发机构的签发机构，直到签发机构是 Root CA，如果 Root CA 是被你的系统所信任的，那么你的证书就是有效的。</p>
+
+<h3>为什么不直接使用 pre-master key 作为加密密钥？</h3>
+
+<p>既然我们在产生 master key 之前都是使用非对称加密，也就是使用 public key 加密的消息只能使用 private key 进行解密，那么我们我们通过 public key 加密 pre-master key 传给服务器，然后直接使用 pre-master key 以对称加密的方式进行后续的数据传输不就行了吗？因为 pre-master key 不可能被人解密啊，不是吗？</p>
+
+<p>虽然别人解密不了，但是阻止不了别人复制你的数据流（不需要看里面有什么数据）再往服务器发送你的数据啊，这种攻击方式称为 <a href="https://security.stackexchange.com/a/218492">replay attack</a>。</p>
+
+<figure><img src="DraggedImage.tiff" alt="https://en.wikipedia.org/wiki/Replay_attack"/><figcaption>https://en.wikipedia.org/wiki/Replay_attack</figcaption></figure>
+
+<p>比如你发送了一条请求用来购买一个 iPhone13，别人看到你发的请求后直接复制你的数据流重新发送，在新的连接（connection）里，你们还是使用了之前的 pre-master key，这样虽然别人看不到你发了什么，但是服务器理解你的请求，因为它也有你给的 pre-master key，这样请求就成功了，你又<strong>喜提</strong>一个 iPhone13。</p>
+
+<p>但是如果你的 pre-master key 依赖每一次和服务器建立连接的时候服务器创建的随机字符串的话，也就是基于上面的 3 个值创建的 master key，那么上述情况就不成立了。</p>
+
+<p>比如你 replay 的请求的时候（旧请求），pre-master key=aaa，client random=123，server random=456，你们创建的 master key =aaa123456。（具体算法请参考 <a href="http://www.moserware.com/2009/06/first-few-milliseconds-of-https.html">PRF</a> ），那么建立新连接的时候，pre-master key=aaa，client random=123，server random=789，那么因为你是 replay，所以你发送的 pre-master key 还是 aaa，client random 还是 123，但是，服务器的 server random 变了，所以客户端和服务器产生的 master key 就不一致了，aaa123456 和 aaa123789，这样握手就失败了，这样你就拿到一台你想要的 iPhone 了。</p>
+
+<h3>如何抓取局域网下别人的网络流量？</h3>
+
+<p>比如使用 <a href="https://wiki.wireshark.org/CaptureSetup/WLAN">wireshark</a> 就可以监听和分析同一个局域网下面所有的网络请求。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://howhttps.works/"> How HTTPS works ...in a comic! 🌈 🎉 🍕 </a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Replay_attack">What is Replay Attack?</a></li>
+	<li><a href="https://www.catchpoint.com/blog/wireshark-tls-handshake">Understand TLS handshake by using wireshark</a></li>
+	<li><a href="https://www.cloudflare.com/learning/ssl/what-happens-in-a-tls-handshake/">What happens in a TLS handshake?</a></li>
+	<li><a href="https://security.stackexchange.com/questions/218491/why-using-the-premaster-secret-directly-would-be-vulnerable-to-replay-attack"> Why using the premaster secret directly would be vulnerable to replay attack ?</a></li>
+	<li><a href="https://security.stackexchange.com/questions/89383/why-does-the-ssl-tls-handshake-have-a-client-and-server-random"> Why does the ssl tls handshake have a client and server random ?</a></li>
+	<li><a href="https://www.cnblogs.com/flythinking/p/12446303.html">SSL/TLS 协议运行机制概述</a></li>
+</ol>
+
+</body>
+</html>
+
