@@ -1,8 +1,9 @@
-<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>手写 Promise 及原理解析</title>
 	</head>
 <body>
@@ -121,13 +122,13 @@
 	<li>又过了1s，promise3 settle 了，调用 promise2 暴露的 resolve 函数将 promise2 settle 了，promise2 一 settle，就开始遍历 promise2 身上的 <em>onFulfilledCallbacks</em> 了，也就是第二个 <code>then</code> 注册的 callback。通过这种将 settle 的方法暴露出去来保证正确的执行顺序。</li>
 </ul>
 
-<h2>其他</h2>
+<h2>Q&amp;A</h2>
 
 <h3>macrotask/microtask 官方叫法是？</h3>
 
 <p>在<a href="http://262.ecma-international.org/6.0/#sec-jobs-and-job-queues">ECMA 规范</a>里，</p>
 
-<p>macrotask 叫做 <em> ScriptJobs</em>，</p>
+<p>macrotask 叫做 <em>ScriptJobs</em>，</p>
 
 <blockquote>
 <p>Jobs that validate and evaluate ECMAScript Script and Module source text.</p>
@@ -170,6 +171,32 @@
 
 <figure><img src="DraggedImage-1.png"/></figure>
 
+<h2>其他</h2>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">testpromise</span>(){
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Promise</span>((<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>)<span class="syntax-all syntax-keyword">=&gt;</span>{
+    <span class="syntax-all syntax-variable">reject</span>(<span class="syntax-all syntax-string">&quot;Error&quot;</span>);
+  })
+}
+
+<span class="syntax-all syntax-variable">testpromise</span>()
+<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">catch</span>((<span class="syntax-all syntax-parameter">err</span>)<span class="syntax-all syntax-keyword">=&gt;</span>{<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">err</span>)})
+<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(()<span class="syntax-all syntax-keyword">=&gt;</span>{<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;Then&quot;</span>)})</code></pre>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">testpromise</span>(){
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Promise</span>((<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>)<span class="syntax-all syntax-keyword">=&gt;</span>{
+    <span class="syntax-all syntax-variable">reject</span>(<span class="syntax-all syntax-string">&quot;Error&quot;</span>);
+  })
+}
+
+<span class="syntax-all syntax-variable">testpromise</span>()
+<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(()<span class="syntax-all syntax-keyword">=&gt;</span>{<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;Then&quot;</span>)})
+<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">catch</span>((<span class="syntax-all syntax-parameter">err</span>)<span class="syntax-all syntax-keyword">=&gt;</span>{<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">err</span>)})</code></pre>
+
+<p>上面的返回结果一样吗？<a href="https://stackoverflow.com/questions/66931012/why-promise-catch-also-call-then-if-it-is-not-in-the-right-order">查看问题来源</a>。</p>
+
+<p>说到底，<code>.catch(cb)</code> 只是 <code>.then(()=&gt;{}, cb)</code> 的语法糖而已，而 <code>.then</code> 返回的 promise 取决于 cb 调用时候的返回值，如果是 promise 那么取决于该 promise 的状态，其他就 resovle 到那个返回值。</p>
+
 <h2>参考</h2>
 
 <ol>
@@ -184,6 +211,3 @@
 </body>
 </html>
 
-
-
-<script src="/js/index.js" defer></script>
