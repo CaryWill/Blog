@@ -38,7 +38,7 @@
 
 <h3>Callback Register</h3>
 
-<p>根据 <code>promise.then(cb)</code> 里 promise 的状态，决定怎么注册 callback，</p>
+<p>根据 <code>promise.then(cb)</code> 里 <em>promise</em> 的状态，决定怎么注册 callback，</p>
 
 <ul>
 	<li>promise 为 <em>fulfilled</em> 状态的时候直接在微任务队列中添加一个微任务，并且 <em>onFulfilled</em> 会接收到 promise 的 <em>resolve</em> 时的 value 值。
