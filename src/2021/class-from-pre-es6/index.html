@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>class from Pre-ES6</title>
+	</head>
+<body>
+<h1> class from Pre-ES6</h1>
+
+<p><strong>2021.07.10</strong></p>
+
+<h2>实现</h2>
+
+<p>用 pre-es6 的语法实现 es6 的 class 其实不难。核心要点有两个，<em> 实例化</em>和<em>继承</em>。</p>
+
+<h3>实例化</h3>
+
+<p>我们不仅要实例化子类身上的 property，还要实例化父类身上的 property 给到子类实例上。</p>
+
+<p>对应关键词，<em>super</em>，<em>class</em>，<em>new</em>，<em> constructor</em>。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 父类
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">superClass</span>() {
+	<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">name</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&#39;superClass&#39;</span>;
+	<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">hello</span> <span class="syntax-all syntax-keyword">=</span> () <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;hello&#39;</span>);
+} 
+<span class="syntax-all syntax-parameter">superClass</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">static</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&#39;static&#39;</span>;
+
+<span class="syntax-all syntax-comment">// 子类
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">subClass</span>() {
+  <span class="syntax-all syntax-parameter">superClass</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">call</span>(<span class="syntax-all syntax-constant">this</span>);
+  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">name</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&#39;subClass&#39;</span>;
+  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">hi</span> <span class="syntax-all syntax-keyword">=</span> () <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;hi&#39;</span>);
+}
+<span class="syntax-all syntax-parameter">subClass</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">alsoStatic</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&#39;alsoStatic&#39;</span>;</code></pre>
+
+<h3>继承</h3>
+
+<p>继承通过原型链（prototype chain）来实现。设置子类的 prototype 为 父类的 prototype，子类的实例的 prototype 设置为父类实例的 prototype 即可完成继承。</p>
+
+<p>对应关键词，<em>extends</em>。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-entity">subClass</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">prototype</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">create</span>(<span class="syntax-all syntax-entity">superClass</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">prototype</span>, {
+  <span class="syntax-all syntax-string">constructor</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">subClass</span>,
+});
+
+<span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">setPrototypeOf</span>(<span class="syntax-all syntax-parameter">subClass</span>, <span class="syntax-all syntax-parameter">superClass</span>);</code></pre>
+
+<p>来测试下，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">subClass</span>();
+<span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">hi</span>(); <span class="syntax-all syntax-comment">// &#39;hi&#39;
+</span><span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">hello</span>(); <span class="syntax-all syntax-comment">// &#39;hello&#39;
+</span><span class="syntax-all syntax-parameter">subClass</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">alsoStatic</span> <span class="syntax-all syntax-comment">// &#39;alsoStatic&#39;
+</span><span class="syntax-all syntax-parameter">subClass</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">static</span> <span class="syntax-all syntax-comment">// &#39;static&#39;
+</span></code></pre>
+
+<p>完整源码请<a href="https://github.com/CaryWill/Frontend/blob/main/class-impl/index.js">点击</a>。</p>
+
+<hr />
+
+<h2>Q&amp;A</h2>
+
+<h3>Object.getPrototypeOf 和 __proto__ 的区别 ？</h3>
+
+<p>作用一样。只不过 __ proto__ 是浏览器私有的 API，而<code>Object.getPrototypeOf</code> 是 ECMA 语言标准中的一部分。</p>
+
+<h3>Object.getPrototypeOf 和 .prototype 的区别 ？</h3>
+
+<p><code>.prototype</code> 是构造函数 (constructor) 的一个属性，它是构造函数的实例的 prototype。</p>
+
+<p>而 <code>Object.getPrototypeOf</code> 是用来获取对象的 prototype 的。</p>
+
+<p>所以两者之间唯一的共同点就是，实例的 prototype 可以用构造函数身上的 <code>.prototype</code> 属性表示，也可以使用 <code>Object.getPrototypeOf</code> 以实例为入参进行获取。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">Animal</span>() {}
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">animal</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Animal</span>(); <span class="syntax-all syntax-comment">// 实例
+</span><span class="syntax-all syntax-entity">Animal</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">prototype</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getPrototypeOf</span>(<span class="syntax-all syntax-parameter">animal</span>); <span class="syntax-all syntax-comment">// true
+</span></code></pre>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/Object_prototypes">Object prototypes - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/proto">__proto__ - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create">Object.create - MDN</a></li>
+	<li><a href="https://babeljs.io/repl#?browsers=defaults%2C%20not%20ie%2011%2C%20not%20ie_mob%2011%2C%3E%200.25%25%2C%20not%20dead&amp;build=&amp;builtIns=false&amp;corejs=3.6&amp;spec=false&amp;loose=false&amp;code_lz=MYGwhgzhAECC0FMAeAXBA7AJjAQtA3gL5A&amp;debug=false&amp;forceAllTransforms=false&amp;shippedProposals=false&amp;circleciRepo=&amp;evaluate=false&amp;fileSize=false&amp;timeTravel=false&amp;sourceType=module&amp;lineWrap=true&amp;presets=env%2Creact%2Cstage-2&amp;prettier=false&amp;targets=&amp;version=7.15.8&amp;externalPlugins=&amp;assumptions=%7B%7D">Babeljs es6 class to es5 implement </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes">class - MDN</a></li>
+</ol>
+
+</body>
+</html>
+

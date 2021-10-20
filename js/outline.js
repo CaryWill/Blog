@@ -44,6 +44,12 @@ var outline = [
         date: "Sept 01, 2021",
         href: "/src/2021/regex101.html",
       },
+      {
+        title: "Class From Pre-ES6",
+        desc: "都说 class 是语法糖，那么我们看下 ES5 中怎么实现 class 继承。",
+        date: "July 10, 2021",
+        href: "/src/2021/class-from-pre-es6/index.html",
+      },
     ],
   },
 ];
