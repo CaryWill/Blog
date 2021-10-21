@@ -66,9 +66,12 @@ walk(path.join("./src"), function (err, results) {
       const css = `<link href="/css/style.css" rel="stylesheet" />`;
       // comment+header
       const js = `<script src="/js/index.js" defer></script>`;
+      // auto generated ulyssess css
+      const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="css/style.css" />`;
       // 移除之前有的 script
       data = data.replaceAll(css, "");
       data = data.replaceAll(js, "");
+      data = data.replaceAll(ulyssessPostCss, "");
       // 添加一个 script 来保证只有一个
       data = css + data;
       data += js;

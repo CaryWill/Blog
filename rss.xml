@@ -5,35 +5,59 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>MITM Attack 原理</title>
+    <link>/src/2021/ways-of-mitm-attack/index.html</link>
+    <description>使用 MITM Attack 来解密 HTTPS 流量</description>
+    <pubDate>Thu Oct 21 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Thu Oct 21 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>HTTPS 原理解析</title>
+    <link>/src/2021/https-handshakes/index.html</link>
+    <description>HTTPS 原理解析</description>
+    <pubDate>Sun Oct 17 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Sun Oct 17 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>手写一个深拷贝</title>
     <link>/src/2021/deep-copy/index.html</link>
     <description>通过递归和迭代两种方式实现深拷贝</description>
-    <pubDate>Oct 03, 2021</pubDate>
+    <pubDate>Sun Oct 03 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Sun Oct 03 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>Event loop</title>
     <link>/src/2021/event-loop/index.html</link>
     <description>JavaScript 是单线程的，一般 API 请求是异步的，那么既然只有一个线程，请求回来后的回调是在怎么时候执行呢？</description>
-    <pubDate>Sept 30, 2021</pubDate>
+    <pubDate>Thu Sep 30 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Thu Sep 30 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>手写 Promise 及原理解析</title>
     <link>/src/2021/learn-promise-by-implement/index.html</link>
     <description>通过手写一个 promise 来帮你理解 promise 的原理</description>
-    <pubDate>Sept 28, 2021</pubDate>
+    <pubDate>Tue Sep 28 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Tue Sep 28 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>The git internals</title>
     <link>/src/2021/the-git-internals/index.html</link>
     <description>对比寓言故事里提到的 git 底层原理和实际的 git 底层原理的差异</description>
-    <pubDate>Sept 20, 2021</pubDate>
+    <pubDate>Mon Sep 20 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Mon Sep 20 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>The git parable</title>
     <link>/src/2021/the-git-parable/the-git-parable.html</link>
     <description>用一则寓言故事来帮助你了解 git 背后的原理以及命令的使用。</description>
-    <pubDate>Sept 15, 2021</pubDate>
+    <pubDate>Wed Sep 15 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Wed Sep 15 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>Regex 101</title>
     <link>/src/2021/regex101.html</link>
     <description>Regular expression 101</description>
-    <pubDate>Sept 01, 2021</pubDate>
+    <pubDate>Wed Sep 01 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Wed Sep 01 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>Class From Pre-ES6</title>
+    <link>/src/2021/class-from-pre-es6/index.html</link>
+    <description>都说 class 是语法糖，那么我们看下 ES5 中怎么实现 class 继承。</description>
+    <pubDate>Sat Jul 10 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Sat Jul 10 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item> 
   </channel>
 </rss>
