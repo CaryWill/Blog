@@ -41,7 +41,7 @@
 
 <p>问题就出在这，导致浏览器觉得我们的证书有猫腻，你看下图，SAN 里面的 <em>DNS name</em> 列表里根本没有我们当前访问的域名，</p>
 
-<figure><img src="DraggedImage.tiff"/></figure>
+<figure><img src="DraggedImage-1.png"/></figure>
 
 <p>这就验证了我的想法，Charles 不是根据我们访问的页面的域名动态生成 SSL 证书的。那么 Charles 的 MITM 是怎么做的呢？</p>
 
@@ -55,7 +55,7 @@
 
 <p>参考了下<a href="https://www.sarthakbatra.com/blog/running-react-with-https-on-custom-local-domain/">这篇文章</a>，利用 <code>mkcert</code> 工具来生成自签名证书，替换了下 webpack-dev-server 的 SSL 证书，</p>
 
-<figure><img src="DraggedImage-1.png"/></figure>
+<figure><img src="DraggedImage-2.png"/></figure>
 
 <p>PERFECT！！！</p>
 
@@ -63,15 +63,15 @@
 
 <p>来看下这个证书的 <em>DNS name</em>，</p>
 
-<figure><img src="DraggedImage-2.png"/></figure>
+<figure><img src="DraggedImage-3.png"/></figure>
 
 <p>和我们的域名<strong>一致</strong>，这样浏览器就觉得你 OK 了。所以 Charles 的话，需要你本身的证书是受信任的，浏览器才不会给你个 ‘Your website is Not Secure’ 提示。</p>
 
 <p>现在开下 Charles 你就会发现，你原本的根证书变成 Charles 的根证书了，因为你的证书和用来签名的证书都是受信任的，所以浏览器什么安全风险都不会报。</p>
 
-<figure><img src="DraggedImage-3.png"/></figure>
-
 <figure><img src="DraggedImage-4.png"/></figure>
+
+<figure><img src="DraggedImage-5.png"/></figure>
 
 <hr />
 
@@ -87,17 +87,17 @@
 
 <p>正好手上有个 <em>Surge</em> 可以用来测试，</p>
 
-<figure><img src="DraggedImage-5.png"/></figure>
+<figure><img src="DraggedImage-6.png"/></figure>
 
 <p>我们就拿 leetcode 的官网进行测试，</p>
 
-<figure><img src="DraggedImage-6.png"/></figure>
+<figure><img src="DraggedImage-7.png"/></figure>
 
 <p>你会发现这个证书是多个域名共享的，看下 <em>DNS Name</em> 就可以看到了。然后你开了 Surge 的 MITM 攻击的话，你，将，会，看到，<em>DNS Name</em> 从多个域名变成单个当前访问的页面的域名了，</p>
 
-<figure><img src="DraggedImage-7.png"/></figure>
-
 <figure><img src="DraggedImage-8.png"/></figure>
+
+<figure><img src="DraggedImage-9.png"/></figure>
 
 <p>这就是两种 MITM 攻击的全部了。</p>
 
@@ -107,7 +107,7 @@
 
 <p>其实问题的起因是我通过 Charles rewrite 接口的时候报证书异常，我就十分不理解哪里异常了？不是只要开了 Charles 就完事儿了吗？结果发现不是，</p>
 
-<figure><img src="DraggedImage-1.tiff"/></figure>
+<figure><img src="DraggedImage-10.png"/></figure>
 
 <p>配完自签名证书后就 OK 了。</p>
 
