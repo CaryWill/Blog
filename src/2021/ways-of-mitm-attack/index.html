@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>MITM Attack In Charles</title>
+	</head>
+<body>
+<h1>MITM Attack In Charles</h1>
+
+<p><strong>2021.10.21</strong></p>
+
+<p>在讲解中间人攻击前（MITM Attack），先想问个问题，‘客户端是如何证明你的证书是可信任的？’</p>
+
+<p>通过下面几点，</p>
+
+<ul>
+	<li>颁发证书的根证书是否受系统信任。</li>
+	<li>证书里的 Common Name 和 Subject Alternative Name （简称<a href="https://support.dnsimple.com/articles/what-is-ssl-san/">SAN</a>，一般多个域名同一个证书的话会使用证书里的这个字段）里面的 <em>DNS name</em> 中有没有你要访问的域名。</li>
+	<li>证书是否过期。</li>
+</ul>
+
+<p>OK，这样的话，我们如果解决上面三点，也就是伪造 SSL 证书的话，那么就能实现中间人攻击，破解 HTTPS 流量了。</p>
+
+<p>看下 Charles 的定义你就知道，它会动态生成证书以便实行 MITM 攻击，</p>
+
+<blockquote>
+<p>Charles does this by becoming a man-in-the-middle. Instead of your browser seeing the server’s certificate, Charles dynamically generates a certificate for the server and signs it with its own root certificate (the Charles CA Certificate). Charles receives the server’s certificate, while your browser receives Charles’s certificate. Therefore you will see a security warning, indicating that the root authority is not trusted. If you add the Charles CA Certificate to your trusted certificates you will no longer see any warnings – see below for how to do this.</p>
+</blockquote>
+
+<p><strong>那么，你有没有想过，Charles 是在什么时机动态生成 SSL 证书的吗？</strong></p>
+
+<p>事情还得从昨天说起，昨天我用 webpack 在本地起了一个服务，可以通过 <code>https://localhost:8080/</code> 访问 demo 页面，然后我在 hosts 文件里面加了个域名 <code>dev.localhost.com</code> 指向 127.0.0.1，这样我就也可以通过 <code>https://dev.localhost:8080/</code> 访问我们的 demo 页面，然后我像往常一样开了 Charles，平常都是直接点击浏览器提示的不安全页面的下面的一个<em>仍旧访问</em>的链接绕过安全提示强行进入页面。</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>但是，当出现那个不安全页面的时候，我，我停住了，突然我这样想了下，‘Charles 不是给我们动态生成 SSL 证书吗，然后 Charles 的 Root CA 证书我们也在系统中的钥匙串中信任了，那么浏览器怎么会觉得 Charles 给的证书可能是假的呢？’，奇怪啊，我一直以为只要开了 Charles 就 OK 了，什么都不用管了。结果竟然还是不安全？哪里有问题？</p>
+
+<p>原来我一直以为，Charles 是根据我们访问的<strong>域名</strong>动态生成 SSL 证书的，这样证书就是受浏览器信任的，结果调查发现 Charles 不是这么干的。。。</p>
+
+<p>问题就出在这，导致浏览器觉得我们的证书有猫腻，你看下图，SAN 里面的 <em>DNS name</em> 列表里根本没有我们当前访问的域名，</p>
+
+<figure><img src="DraggedImage.tiff"/></figure>
+
+<p>这就验证了我的想法，Charles 不是根据我们访问的页面的域名动态生成 SSL 证书的。那么 Charles 的 MITM 是怎么做的呢？</p>
+
+<blockquote>
+<p>先暂缓与客户端的握手，立刻开始与服务端的握手，在完成服务端握手拿到服务端证书后，修改其公钥与签发者信息并用自己的根证书重新签名，再用这个证书与客户端完成握手。- 摘自 <a href="https://manual.nssurge.com/book/understanding-surge/cn/#tlshttps-%E4%B8%8E-mitm"> Surge 官方中文指引 </a></p>
+</blockquote>
+
+<p>所以 Charles 就是修改我们 webpack-dev-server 以 https 方式启动时的 SSL 证书，所以就是在服务起起来的时候就决定了。</p>
+
+<p>既然这样，破解 ‘Your website is Not Secure’ 也好说，替换 webpack-dev-server 的 SSL 证书不就行了。</p>
+
+<p>参考了下<a href="https://www.sarthakbatra.com/blog/running-react-with-https-on-custom-local-domain/">这篇文章</a>，利用 <code>mkcert</code> 工具来生成自签名证书，替换了下 webpack-dev-server 的 SSL 证书，</p>
+
+<figure><img src="DraggedImage-1.png"/></figure>
+
+<p>PERFECT！！！</p>
+
+<p>一切准备就绪的时候，服务重启，你发现，网站的证书受信任了，而且是由 <em>mkcert…</em> 根证书签发的，这个根证书我们配好了，受我们系统信任的（你可以在 mac 的钥匙串里面看到证书详情）。</p>
+
+<p>来看下这个证书的 <em>DNS name</em>，</p>
+
+<figure><img src="DraggedImage-2.png"/></figure>
+
+<p>和我们的域名<strong>一致</strong>，这样浏览器就觉得你 OK 了。所以 Charles 的话，需要你本身的证书是受信任的，浏览器才不会给你个 ‘Your website is Not Secure’ 提示。</p>
+
+<p>现在开下 Charles 你就会发现，你原本的根证书变成 Charles 的根证书了，因为你的证书和用来签名的证书都是受信任的，所以浏览器什么安全风险都不会报。</p>
+
+<figure><img src="DraggedImage-3.png"/></figure>
+
+<figure><img src="DraggedImage-4.png"/></figure>
+
+<hr />
+
+<p>那么我们一开始认为的通过访问域名的时候，MITM proxy server 动态创建 SSL 根证书返回给客户端的这种想法就不行吗？</p>
+
+<p><strong>当然也是可以</strong>。</p>
+
+<p><em>Surge</em> 就是这么干的。它和 <em>Charles</em> 同样都是网络调试工具，<em>Surge</em> 就是通过我们这里说的这种方式进行 MITM 实行攻击的，</p>
+
+<blockquote>
+<p>Surge 是在与客户端握手时，直接凭空生成了一份符合需要的新服务器证书。另一些软件的策略是，先暂缓与客户端的握手，立刻开始与服务端的握手，在完成服务端握手拿到服务端证书后，修改其公钥与签发者信息并用自己的根证书重新签名，再用这个证书与客户端完成握手。 - 摘自 <a href="https://manual.nssurge.com/book/understanding-surge/cn/#tlshttps-%E4%B8%8E-mitm"> Surge 官方中文指引 </a></p>
+</blockquote>
+
+<p>正好手上有个 <em>Surge</em> 可以用来测试，</p>
+
+<figure><img src="DraggedImage-5.png"/></figure>
+
+<p>我们就拿 leetcode 的官网进行测试，</p>
+
+<figure><img src="DraggedImage-6.png"/></figure>
+
+<p>你会发现这个证书是多个域名共享的，看下 <em>DNS Name</em> 就可以看到了。然后你开了 Surge 的 MITM 攻击的话，你，将，会，看到，<em>DNS Name</em> 从多个域名变成单个当前访问的页面的域名了，</p>
+
+<figure><img src="DraggedImage-7.png"/></figure>
+
+<figure><img src="DraggedImage-8.png"/></figure>
+
+<p>这就是两种 MITM 攻击的全部了。</p>
+
+<h2>其他</h2>
+
+<p>这个是我测试用的 webpack-dev-server <a href="https://github.com/CaryWill/webpack-minimium-dev-server">项目</a>，你可以删掉证书相关的部分，将服务启动起来鼓捣下。</p>
+
+<p>其实问题的起因是我通过 Charles rewrite 接口的时候报证书异常，我就十分不理解哪里异常了？不是只要开了 Charles 就完事儿了吗？结果发现不是，</p>
+
+<figure><img src="DraggedImage-1.tiff"/></figure>
+
+<p>配完自签名证书后就 OK 了。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://support.dnsimple.com/articles/what-is-ssl-san/">What is SAN ?</a></li>
+	<li><a href="https://en.m.wikipedia.org/wiki/Subject_Alternative_Name">Subject Alternative Name - Wikipedia</a></li>
+	<li><a href="https://www.charlesproxy.com/documentation/faqs/localhost-ssl-traffic-fails-with-err_connection_closed/">Localhost SSL traffic fails with ERR_CONNECTION_CLOSED in Chrome - Charles </a></li>
+	<li><a href="https://stackoverflow.com/questions/43619644/i-am-getting-an-invalid-host-header-message-when-connecting-to-webpack-dev-ser">&quot;Invalid Host header&quot; error - webpack-dev-server</a></li>
+	<li><a href="https://support.dnsimple.com/articles/what-is-common-name/">what-is-common-name?</a></li>
+	<li><a href="https://manual.nssurge.com/book/understanding-surge/cn/">Surge 官方中文指引：理解 Surge 原理 </a></li>
+	<li><a href="https://www.charlesproxy.com/documentation/proxying/ssl-proxying/">How Charles Perform MITM Attack ？</a></li>
+	<li><a href="https://www.sarthakbatra.com/blog/running-react-with-https-on-custom-local-domain/">How to create self-signed CA?</a></li>
+	<li><a href="https://1991421.cn/2020/12/30/c9d4b476/">Surge 如何开启 MITM 解密 HTTPS 流量 ？</a></li>
+	<li><a href="https://mp.weixin.qq.com/s/WWCM5ROW2U45pdK_4rLosw">竟然是 300 万的诈骗案！案例解读</a></li>
+</ol>
+
+</body>
+</html>
+
