@@ -3,8 +3,8 @@ var outline = [
   {
     2021: [
       {
-        title: "从输入URL 到页面展示到底发生了什么？",
-        desc: "经典老问题",
+        title: "从输入URL 到页面展示到底发生了什么？笔记",
+        desc: "经典老问题笔记",
         date: "Nov 19, 2021",
         href: "/src/2021/what-happens-when/index.html",
       },
