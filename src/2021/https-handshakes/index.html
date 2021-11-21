@@ -105,22 +105,30 @@
 
 <p>比如使用 <a href="https://wiki.wireshark.org/CaptureSetup/WLAN">wireshark</a> 就可以监听和分析同一个局域网下面所有的网络请求。</p>
 
+<h3>如何保证消息的完整性？</h3>
+
+<p>比如先验证 client的消息是否遭篡改，client 可以先通过 cipher suite 里提供的 MAC 算法，用 MAC 算法计算 message 的 MAC 值，将其和 message一并发给 server，server 用 MAC 算法计算 client 传过来的 message，再计算一遍 MAC 值，比对下来判断是否遭篡改。</p>
+
+<figure><img src="DraggedImage-2.png"/></figure>
+
+<figure><img src="DraggedImage-3.png" alt="https://en.wikipedia.org/wiki/Message_authentication_code"/><figcaption>https://en.wikipedia.org/wiki/Message_authentication_code</figcaption></figure>
+
 <h2>参考</h2>
 
 <ol>
-	<li><a href="https://howhttps.works/"> How HTTPS works ...in a comic! 🌈 🎉 🍕 </a></li>
+	<li><a href="https://howhttps.works/">How HTTPS works ...in a comic! 🌈 🎉 🍕 </a></li>
 	<li><a href="https://en.wikipedia.org/wiki/Replay_attack">What is Replay Attack?</a></li>
 	<li><a href="https://www.catchpoint.com/blog/wireshark-tls-handshake">Understand TLS handshake by using wireshark</a></li>
 	<li><a href="https://www.cloudflare.com/learning/ssl/what-happens-in-a-tls-handshake/">What happens in a TLS handshake?</a></li>
-	<li><a href="https://security.stackexchange.com/questions/218491/why-using-the-premaster-secret-directly-would-be-vulnerable-to-replay-attack"> Why using the premaster secret directly would be vulnerable to replay attack ?</a></li>
-	<li><a href="https://security.stackexchange.com/questions/89383/why-does-the-ssl-tls-handshake-have-a-client-and-server-random"> Why does the ssl tls handshake have a client and server random ?</a></li>
+	<li><a href="https://security.stackexchange.com/questions/218491/why-using-the-premaster-secret-directly-would-be-vulnerable-to-replay-attack">Why using the premaster secret directly would be vulnerable to replay attack ?</a></li>
+	<li><a href="https://security.stackexchange.com/questions/89383/why-does-the-ssl-tls-handshake-have-a-client-and-server-random">Why does the ssl tls handshake have a client and server random ?</a></li>
 	<li><a href="https://www.ibm.com/docs/en/ibm-mq/9.1?topic=tls-how-provides-identification-authentication-confidentiality-integrity">What TLS provides?</a></li>
 	<li><a href="https://datatracker.ietf.org/doc/html/rfc5246">The Transport Layer Security (TLS) Protocol 1.2 - official doc</a></li>
-	<li><a href="https://en.wikipedia.org/wiki/Public_key_certificate"> Public key certificate</a></li>
-	<li><a href="https://datatracker.ietf.org/doc/html/rfc5246#section-5">SSL rfc</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Public_key_certificate">Public key certificate</a></li>
+	<li><a href="https://datatracker.ietf.org/doc/html/rfc5246#section-5">SSL RFC</a></li>
 	<li><a href="https://www.cloudflare.com/learning/ssl/what-is-a-session-key">https://www.cloudflare.com/learning/ssl/what-is-a-session-key</a></li>
 	<li><a href="https://en.wikipedia.org/wiki/Message_authentication_code">Message_authentication_code example</a></li>
-	<li><a href="https://www.ruanyifeng.com/blog/2014/02/ssl_tls.html"> SSL/TLS协议运行机制的概述 - 阮一峰 </a></li>
+	<li><a href="https://www.ruanyifeng.com/blog/2014/02/ssl_tls.html">SSL/TLS协议运行机制的概述 - 阮一峰 </a></li>
 </ol>
 
 </body>
