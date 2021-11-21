@@ -1,9 +1,9 @@
-<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>HTTPS 三次握手</title>
 	</head>
 <body>
@@ -11,36 +11,59 @@
 
 <p><strong>2021.10.17</strong></p>
 
+<figure><img src="DraggedImage.png" alt="https://howhttps.works/"/><figcaption>https://howhttps.works/</figcaption></figure>
+
 <p>前几天有同事问我，如何在 iOS 模拟器上代理页面资源，工具使用的是 <em>lightProxy</em>，但是之前我一直用的是 <em>charles</em>，但是都一样吧本质上，但是他没有代理成功，SSL 报错 ，我说需要装证书的，他说他之前没装也可以跑起来。。。 借（cèng）此机会我们来重新回顾下 <em>HTTPS</em>。</p>
 
-<p>HTTP 是明文传输的，而 HTTPS 是加密传输的，HTTPS 是 HTTP over SSL 的缩写，所以核心要点就是这里的 <a href="https://howhttps.works/the-handshake/">SSL</a>。</p>
+<p>首先来看下为什么要使用 HTTPS，HTTP 有什么缺点？</p>
 
-<p>下面来具体讲解下 SSL，</p>
+<ul>
+	<li>窃听风险(eavesdropping)</li>
+	<li>冒充风险（pretending）</li>
+	<li>篡改风险（tampering）</li>
+</ul>
 
-<figure><img src="DraggedImage.png" alt="https://howhttps.works/"/><figcaption>https://howhttps.works/</figcaption></figure>
+<p>而 HTTPS 的出现就是为了解决上面的问题，提供，</p>
+
+<ul>
+	<li>confidentiality（通过 master secret 加密来加密传输解决窃听风险）</li>
+	<li>authentication（通过证书来验证通信方身份来解决冒充风险）</li>
+	<li>integrity( 通过 MAC 算法对比 message 的 hash 是否相同来保证消息不被窜改来解决篡改风险）</li>
+</ul>
+
+<p>HTTPS 就是 HTTP over SSL 缩写，那么我们来看下SSL 的握手是怎么样的，</p>
 
 <ol>
 	<li>Client Hello. 
 
-		<p>客户端向服务器发送一条 <em>”hello”</em> 消息，里面包含客户端可以支持的 TLS 版本，支持的加密方式（ciphersuit）以及一段客户端随机生成的字符串（client random）。</p></li>
+		<p>向服务器提供可选的加密方式。</p>
+
+		<p>客户端向服务器发送一条 <em>”hello”</em> 消息，里面包含客户端可以支持的 TLS 版本最高版本，支持的加密方式（cipher suite）以及一段客户端随机生成的字符串（client random）。</p></li>
 	<li>Server Hello. 
 
-		<p>服务器向客户端发送一条 <em>”hello”</em> 消息，里面包含证书（certificate），服务器选择的 TLS 版本，服务器要使用的加密算法，以及一段服务器随机生成的字符串（server random）。</p></li>
+		<p>服务器决定加密方式，并向客户端提供证书来证明自己身份。</p>
+
+		<p>服务器向客户端发送一条 <em>”hello”</em> 消息，里面包含证书（certificate），服务器选择的 TLS 版本，服务器要使用的加密算法（cipher suite），以及一段服务器随机生成的字符串（server random）。</p></li>
 	<li>Client key exchange.
 
-		<p>交换 premaster key。客户端验证服务器发过来的证书，验证服务器拥有该域名，证书里面包含 public key，然后客户端会生成一个 pre-master key 并用 public key 加密该 key 后发送给服务器。</p></li>
+		<p>交换 pre-master secret，用来生成最终的 master secret 来进行对称加密通信。</p>
+
+		<p>客户端验证服务器发过来的证书（Q&amp;A里面会讲如何验证），验证服务器拥有该域名，证书里面包含 public key，然后客户端会生成一个 pre-master secret 并用 public key 加密该 key 后发送给服务器。</p></li>
 	<li>Change Cipher Spec.
 
-		<p>改变密码标准协议。在这之前我们都是明文传输的，到这一步，客户端，服务器都有了 pre-master key, client random, server random，客户端和服务器会使用这三个值，通过 <em> PRF</em> 函数计算出一个 master key 作为对称加密的密钥进行接下来的加密的数据传输。</p></li>
+		<p>确认之后的传输使用之前决定的加密方式进行加密传输。</p>
+
+		<p>在这之前我们都是明文传输的，到这一步，客户端，服务器都有了 pre-master secret, client random, server random，客户端和服务器会使用这三个值，通过 <em> PRF</em> 函数计算出一个 master secret 作为对称加密的密钥进行接下来的加密的数据传输。</p></li>
+	<li>Finish.
+
+		<p>通过 master secret 以及 cipher suite 里的 MAC 算法确认消息的完整性。</p>
+
+		<p>client 通过 Cipher Spec 的 MAC 算法对之前请求的 message 进行加密计算出一个 MAC 值，并同 message 一起给到 server，server 解密消息后，再使用 MAC 算法对 message 进行加密计算出一个 MAC 值，然后对比客户端计算出的 MAC 来判断消息的完整性，当 client 和 server 都完成了消息的校验，就可以在应用层发送真正的数据了。</p></li>
 </ol>
 
-<p>总结一下，原理大概是这样的，首先服务器端有 SSL 证书，和非对称加密的 public</p>
+<p>到此就结束了。</p>
 
-<p> key 和 private key。我们的目的很简单，客户端和服务端有一个共享的加密密钥就行。客户端生成一个<em>准主密钥</em>并通过服务器给的公钥加密给到服务器，服务器用私钥解密这个<em>准主密钥</em>，然后客户端和服务端以<em>准主密钥</em>，客户端随机数，服务端随机数为入参计算出一个<em>主密钥</em>，这个时候客户端和服务端就以这个<em>主密钥</em>以对称加密的方式进行加密传输。</p>
-
-<p>难点其实就是在于客户端如何将对称密钥在不被人破解的情况下传输给后端。</p>
-
-<p>怎么样原理还是很简单的吧，既然知道了 HTTPS 的实现原理，那么怎么破解呢？</p>
+<p>难点其实就是在于客户端如何将对称密钥在不被人发现（或者说发现了也破解不了）的情况下传输给后端。</p>
 
 <p><strong>思考题</strong>：如何使用 MITM 的方式破解 HTTPS。</p>
 
@@ -64,19 +87,19 @@
 
 <p>电脑会预置一些根证书，当客户端收到客户端发过来的证书的时候，当发现该证书不是根证书的时候，它会查看签发该证书的证书，直到找到根证书，此时会去电脑预置的根证书里面找，看该根证书是否受你的电脑信任，如果受信任，那么该证书就是有效的，反之亦然。</p>
 
-<h3>为什么不直接使用 pre-master key 作为加密密钥？</h3>
+<h3>为什么不直接使用 pre-master secret 作为加密密钥？</h3>
 
-<p>既然我们在产生 master key 之前都是使用非对称加密，也就是使用 public key 加密的消息只能使用 private key 进行解密，那么我们我们通过 public key 加密 pre-master key 传给服务器，然后直接使用 pre-master key 以对称加密的方式进行后续的数据传输不就行了吗？因为 pre-master key 不可能被人解密啊，不是吗？</p>
+<p>既然我们在产生 master secret 之前都是使用非对称加密，也就是使用 public key 加密的消息只能使用 private key 进行解密，那么我们我们通过 public key 加密 pre-master secret 传给服务器，然后直接使用 pre-master secret 以对称加密的方式进行后续的数据传输不就行了吗？因为 pre-master secret 不可能被人解密啊，不是吗？</p>
 
 <p>虽然别人解密不了，但是阻止不了别人复制你的数据流（不需要看里面有什么数据）再往服务器发送你的数据啊，这种攻击方式称为 <a href="https://security.stackexchange.com/a/218492">replay attack</a>。</p>
 
 <figure><img src="DraggedImage-1.png" alt="https://en.wikipedia.org/wiki/Replay_attack"/><figcaption>https://en.wikipedia.org/wiki/Replay_attack</figcaption></figure>
 
-<p>比如你发送了一条请求用来购买一个 iPhone13，别人看到你发的请求后直接复制你的数据流重新发送，在新的连接（connection）里，你们还是使用了之前的 pre-master key，这样虽然别人看不到你发了什么，但是服务器理解你的请求，因为它也有你给的 pre-master key，这样请求就成功了，你又<strong>喜提</strong>一个 iPhone13。</p>
+<p>比如你发送了一条请求用来购买一个 iPhone13，别人看到你发的请求后直接复制你的数据流重新发送，在新的连接（connection）里，你们还是使用了之前的 pre-master secret，这样虽然别人看不到你发了什么，但是服务器理解你的请求，因为它也有你给的 pre-master secret，这样请求就成功了，你又<strong>喜提</strong>一个 iPhone13。</p>
 
-<p>但是如果你的 pre-master key 依赖每一次和服务器建立连接的时候服务器创建的随机字符串的话，也就是基于上面的 3 个值创建的 master key，那么上述情况就不成立了。</p>
+<p>但是如果你的 pre-master secret 依赖每一次和服务器建立连接的时候服务器创建的随机字符串的话，也就是基于上面的 3 个值创建的 master secret，那么上述情况就不成立了。</p>
 
-<p>比如你 replay 的请求的时候（旧请求），pre-master key=aaa，client random=123，server random=456，你们创建的 master key =aaa123456。（具体算法请参考 <a href="http://www.moserware.com/2009/06/first-few-milliseconds-of-https.html">PRF</a> ），那么建立新连接的时候，pre-master key=aaa，client random=123，server random=789，那么因为你是 replay，所以你发送的 pre-master key 还是 aaa，client random 还是 123，但是，服务器的 server random 变了，所以客户端和服务器产生的 master key 就不一致了，aaa123456 和 aaa123789，这样握手就失败了，这样你就拿到一台你想要的 iPhone 了。</p>
+<p>比如你 replay 的请求的时候（旧请求），pre-master secret=aaa，client random=123，server random=456，你们创建的 master secret =aaa123456。（具体算法请参考 <a href="http://www.moserware.com/2009/06/first-few-milliseconds-of-https.html">PRF</a> ），那么建立新连接的时候，pre-master secret=aaa，client random=123，server random=789，那么因为你是 replay，所以你发送的 pre-master secret 还是 aaa，client random 还是 123，但是，服务器的 server random 变了，所以客户端和服务器产生的 master secret 就不一致了，aaa123456 和 aaa123789，这样握手就失败了，这样你就拿到一台你想要的 iPhone 了。</p>
 
 <h3>如何抓取局域网下别人的网络流量？</h3>
 
@@ -91,12 +114,15 @@
 	<li><a href="https://www.cloudflare.com/learning/ssl/what-happens-in-a-tls-handshake/">What happens in a TLS handshake?</a></li>
 	<li><a href="https://security.stackexchange.com/questions/218491/why-using-the-premaster-secret-directly-would-be-vulnerable-to-replay-attack"> Why using the premaster secret directly would be vulnerable to replay attack ?</a></li>
 	<li><a href="https://security.stackexchange.com/questions/89383/why-does-the-ssl-tls-handshake-have-a-client-and-server-random"> Why does the ssl tls handshake have a client and server random ?</a></li>
-	<li><a href="https://www.cnblogs.com/flythinking/p/12446303.html">SSL/TLS 协议运行机制概述</a></li>
 	<li><a href="https://www.ibm.com/docs/en/ibm-mq/9.1?topic=tls-how-provides-identification-authentication-confidentiality-integrity">What TLS provides?</a></li>
 	<li><a href="https://datatracker.ietf.org/doc/html/rfc5246">The Transport Layer Security (TLS) Protocol 1.2 - official doc</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Public_key_certificate"> Public key certificate</a></li>
+	<li><a href="https://datatracker.ietf.org/doc/html/rfc5246#section-5">SSL rfc</a></li>
+	<li><a href="https://www.cloudflare.com/learning/ssl/what-is-a-session-key">https://www.cloudflare.com/learning/ssl/what-is-a-session-key</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Message_authentication_code">Message_authentication_code example</a></li>
+	<li><a href="https://www.ruanyifeng.com/blog/2014/02/ssl_tls.html"> SSL/TLS协议运行机制的概述 - 阮一峰 </a></li>
 </ol>
 
 </body>
 </html>
 
-<script src="/js/index.js" defer></script>
