@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>&quot;What happens when you type google.com into your browser&#39;s address box and press enter?&quot;</title>
+	</head>
+<body>
+<h1>&quot;What happens when you type google.com into your browser&#39;s address box and press enter?&quot;</h1>
+
+<p><a href="https://github.com/alex/what-happens-when#dns-lookup">原文</a></p>
+
+<h2>hostname</h2>
+
+<p>hostname 只能包含 ASCII 的字符，所以当遇到不是 ASCII 的字符的时候，浏览器会在发请求前对其进行转码。</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<figure><img src="DraggedImage-1.png"/></figure>
+
+<h2>确认是否强制走 HTTPS</h2>
+
+<p>在你第一次通过 http 协议访问某一个网站的时候，你可以通过在相应头你加上一个 <code>Strict-Transport-Security</code> 字段，这样在你第一次通过 https 访问该页面的时候，浏览器会自动帮你记录，下次还有通过 http 访问的，都默认给你用 https 协议访问，<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security">详情可参考</a>。</p>
+
+<p>具体自己测试了下， 用 http 协议访问该页面(http://developer.rhinokeen.com/)，虽然该地址会被 302 到对应的 HTTPS (https://developer.rhinokeen.com/)，但这操作不是浏览器的行为，而是我们服务器的行为，因为我在浏览器里没看到 HSTS list 里有该域名的记录，</p>
+
+<figure><img src="DraggedImage-2.png"/></figure>
+
+<p>于是我直接通过 charles 改了 http://developer.rhinokeen.com/ 的相应头，</p>
+
+<figure><img src="DraggedImage-3.png"/></figure>
+
+<p>然后我们先通过 HTTPS 协议访问该网址（http://developer.rhinokeen.com/），将其加入到我们浏览器内置的 HSTS list 去，你可以在 <a href="chrome://net-internals/#hsts">这里</a> 重新查看下我们的域名是否在 HSTS list 中，</p>
+
+<figure><img src="DraggedImage-4.png"/></figure>
+
+<p>这样你不管通过 HTTP 也好，HTTPS 也好，都会默认走 HTTPS。</p>
+
+<p><strong>思考题</strong>：为什么 HTTPS 安全？</p>
+
+<h2>DNS</h2>
+
+<h3>浏览器 DNS 缓存</h3>
+
+<p><a href="https://stackoverflow.com/a/36917902">查了下发现</a>，浏览器大约会对 DNS 有个 60s（不知道以后会不会变动） 的缓存，这也就是为什么，比如我们直接修改 hosts 文件，有时候不会立马生效的原因。</p>
+
+<figure><img src="DraggedImage-5.png"/></figure>
+
+<figure><img src="DraggedImage-6.png"/></figure>
+
+<figure><img src="DraggedImage-7.png"/></figure>
+
+<p>让我们来测试一下，首先我本地起一个页面，就一行代码 <code>&lt;span&gt;test&lt;/span&gt;</code>，这样来<strong>排除页面里的接口持续访问域名</strong>导致 cache 一直被缓存成旧的 DNS，然后配了下 hosts 文件，这样我们就可以通过 http://dev.com:8080/ 访问我们的本地页面了，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-constant">127.0</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">0.1</span> <span class="syntax-all syntax-parameter">dev</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">com</span></code></pre>
+
+<p>访问之后浏览器缓存下了该域名，这样我们下次再（在DNS缓存被清掉之前）访问这个地址的时候，就算改了 hosts 文件，也还是可以访问的，接下来我们在访问了页面后，立马修改 hosts 文件，然后立马访问页面，</p>
+
+<pre><code class="code-highlighted code-js"># 注释掉
+# <span class="syntax-all syntax-constant">127.0</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">0.1</span> <span class="syntax-all syntax-parameter">dev</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">com</span> </code></pre>
+
+<p>你会发现还是可以访问的，然后我们坐着喝会儿茶，什么都不动，等待浏览器 DNS 缓存失效，再改下 hosts 文件，重新访问，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-constant">127.0</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">0.1</span> <span class="syntax-all syntax-parameter">dev</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">com</span></code></pre>
+
+<p>你会发现又行了，因为浏览器缓存失效了，所以会走我们系统的 hosts 文件来解析域名，不过测试下来浏览器的 DNS 缓存时间好像更短，没有 60s，感觉就只有 5s 左右的样子。</p>
+
+<p>如果 hosts 文件修改了没有生效，可以尝试着等待一段时间，或者使用无痕模式，或者在<a href="chrome://net-internals/#dns">这里</a> 手动清理 DNS。</p>
+
+<p>当浏览器的 DNS 缓存失效，hosts 文件里也没有找到对应的 map，那么就会去<a href="https://github.com/alex/what-happens-when#dns-lookup"> DNS 服务器上找</a>，直到我们能根据给的域名找到对应的 IP 地址。</p>
+
+<p><strong>题外话</strong>：Chrome 的 <code>Disable cache</code> 这个勾选框也能防止 DNS 缓存吗？</p>
+
+<h2>HTTPS</h2>
+
+<p>再浏览器根据域名解析到服务器 IP 地址后，配合服务器端口，会向服务器请求对应的资源，然后进行 TCP 的 3 次握手来建立可靠的连接传递数据，若是我们使用 HTTPS 的话，那么在 TCP 建立连接之后我们还会建立 SSL 连接来加密数据进行传输，来获取我们的页面。</p>
+
+<p><strong>思考题</strong>： 浏览器资源缓存？</p>
+
+<p>参考：<a href="https://carytalk.netlify.app/src/2021/https-handshakes/index.html">https://carytalk.netlify.app/src/2021/https-handshakes/index.html</a></p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://www.name.com/punycode-converter">hostname normalize converter</a></li>
+	<li><a href="https://github.com/alex/what-happens-when#parse-url">What happens when you type google.com into your browser&#39;s address box and press enter? </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security">HSTS policy - MDN</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">https://en.wikipedia.org/wiki/Man-in-the-middle_attack</a></li>
+</ol>
+
+</body>
+</html>
+
