@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "HTTP 缓存动手实践",
+        desc: "手动配置缓存来帮助了解 http cache 以及各种缓存策略出现的原因",
+        date: "Nov 23, 2021",
+        href: "/src/2021/http-caching/index.html",
+      },
+      {
         title: "从输入URL 到页面展示到底发生了什么？",
         desc: "经典老问题验证笔记",
         date: "Nov 19, 2021",

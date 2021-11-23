@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>HTTP 缓存动手实践</title>
+	</head>
+<body>
+<h1>HTTP 缓存动手实践</h1>
+
+<p><strong>2021.11.22</strong></p>
+
+<p>先考虑一个问题，就是为什么需要缓存？</p>
+
+<p>缓存有下面几个好处，</p>
+
+<ol>
+	<li>提升页面加载速度。不变的资源可以直接使用本地缓存，不用去服务器重新获取。</li>
+	<li>减少服务器负载。因为客户端使用缓存，更少的请求到服务器了。</li>
+</ol>
+
+<p>下面就来介绍两种缓存策略，<strong>强制缓存</strong>和<strong>协商缓存</strong>。</p>
+
+<h2>强制缓存</h2>
+
+<p>在缓存的有效期内使用缓存，过期的时候从服务器重新获取资源。对于一些不怎么会变动的文件，我们推荐使用强制缓存，当变动的时候我们可以配合协商缓存。</p>
+
+<p>我们先本地启动一个服务器来测试下，<a href="https://github.com/CaryWill/Frontend/tree/master/http-cache">demo</a> 给你写好了，clone 下来, <code>npm start</code> 就可以进行测试了。本来是想使用 express 框架来写的，但是发现，会默认加几个请求/响应头，而且弄来弄去还去不掉，就用 node 的 built-in 的 http 模块了，零依赖。</p>
+
+<p>项目启动起来后，什么缓存的请求头/响应头都没有配，所以，每次请求都直接从本地服务器获取。</p>
+
+<figure><img src="DraggedImage.tiff" alt="刷新好几次的结果，都没有缓存"/><figcaption>刷新好几次的结果，都没有缓存</figcaption></figure>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<h3>Expires</h3>
+
+<p>第一种缓存头，服务器可以在响应资源的时候设置一个 <code>Expires</code> 响应头来对资源进行缓存，给定一个资源都有效期，浏览器在第一次请求之后，在某某时间之前（<code>Expires</code> 的值），都会直接从缓存获取资源。</p>
+
+<p><strong>测试</strong>：我们在服务器响应的时候设置了一个比较靠后的时间，<em>Wed, 21 Oct 2022 07:28:00 GMT</em> ，在第一次请求之后继续刷新看会不会从缓存读取。</p>
+
+<p>我们再次请求的时候，发现系统时间还没到 <code>Expires</code> 指定的缓存失效时间，所以浏览器会直接从缓存读取。</p>
+
+<figure><img src="DraggedImage-1.png"/></figure>
+
+<p>当然这个请求头也有一定的问题，如果系统时间和服务器时间不同步，如果系统设置了一个很后的时间，那该过期的时候就不会过期了（当然一般这样浏览器会报时间相关的错误，比如时钟过快，如果访问 https 资源的话）。</p>
+
+<p>所以就出现了另一个响应头， <code>Cache-Control</code>，它使用的是<em>相对时间</em>，就解决了系统时间和服务器时间不同步的问题。</p>
+
+<h3>Cache-Control</h3>
+
+<p>主要使用 <code>max-age</code> 值来指定缓存有效时间，当然这个 HTTP header 还有一些其他的用法。</p>
+
+<p>测试：我们在服务器响应的时候，设置一个 <code>Cache-Control</code> 的响应头，值为 <em> max-age=10</em>，也就是 10秒的有效期，然后我们在请求完成后再次刷新页面，看浏览器是否使用了缓存。如下图所示，浏览器使用了缓存（10秒过后，浏览器就会重新向浏览器获取资源）。</p>
+
+<figure><img src="DraggedImage-1.tiff"/></figure>
+
+<p>但无论使用 <code>Expires</code> 还是 <code>Cache-Control</code> 的<em> max-age</em> 进行强制缓存，都会有一个问题，“就是当缓存时间到了需要去服务器重新获取资源的时候，如果服务器上的该资源没有被改动，那么，我们这次向服务器重新获取资源不就是浪费的吗？直接使用本地缓存不就行了吗？”</p>
+
+<p>这里我们就可以配合 <strong>协商缓存</strong> 来继续优化我们的缓存策略。协商缓存，顾名思义就是和服务器协商，要不要继续使用浏览器的缓存。</p>
+
+<h2>协商缓存</h2>
+
+<h3>Last-Modified</h3>
+
+<p>当强制缓存时间到的时候，我们需要向服务器确认我们手上的资源是否被修改过，是的话重新从服务器上获取该资源即可，不是的话，需要一种方式告诉浏览器该资源还是新的，可以继续使用缓存，并且服务器直接在 response 返回空就行了，节省带宽。</p>
+
+<p>对，<code>Last-Modified</code> 响应头就该出场了。我们在请求资源的时候，服务器在响应头里加上 <code>Last-Modified</code> 用来标志资源的上次修改时间，这样当缓存过期的时候，浏览器再次发送请求带上 <code>If-Modified-Since</code> 这个请求头（这个请求头就是 <code>Last-Modified</code> 的值），服务器对比该请求头的值和服务上该资源的最新修改时间来决定是否继续使用本地缓存。</p>
+
+<pre><code class="code-highlighted code-js">  <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">readFile</span>(<span class="syntax-all syntax-parameter">filePath</span>, <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-parameter">error</span>, <span class="syntax-all syntax-parameter">content</span>) {
+    <span class="syntax-all syntax-comment">// res.removeHeader(&quot;Cache-Control&quot;);
+</span>    <span class="syntax-all syntax-keyword">if</span>(<span class="syntax-all syntax-parameter">error</span>) <span class="syntax-all syntax-keyword">return</span>;
+    <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+      <span class="syntax-all syntax-string">&quot;Content-Type&quot;</span>: <span class="syntax-all syntax-parameter">contentType</span>,
+      <span class="syntax-all syntax-comment">// Expires: &quot;Wed, 21 Oct 2022 07:28:00 GMT&quot;,
+</span>      <span class="syntax-all syntax-comment">// &quot;Cache-Control&quot;: &quot;public,max-age=10&quot;,
+</span>    });
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">status</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">statSync</span>(<span class="syntax-all syntax-parameter">filePath</span>);
+
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">lastModified</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">status</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">mtime</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toUTCString</span>();
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">lastModified</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">headers</span>[<span class="syntax-all syntax-string">&quot;if-modified-since&quot;</span>]) {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">304</span>, <span class="syntax-all syntax-string">&quot;Not Modified&quot;</span>);
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>();
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, <span class="syntax-all syntax-string">&quot;OK&quot;</span>);
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+        <span class="syntax-all syntax-string">&quot;Cache-Control&quot;</span>: <span class="syntax-all syntax-string">&quot;public,max-age=10&quot;</span>,
+        <span class="syntax-all syntax-string">&quot;Last-Modified&quot;</span>: <span class="syntax-all syntax-parameter">lastModified</span>,
+      });
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>(<span class="syntax-all syntax-parameter">content</span>);
+    }
+  });</code></pre>
+
+<p>首次请求（10秒有效期，文件的最新修改时间也已经知道）</p>
+
+<figure><img src="DraggedImage-2.tiff"/></figure>
+
+<p>再次请求（因为还在缓存时间内 10秒，所以直接使用缓存）</p>
+
+<figure><img src="DraggedImage-3.tiff"/></figure>
+
+<p>等待 10s 等缓存过期，再次请求，因为服务器上这个文件一直没有动过，对比服务器上该文件的最新修改时间和请求头里的上次修改时间，发现时间一致，即文件没有改动，返回 304 告诉浏览器可以继续使用缓存，</p>
+
+<figure><img src="DraggedImage-4.tiff"/><img src="DraggedImage-5.tiff"/></figure>
+
+<p>不过这个响应头使用的时候还是会有一个问题，<strong>时间精度问题</strong>。</p>
+
+<p><code>Last-Modified</code> 只精确到了秒，如果 1秒内该文件发生了很多次的改动，那么，你会拿不到最新的数据。比如你在 <strong> Tue, 23 Nov 2021</strong> 的 <em> 02:20:26:111</em> 的时候做了一次变更，在 <em> 02:20:26:123</em> 的时候又做了一次变更，那么因为 <code>Last-Modified</code> 的比较只是精确到秒，所以无论是不是第一次比较 <em> 02:20:26</em> 的时间，都只会返回 <em> 02:20:26</em> 毫秒数最小的那个文件。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">switch</span> (<span class="syntax-all syntax-parameter">extname</span>) {
+    <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&quot;.js&quot;</span>:
+      <span class="syntax-all syntax-parameter">contentType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;text/javascript&quot;</span>;
+	  <span class="syntax-all syntax-comment">// demo.js 会在每次请求的时候写入当前时间到文件中（毫秒级）
+</span>      <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeFileSync</span>(<span class="syntax-all syntax-parameter">filePath</span>, <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Date</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toISOString</span>(), <span class="syntax-all syntax-string">&quot;utf-8&quot;</span>);
+      <span class="syntax-all syntax-keyword">break</span>;
+  }
+
+  <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">readFile</span>(<span class="syntax-all syntax-parameter">filePath</span>, <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-parameter">error</span>, <span class="syntax-all syntax-parameter">content</span>) {
+    <span class="syntax-all syntax-comment">// res.removeHeader(&quot;Cache-Control&quot;);
+</span>    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">error</span>) <span class="syntax-all syntax-keyword">return</span>;
+    <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+      <span class="syntax-all syntax-string">&quot;Content-Type&quot;</span>: <span class="syntax-all syntax-parameter">contentType</span>,
+      <span class="syntax-all syntax-comment">// Expires: &quot;Wed, 21 Oct 2022 07:28:00 GMT&quot;,
+</span>      <span class="syntax-all syntax-comment">// &quot;Cache-Control&quot;: &quot;public,max-age=10&quot;,
+</span>    });
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">status</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">statSync</span>(<span class="syntax-all syntax-parameter">filePath</span>);
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">lastModified</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">status</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">mtime</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toUTCString</span>();
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">lastModified</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">headers</span>[<span class="syntax-all syntax-string">&quot;if-modified-since&quot;</span>]) {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">304</span>, <span class="syntax-all syntax-string">&quot;Not Modified&quot;</span>);
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>();
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, <span class="syntax-all syntax-string">&quot;OK&quot;</span>);
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+        <span class="syntax-all syntax-string">&quot;Cache-Control&quot;</span>: <span class="syntax-all syntax-string">&quot;public,max-age=0&quot;</span>,
+        <span class="syntax-all syntax-string">&quot;Last-Modified&quot;</span>: <span class="syntax-all syntax-parameter">lastModified</span>,
+      });
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>(<span class="syntax-all syntax-parameter">content</span>);
+    }
+  });</code></pre>
+
+<p>测试：首先将缓存有效期设置为 0 秒（等同于 <code>Cache-Control: public,no-cache</code>，并且注意 “no-cache” 的作用是不是用本地缓存而不是不缓存），这样每次请求浏览器会直接向服务器获取资源并写入到本地缓存，然后连续刷新好几次页面，你会发现，如果两次刷新发生在某一秒内，那么在该某一秒内的最新的资源变更你就拿不到了，</p>
+
+<figure><img src="DraggedImage-6.tiff"/></figure>
+
+<figure><img src="DraggedImage-7.tiff"/></figure>
+
+<figure><img src="DraggedImage-8.tiff"/></figure>
+
+<p>上面就是一秒内刷新了两次出现的情况，我们设置了每次请求 demo.js 文件都会发生改动，但是由于两次刷新是在 1 秒内完成的，所以当缓存时间到的时候，浏览器发起协商缓存，请求是 200，因为文件变动了，然后 1秒内的再次请求将会返回 304，因为在<strong>秒级</strong>上做时间对比是通过的，所以服务器 304 告诉浏览器使用本地缓存。</p>
+
+<p>当然这个也是可以解决的，就是下面的 <code>ETag</code>。</p>
+
+<h3>ETag</h3>
+
+<p>时间会有精度问题，那么每次写上我们直接基于文件内容（hash 文件内容对比 hash 即可），不基于时间不就可以了，这就是 <code>ETag</code> 做的事情，它和 <code>Last-Modified</code> 作用一样，你理解上就换了个字段就行。</p>
+
+<p>每次请求文件的时候，响应头会带上表示文件内容 hash 的 <code>ETag</code> 响应头，在需要协商缓存的时候，请求头里加一个 <code>If-None-Match</code> 字段，值是该文件的 <code>ETag</code> 值（一般浏览器会帮你自动带上）。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">app</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">http</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createServer</span>((<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">filePath</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;.&quot;</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">url</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">filePath</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-string">&quot;./&quot;</span>) <span class="syntax-all syntax-parameter">filePath</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;./index.html&quot;</span>;
+  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">extname</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">path</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">extname</span>(<span class="syntax-all syntax-parameter">filePath</span>);
+  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">contentType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;text/html&quot;</span>;
+  <span class="syntax-all syntax-keyword">switch</span> (<span class="syntax-all syntax-parameter">extname</span>) {
+    <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&quot;.js&quot;</span>:
+      <span class="syntax-all syntax-parameter">contentType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;text/javascript&quot;</span>;
+      <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeFileSync</span>(<span class="syntax-all syntax-parameter">filePath</span>, <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Date</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toISOString</span>(), <span class="syntax-all syntax-string">&quot;utf-8&quot;</span>);
+      <span class="syntax-all syntax-keyword">break</span>;
+  }
+
+  <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">readFile</span>(<span class="syntax-all syntax-parameter">filePath</span>, <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-parameter">error</span>, <span class="syntax-all syntax-parameter">content</span>) {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">error</span>) <span class="syntax-all syntax-keyword">return</span>;
+    <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+      <span class="syntax-all syntax-string">&quot;Content-Type&quot;</span>: <span class="syntax-all syntax-parameter">contentType</span>,
+    });
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">etag</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">hash</span>(<span class="syntax-all syntax-parameter">content</span>);
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">headers</span>[<span class="syntax-all syntax-string">&quot;if-none-match&quot;</span>] <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">etag</span>) {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">304</span>, <span class="syntax-all syntax-string">&quot;Not Modified&quot;</span>);
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>();
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+        <span class="syntax-all syntax-string">&quot;Cache-Control&quot;</span>: <span class="syntax-all syntax-string">&quot;public,max-age=0&quot;</span>,
+        <span class="syntax-all syntax-string">ETag</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">etag</span>,
+      });
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>(<span class="syntax-all syntax-parameter">content</span>);
+    }
+  });
+});</code></pre>
+
+<p>还是同样的操作，1秒内多次请求，可以看到第 4 次和第 5 次刷新是发生在 1秒内的，然后你会发现虽然这两条数据都在同 1 秒，但和 <code>Last-Modified</code> 不同的是，2 个响应的响应内容不同，而且也绝不会相同。</p>
+
+<figure><img src="DraggedImage-9.tiff"/></figure>
+
+<figure><img src="DraggedImage-10.tiff"/></figure>
+
+<figure><img src="DraggedImage-11.tiff"/></figure>
+
+<figure><img src="DraggedImage-12.tiff"/></figure>
+
+<figure><img src="DraggedImage-13.tiff"/></figure>
+
+<p>第 4 次请求 demo.js 文件的时候，服务器会在响应头里该文件的 <code>Etag</code> 也返回回来，当我们发出第 5 次请求的时候，我们向服务器发起了协商缓存（因为我们设置了 max-age=0），并在请求头上带上了 <code>If-None-Match</code> 的请求头，值是第 4 次请求的 <code>ETag</code>，服务器对服务器上的 demo.js 的 hash（ETag 值）和 <code>If-None-Match</code> 的值进行了对比，因为我们每次请求 demo.js 的内容都会改变，所以这次对比就会就发现文件发生了变动，于是就返回 200，并在响应头里加上了新文件的 ETag 值。</p>
+
+<p><code>If-None-Match</code> 的意思其实也很好理解，服务器会返回新的文件需要满足一个条件，当且仅当你提供的所有的(none) <code>ETag</code> 都没有命中服务器上的那个资源的 <code>ETag</code> 的值。</p>
+
+<p>到此 2 种缓存模式就介绍完了。</p>
+
+<h2>其他</h2>
+
+<h3>强制缓存和协商缓存的优先级</h3>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">app</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">http</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createServer</span>((<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">filePath</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;.&quot;</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">url</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">filePath</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-string">&quot;./&quot;</span>) <span class="syntax-all syntax-parameter">filePath</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;./index.html&quot;</span>;
+  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">extname</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">path</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">extname</span>(<span class="syntax-all syntax-parameter">filePath</span>);
+  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">contentType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;text/html&quot;</span>;
+  <span class="syntax-all syntax-keyword">switch</span> (<span class="syntax-all syntax-parameter">extname</span>) {
+    <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&quot;.js&quot;</span>:
+      <span class="syntax-all syntax-parameter">contentType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;text/javascript&quot;</span>;
+      <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeFileSync</span>(<span class="syntax-all syntax-parameter">filePath</span>, <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Date</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toISOString</span>(), <span class="syntax-all syntax-string">&quot;utf-8&quot;</span>);
+      <span class="syntax-all syntax-keyword">break</span>;
+  }
+
+  <span class="syntax-all syntax-parameter">fs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">readFile</span>(<span class="syntax-all syntax-parameter">filePath</span>, <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-parameter">error</span>, <span class="syntax-all syntax-parameter">content</span>) {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">error</span>) <span class="syntax-all syntax-keyword">return</span>;
+    <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+      <span class="syntax-all syntax-string">&quot;Content-Type&quot;</span>: <span class="syntax-all syntax-parameter">contentType</span>,
+    });
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">etag</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">hash</span>(<span class="syntax-all syntax-parameter">content</span>);
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">headers</span>[<span class="syntax-all syntax-string">&quot;if-none-match&quot;</span>] <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">etag</span>) {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">304</span>, <span class="syntax-all syntax-string">&quot;Not Modified&quot;</span>);
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>();
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">writeHead</span>(<span class="syntax-all syntax-constant">200</span>, {
+        <span class="syntax-all syntax-string">&quot;Cache-Control&quot;</span>: <span class="syntax-all syntax-string">&quot;public,max-age=10&quot;</span>,
+        <span class="syntax-all syntax-string">ETag</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">etag</span>,
+      });
+      <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">end</span>(<span class="syntax-all syntax-parameter">content</span>);
+    }
+  });
+});</code></pre>
+
+<figure><img src="DraggedImage-14.tiff"/></figure>
+
+<p>可以看到，在一个缓存有效期内（10秒），即便文件变了（目前每次请求都会重新生成 demo.js 的文件内容），浏览器也不会从服务器获取资源，而是直接使用缓存。</p>
+
+<p>所以，<strong>强缓存的优先级大于协商缓存</strong>。</p>
+
+<h3>前端缓存策略的运用</h3>
+
+<p>看到一种属于强缓存的缓存策略，在 <strong><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#revved_resources">Revved resources</a></strong> 这部分里介绍了，“按照一定规则给资源命名，按资源的 URI 进行缓存”。</p>
+
+<p>比方说，我们的 html 页面里引用了某个 js 文件，这个 js 文件是按照版本号进行命名的，每次请求 html 页面，后端 vm 模版会动态写入这个 js 文件的 CDN 地址，这个 js 文件（设置为永远不会过期，而且只有发布版本的时候，这个 js 文件的 CDN 地址才会更新）。</p>
+
+<p>我们有一套发布系统，发布到正式环境后，生成的 CDN 文件地址就不能修改了，这样我们可以永远使用这个文件的缓存，也不用担心文件缓存失效。</p>
+
+<h2>参数</h2>
+
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag#caching_of_unchanged_resources">ETag - MDN </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expires">Expires - MDN </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#revved_resources">HTTP caching - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match">If-None-Match - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since">If-Modified-Since - MDN</a></li>
+	<li><a href="why-is-http-request-header-if-none-match-called-that">Why-is-http-request-header-if-none-match-called-that</a></li>
+	<li><a href="https://juejin.cn/post/6844903655619969038">Learn http cache by Hand</a></li>
+	<li><a href="https://superuser.com/a/775756">Refresh all tabs in Google Chrome</a></li>
+	<li><a href="https://nodejs.org/en/knowledge/file-system/how-to-write-files-in-nodejs/">how-to-write-files-in-nodejs</a></li>
+	<li><a href="https://nodejs.org/api/http.html">Nodejs api</a> </li>
+	<li><a href="https://nodejs.org/en/knowledge/HTTP/servers/how-to-create-a-HTTP-server/"> How do I create a HTTP server? </a></li>
+	<li><a href="https://www.cloudflare.com/learning/cdn/glossary/origin-server">CDN caching - Cloudflare </a></li>
+</ol>
+
+</body>
+</html>
+
