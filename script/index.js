@@ -84,19 +84,19 @@ walk(path.join("./src"), function (err, results) {
         logLevel: 1,
       };
       var converter = new ConvertTiff(options);
-      const arr = p.split("/");
-      const name = arr.pop();
-      console.log(path.dirname(p));
       converter.convertOne(p, path.dirname(p));
       // 因为转换会创建文件夹 所以需要将里面的文件移出来
-      // https://stackoverflow.com/questions/8579055/how-do-i-move-files-in-node-js
+      // https://stackoverflow.com/a/41562625
       var oldPath = p.split(".tiff")[0] + "/" + "0.png";
       var newPath = p.split(".tiff")[0] + ".png";
-      fs.rename(oldPath, newPath, function (err) {
-        if (err) throw err;
-        console.log("Successfully renamed - AKA moved!");
-      });
-      // 删除之前的文件
+      if (fs.existsSync(p.split(".tiff")[0])) {
+        fs.renameSync(oldPath, newPath, function (err) {
+          if (err) throw err;
+          console.log("Successfully renamed - AKA moved!");
+        });
+      }
+      //  FIXME: 清理文件夹
+      // fs.rmSync(p.split(".tiff")[0], { recursive: true, force: true });
     }
   });
 });
