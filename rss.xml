@@ -5,6 +5,24 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>BFC</title>
+    <link>/src/2021/BFC/index.html</link>
+    <description>什么是 BFC？以及 BFC 解决了什么问题？</description>
+    <pubDate>Wed Nov 24 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Wed Nov 24 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>HTTP 缓存动手实践</title>
+    <link>/src/2021/http-caching/index.html</link>
+    <description>手动配置缓存来帮助了解 http cache 以及各种缓存策略出现的原因</description>
+    <pubDate>Tue Nov 23 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Tue Nov 23 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>从输入URL 到页面展示到底发生了什么？</title>
+    <link>/src/2021/what-happens-when/index.html</link>
+    <description>经典老问题验证笔记</description>
+    <pubDate>Fri Nov 19 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Fri Nov 19 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>MITM Attack 原理</title>
     <link>/src/2021/ways-of-mitm-attack/index.html</link>
     <description>使用 MITM Attack 来解密 HTTPS 流量</description>

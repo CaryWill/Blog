@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/CaryWill/Blog/issues"
   },
-  "homepage": "https://github.com/CaryWill/Blog#readme"
+  "homepage": "https://github.com/CaryWill/Blog#readme",
+  "dependencies": {
+    "tiff-to-png": "^2.0.2"
+  }
 }

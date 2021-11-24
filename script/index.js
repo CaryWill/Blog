@@ -1,5 +1,6 @@
 var fs = require("fs");
 var path = require("path");
+var ConvertTiff = require("tiff-to-png");
 
 // 添加 RSS
 var outline = require("../js/outline.js");
@@ -72,10 +73,30 @@ walk(path.join("./src"), function (err, results) {
       data = data.replaceAll(css, "");
       data = data.replaceAll(js, "");
       data = data.replaceAll(ulyssessPostCss, "");
+      // 转换 tiff 到 png 以免浏览器不能显示
+      data = data.replaceAll(".tiff", ".png");
       // 添加一个 script 来保证只有一个
       data = css + data;
       data += js;
       fs.writeFileSync(p, data, "utf-8");
+    } else if (p.includes(".tiff")) {
+      var options = {
+        logLevel: 1,
+      };
+      var converter = new ConvertTiff(options);
+      const arr = p.split("/");
+      const name = arr.pop();
+      console.log(path.dirname(p));
+      converter.convertOne(p, path.dirname(p));
+      // 因为转换会创建文件夹 所以需要将里面的文件移出来
+      // https://stackoverflow.com/questions/8579055/how-do-i-move-files-in-node-js
+      var oldPath = p.split(".tiff")[0] + "/" + "0.png";
+      var newPath = p.split(".tiff")[0] + ".png";
+      fs.rename(oldPath, newPath, function (err) {
+        if (err) throw err;
+        console.log("Successfully renamed - AKA moved!");
+      });
+      // 删除之前的文件
     }
   });
 });
