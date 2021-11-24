@@ -135,39 +135,82 @@
 <p>The top and bottom margins of blocks are sometimes combined (collapsed) into a single margin whose size is the largest of the individual margins (or just one of them, if they are equal), a behavior known as margin collapsing. Note that the margins of floating and absolutely positioned elements never collapse.</p>
 </blockquote>
 
+<p>有 3 种情况会触发 Margin collapsing，</p>
+
+<ol>
+	<li>Adjacent siblings</li>
+	<li>No content separating parent and descendants</li>
+	<li>Empty blocks</li>
+</ol>
+
+<p>而，而，而 BFC 只能解决 <em> No content separating parent and descendants</em> 第二种情况下的 <em> Margin collapsing</em>，而不能解决第 1 和 第 3 种情况，<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Mastering_margin_collapsing">Margin collapsing</a> 的文档里有说，它这样说道，</p>
+
+<p><strong>No content separating parent and descendants</strong></p>
+
+<blockquote>
+<p>If there is no border, padding, inline part, <a href="https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Block_formatting_context">block formatting context</a> created, or <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/clear">clearance</a> to separate the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/margin-top">margin-top</a> of a block from the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/margin-top">margin-top</a> of one or more of its descendant blocks; or no border, padding, inline content, <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/height">height</a>, or <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/min-height">min-height</a> to separate the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/margin-bottom">margin-bottom</a> of a block from the<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/margin-bottom"> margin-bottom</a> of one or more of its descendant blocks, then those margins collapse. The collapsed margin ends up outside the parent.</p>
+</blockquote>
+
+<p>如果在一个 block 的 margin-top 和它的 1 个或者多个子元素的 margin-top 之间没有 …，BFC …，的话，那么就会出现 <em> Margin collapsing</em> 的现象。</p>
+
+<p>先来看下 <em> Margin collapsing</em> 出现的时候，</p>
+
+<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">style</span>&gt;
+  body {
+    <span class="syntax-all syntax-parameter">margin</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">0</span>;
+  }
+  .box1 {
+    <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">color</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">lightskyblue</span>;
+    <span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">150</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">150</span><span class="syntax-all syntax-parameter">px</span>;
+	<span class="syntax-all syntax-parameter">margin</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">top</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">25</span><span class="syntax-all syntax-parameter">px</span>;
+  }
+
+  .box2 {
+    <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">color</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">pink</span>;
+    <span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">50</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">50</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-parameter">margin</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">top</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">50</span><span class="syntax-all syntax-parameter">px</span>;
+  }
+&lt;/<span class="syntax-all syntax-tag">style</span>&gt;
+&lt;<span class="syntax-all syntax-tag">body</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;box1&quot;</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;box2&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+  &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">body</span>&gt;</code></pre>
+
 <figure><img src="DraggedImage-5.tiff"/></figure>
 
-<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">head</span>&gt;
-  &lt;<span class="syntax-all syntax-tag">style</span>&gt;
-    html {
-      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">gray</span>;
-    }
-    .container {
-    }
-	.container1 {
-    }
-    p {
-      <span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
-      <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
-      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">lightblue</span>;
-      <span class="syntax-all syntax-parameter">margin</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
-    }
-  &lt;/<span class="syntax-all syntax-tag">style</span>&gt;
-&lt;/<span class="syntax-all syntax-tag">head</span>&gt;
-&lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;container1&quot;</span>&gt;
-  &lt;<span class="syntax-all syntax-tag">p</span>&gt;&lt;/<span class="syntax-all syntax-tag">p</span>&gt;
-&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
-&lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;container&quot;</span>&gt;
-  &lt;<span class="syntax-all syntax-tag">p</span>&gt;&lt;/<span class="syntax-all syntax-tag">p</span>&gt;
-&lt;/<span class="syntax-all syntax-tag">div</span>&gt;</code></pre>
+<p>小正方形的 margin-top 没有在大正方形的内部生效，而是在大正方形的外部生效，因为 box1 的 margin-top 比 box2 的 margin-top 小， <em> Margin collapsing</em> 出现的时候，取一个最大的 margin-top 值，所以 box1 上面是 50px。</p>
 
-<p>你会发现第一个正方形的 bottom margin 和第二个正方形的 top margin 合并了，而 BFC 的这个特性就能解决 margin 合并的问题，我们将其中一个正方形改为 BFC 即可，</p>
+<p>而 box1 变成 BFC 就可以解决这个问题，这样就满足在 box1 的 margin-top 和 box2 的 margin-top 之间有一个 BFC 的条件了，这样就可以避免 <em> Margin collapsing</em> 了。</p>
 
-<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span> {
-   <span class="syntax-all syntax-string">display</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">flow</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-constant">root</span>;
-}</code></pre>
+<p>我们改下 box1 的 class，就可以解决了。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">box1</span> {
+    <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-string">color</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">lightskyblue</span>;
+    <span class="syntax-all syntax-string">width</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">150</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-string">height</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">150</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-parameter">margin</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-string">top</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">25</span><span class="syntax-all syntax-parameter">px</span>;
+	<span class="syntax-all syntax-string">display</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">flow</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-constant">root</span>;
+  }</code></pre>
 
 <figure><img src="DraggedImage-6.tiff"/></figure>
+
+<p>当然我们还可以通过改 box1 的 class 的 padding，border，display（inline）等解决 <em> Margin collapsing</em>，如，uncomment 掉下面任意一行即可，</p>
+
+<pre><code class="code-highlighted code-js">  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">box1</span> {
+    <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-string">color</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">lightskyblue</span>;
+    <span class="syntax-all syntax-string">width</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">150</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-string">height</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">150</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-parameter">margin</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-string">top</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">25</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-comment">/* display: flow-root; */</span>
+    <span class="syntax-all syntax-comment">/* border: 1px solid greenyellow; */</span>
+    <span class="syntax-all syntax-comment">/* padding: 10px; */</span>
+    <span class="syntax-all syntax-comment">/* display: inline-block; */</span>
+  }</code></pre>
+
+<p>不过当出现 float 的时候，如何避免 <em> Margin collapsing</em> 呢，请参考<a href="https://stackoverflow.com/a/41335816">这篇文章</a>。</p>
 
 <p>到此，BFC 的作用讲解完毕。</p>
 
@@ -183,6 +226,7 @@
 	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block">Layout and the containing block</a></li>
 	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Mastering_margin_collapsing">Mastering margin collapsing - MDN</a></li>
 	<li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Floats">The background of floats</a></li>
+	<li><a href="https://stackoverflow.com/a/41335816">margin-top not working with clear: both - Stackoverflow</a></li>
 </ol>
 
 </body>
