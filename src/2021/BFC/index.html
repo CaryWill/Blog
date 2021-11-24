@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Block formatting contexts</title>
+	</head>
+<body>
+<h1>Block formatting contexts</h1>
+
+<p><strong>2021.11.24</strong></p>
+
+<h2>Float</h2>
+
+<p>下面介绍 BFC 的作用的时会用 float 元素举例，所以这里简单介绍下，知道的同学可以直接跳过这部分，那就先来看下 float 的<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/float">定义</a>再顺便介绍下它的出现<a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Floats#the_background_of_floats">背景</a>，</p>
+
+<p>它会将拥有 float 属性的元素置于它所在的容器（<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block">containing block</a>）的左边或者右边（脱离文档流），而它出现的背景就是<strong>文字环绕</strong>，所以它允许文字（text）或者 inline 元素环绕在这个 float 元素周围。</p>
+
+<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">head</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">style</span>&gt;
+    html {
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">gray</span>;
+    }
+    .container {
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">color</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">red</span>;
+    }
+    .float {
+      <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
+      <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">color</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">green</span>;
+      <span class="syntax-all syntax-parameter">float</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">left</span>;
+    }
+  &lt;/<span class="syntax-all syntax-tag">style</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">head</span>&gt;
+&lt;<span class="syntax-all syntax-tag">body</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;container&quot;</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;float&quot;</span>&gt;test&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">div</span>&gt;test&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+  &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">body</span>&gt;</code></pre>
+
+<figure><img src="DraggedImage.tiff"/></figure>
+
+<p>所以上图，float 元素 <code>&lt;div class=&quot;float&quot;&gt;test&lt;/div&gt;</code> 和 <code>&lt;div&gt;test&lt;/div&gt;</code> 重叠了，因为 float 元素是脱离文档流的，而且这里的 float 元素会被置于它的 containing block（<code>&lt;div class=&quot;container&quot;&gt;</code>） 的左侧，不过 <code>&lt;div&gt;test&lt;/div&gt;</code> 里文字（text）不会被 float 元素遮住，因为 float 元素允许文字环绕在它周围。</p>
+
+<p>如果你想取消环绕的效果的话，那么你可以使用 <code>clear</code> 的 CSS <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/clear">属性</a> 来清除环绕效果。给上面的 <code>&lt;div&gt;test&lt;/div&gt;</code> 加一个如下的 class 类，<code> &lt;div class=&quot;clear&quot;&gt;test&lt;/div&gt;</code>，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">clear</span> {
+  <span class="syntax-all syntax-string">clear</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">left</span>;
+}</code></pre>
+
+<figure><img src="DraggedImage-1.tiff"/></figure>
+
+<p>这样就能清除左边的 float 元素，将我们的元素移动到 float 元素下面去了。</p>
+
+<p>OK，和 float 属性相关的功能介绍完了，我们接下来来介绍下 BFC 以及它的作用吧。</p>
+
+<h2>BFC 的三种作用</h2>
+
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Block_formatting_context">BFC</a> 是 Block formatting contexts 的缩写，你可以把它理解为一个隔离容器，float 元素不会泄漏到外面去，外面的 float 也不会泄漏到里面来，感觉上有点像一个 html 嵌套了另一个 html。</p>
+
+<p>它有下面三个作用，</p>
+
+<ol>
+	<li> contain internal floats.（里面包含 float 元素）</li>
+	<li> exclude external floats. （隔离外部的 float 元素）</li>
+	<li>suppress margin collapsing. （避免外边距的重叠）</li>
+</ol>
+
+<p>只要是 block-level 的元素，就可以通过添加这些 <a href="https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Block_formatting_context">属性</a> 变成 BFC。</p>
+
+<h3>Contain internal floats</h3>
+
+<p>Non-BFC 元素不会包含 float 元素，而且会和 float 元素 overlap，这个我们在介绍 float 元素的时候已经知道了，还是用上面讲 float 时用的例子，通过将 float 元素的 containing block 元素（这里是 class 为 container 的 div）改为 BFC 就可以包含这个 float，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span> {
+    <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-string">color</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">red</span>;
+    <span class="syntax-all syntax-string">display</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">flow</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-constant">root</span>;
+}</code></pre>
+
+<figure><img src="DraggedImage-2.tiff"/></figure>
+
+<p>现在 container div 和 float 一样高了，包含了这个 float 元素。</p>
+
+<h3>Exclude external floats</h3>
+
+<p>会 clear 外部泄漏进 BFC 的 float 元素，注意 html 元素是 BFC，还是一样我们改下讲 float 时的例子，我们将 container 里面的 float 移到外面和它平级，</p>
+
+<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">head</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">style</span>&gt;
+    html {
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">gray</span>;
+    }
+    .container {
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">color</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">red</span>;
+      <span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">200</span><span class="syntax-all syntax-parameter">px</span>;
+      <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">200</span><span class="syntax-all syntax-parameter">px</span>;
+    }
+    .float {
+      <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
+      <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">color</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">green</span>;
+      <span class="syntax-all syntax-parameter">float</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">left</span>;
+    }
+  &lt;/<span class="syntax-all syntax-tag">style</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">head</span>&gt;
+&lt;<span class="syntax-all syntax-tag">body</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;float&quot;</span>&gt;test&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;container&quot;</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">div</span>&gt;test&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+  &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">body</span>&gt;</code></pre>
+
+<figure><img src="DraggedImage-3.tiff"/></figure>
+
+<p>float 元素和 container 重叠了，我们可以将 container 改为 BFC，这样 float 元素就被 clear 了，就不会和 container 重叠了。</p>
+
+<p>我们改下 container 的 class，将其变为 BFC，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span> {
+    <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-string">color</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">red</span>;
+    <span class="syntax-all syntax-string">width</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">200</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-string">height</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">200</span><span class="syntax-all syntax-parameter">px</span>;
+    <span class="syntax-all syntax-string">display</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">flow</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-constant">root</span>;
+}</code></pre>
+
+<figure><img src="DraggedImage-4.tiff"/></figure>
+
+<h3>Margin collapsing</h3>
+
+<p>先来了解下 <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Mastering_margin_collapsing">Margin collapsing</a> 的定义，知道的同学可以跳过，</p>
+
+<blockquote>
+<p>The top and bottom margins of blocks are sometimes combined (collapsed) into a single margin whose size is the largest of the individual margins (or just one of them, if they are equal), a behavior known as margin collapsing. Note that the margins of floating and absolutely positioned elements never collapse.</p>
+</blockquote>
+
+<figure><img src="DraggedImage-5.tiff"/></figure>
+
+<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">head</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">style</span>&gt;
+    html {
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">gray</span>;
+    }
+    .container {
+    }
+	.container1 {
+    }
+    p {
+      <span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
+      <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
+      <span class="syntax-all syntax-parameter">background</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">lightblue</span>;
+      <span class="syntax-all syntax-parameter">margin</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">100</span><span class="syntax-all syntax-parameter">px</span>;
+    }
+  &lt;/<span class="syntax-all syntax-tag">style</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">head</span>&gt;
+&lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;container1&quot;</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">p</span>&gt;&lt;/<span class="syntax-all syntax-tag">p</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+&lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">class</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;container&quot;</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">p</span>&gt;&lt;/<span class="syntax-all syntax-tag">p</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">div</span>&gt;</code></pre>
+
+<p>你会发现第一个正方形的 bottom margin 和第二个正方形的 top margin 合并了，而 BFC 的这个特性就能解决 margin 合并的问题，我们将其中一个正方形改为 BFC 即可，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span> {
+   <span class="syntax-all syntax-string">display</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">flow</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-constant">root</span>;
+}</code></pre>
+
+<figure><img src="DraggedImage-6.tiff"/></figure>
+
+<p>到此，BFC 的作用讲解完毕。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flow_Layout/Intro_to_formatting_contexts">Introduction to formatting contexts - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Block_formatting_context">Block formatting context - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/float">float - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/clear">clear - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Visual_formatting_model#floats">Visual formatting model - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flow_Layout/In_Flow_and_Out_of_Flow">In Flow and Out of Flow - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block">Layout and the containing block</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Mastering_margin_collapsing">Mastering margin collapsing - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Floats">The background of floats</a></li>
+</ol>
+
+</body>
+</html>
+

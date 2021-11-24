@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "BFC",
+        desc: "什么是 BFC？以及 BFC 解决了什么问题？",
+        date: "Nov 24, 2021",
+        href: "/src/2021/BFC/index.html",
+      },
+      {
         title: "HTTP 缓存动手实践",
         desc: "手动配置缓存来帮助了解 http cache 以及各种缓存策略出现的原因",
         date: "Nov 23, 2021",
