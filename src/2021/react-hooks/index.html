@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>手写 React Hooks</title>
+	</head>
+<body>
+<h1>手写 React Hooks</h1>
+
+<p><strong> 2021.07.24</strong></p>
+
+<p>先说下 Hooks 出现的背景，就是优化 Class 组件的一些不大友善的点，</p>
+
+<ol>
+	<li>this.setState undefined。
+
+		<p>容易忘记在元素上面绑定事件的时候绑定 this 的值，导致 this 指向了元素本身。而且 this 的用法太 tricky 了对新手不大友好。</p></li>
+	<li><strong>数据同步</strong>分散在各个不同生命周期里面。</li>
+	<li>现在共享状态的办法不是很好。通过 HOC 的形式可以将 non-visual 逻辑抽离出来，但是如果使用了很多个 HOC，容易造成 callback hell。</li>
+</ol>
+
+<p>所以就出现了 React Hooks，来解决上面的问题。</p>
+
+<p>React Hooks 有一些规则，但是如果你不了解 Hooks 被后的原理的话，记规则就不容易记了，而且容易忘。所以，我们先参考<a href="https://www.netlify.com/blog/2019/03/11/deep-dive-how-do-react-hooks-really-work/">这篇</a>文章，手写个 hooks 来体验下，然后我们再来具体讲下为什么 hooks 会有这些<a href="https://reactjs.org/docs/hooks-rules.html">规则</a>。</p>
+
+<ol>
+	<li>use at the top level of the function </li>
+	<li>use only inside custom hooks</li>
+	<li>use only inside react component</li>
+</ol>
+
+<h2>use at the top level of the function </h2>
+
+<p>每一个 hooks 被调用后，会移动当前的指针（currentHook|<code>++|</code>），指针的位置决定你的数据（hooks|<code>[currentHook]|</code>），所以我们不能随意调用 hooks 函数，把它当正常的函数用，因为每次调用指针都会移动，那么你的指针的位置就不对了，所以数据也就不对了。</p>
+
+<p>同理，条件性的在最顶层调用也是禁止的，因为这样指针还是不对的，所以数据也不对。</p>
+
+<h2>use only inside custom hooks</h2>
+
+<p>这个和第 1 点其实是一样的 ，“只能使用在最顶层”，就相当于包一层，我们想要的效果就是同一个 hooks 只被调用一次。</p>
+
+<h2>use only inside react component</h2>
+
+<p>你会发现上面的动手写 hooks 的教程还是有一个问题，就是不同函数组件“实例”它们会使用同一个 hooks 数组和 currentHook 变量，我们需要将这两个变量和组件的“实例”关联起来，这就是为什么 hooks 只能在 React 组件中使用的原因。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">MyReact</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-keyword">function</span>() {
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">hooks</span> <span class="syntax-all syntax-keyword">=</span> [],
+    <span class="syntax-all syntax-parameter">currentHook</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span> <span class="syntax-all syntax-comment">// array of hooks, and an iterator!
+</span><span class="syntax-all syntax-keyword">...</span></code></pre>
+
+<p>更详细的内容可以移步看下 React Fiber 系统。</p>
+
+<p>(ノಥ,<em>｣ಥ)ノ彡 React.Component 🗑
+</em></p>
+
+<p>function ヾ(Ő‿Ő✿)</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://www.netlify.com/blog/2019/03/11/deep-dive-how-do-react-hooks-really-work/">How to write react hooks by hand</a></li>
+	<li><a href="https://ui.dev/why-react-hooks/">Why React Hooks? </a></li>
+	<li><a href="https://yylifen.github.io/sundries-trans/js/react-virtual-dom-postmortem/ch.html">React虚拟DOM原理追踪(动画教程)中文</a> <a href="https://medium.com/@js_tut/react-animated-tutorial-7a46fa3c2b96">英文</a></li>
+	<li><a href="https://reactjs.org/docs/components-and-props.html">Stateless Function Components</a></li>
+	<li><a href="https://www.jianshu.com/p/a162302ee85c">Hooks - implementation初探 </a></li>
+	<li><a href="https://reactjs.org/docs/hooks-rules.html">Rules of Hooks</a></li>
+	<li><a href="https://reactjs.org/docs/hooks-faq.html">Hooks FAQ</a></li>
+</ol>
+
+</body>
+</html>
+

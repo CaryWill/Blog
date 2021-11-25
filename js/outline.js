@@ -69,6 +69,12 @@ var outline = [
         href: "/src/2021/regex101.html",
       },
       {
+        title: "手写 React Hooks",
+        desc: "你知道为什么 hooks 会有这些规则吗？",
+        date: "July 24, 2021",
+        href: "/src/2021/react-hooks/index.html",
+      },
+      {
         title: "Class From Pre-ES6",
         desc: "都说 class 是语法糖，那么我们看下 ES5 中怎么实现 class 继承。",
         date: "July 10, 2021",
