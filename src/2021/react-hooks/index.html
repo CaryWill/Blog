@@ -11,19 +11,36 @@
 
 <p><strong> 2021.07.24</strong></p>
 
-<p>先说下 Hooks 出现的背景，就是优化 Class 组件的一些不大友善的点，</p>
+<p>Hooks 出现的就是因为 react 的 class 组件有一些不大友善的点，比如下面这几点，</p>
 
 <ol>
 	<li>this.setState undefined。
 
 		<p>容易忘记在元素上面绑定事件的时候绑定 this 的值，导致 this 指向了元素本身。而且 this 的用法太 tricky 了对新手不大友好。</p></li>
-	<li><strong>数据同步</strong>分散在各个不同生命周期里面。</li>
-	<li>现在共享状态的办法不是很好。通过 HOC 的形式可以将 non-visual 逻辑抽离出来，但是如果使用了很多个 HOC，容易造成 callback hell。</li>
+	<li><strong>数据同步</strong>分散在各个不同生命周期里面。
+
+		<p>就比如我在组件 mount 的时候，需要拉取数据，在 didUpdate 的时候也需要拉取同样的接口来获取数据，同一个操作分散在了2个甚至更多的生命周期里面。</p></li>
+	<li>现在共享状态的办法不是很好。通过 HOC 的形式可以将 non-visual 逻辑抽离出来，但是如果使用了很多个 HOC，容易造成 callback hell。
+
+<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">WithHover</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">WithTheme</span> <span class="syntax-all syntax-entity">hovering</span><span class="syntax-all syntax-keyword">=</span>{<span class="syntax-all syntax-constant">false</span>}&gt;
+	&lt;<span class="syntax-all syntax-tag">WithAuth</span> <span class="syntax-all syntax-entity">hovering</span><span class="syntax-all syntax-keyword">=</span>{<span class="syntax-all syntax-constant">false</span>} <span class="syntax-all syntax-entity">theme</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&#39;dark&#39;</span>&gt;
+	  &lt;<span class="syntax-all syntax-tag">WithRepos</span> <span class="syntax-all syntax-entity">hovering</span><span class="syntax-all syntax-keyword">=</span>{<span class="syntax-all syntax-constant">false</span>} <span class="syntax-all syntax-entity">theme</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&#39;dark&#39;</span> <span class="syntax-all syntax-entity">authed</span><span class="syntax-all syntax-keyword">=</span>{<span class="syntax-all syntax-constant">true</span>}&gt;
+    	&lt;<span class="syntax-all syntax-tag">Profile</span>
+    	  <span class="syntax-all syntax-entity">id</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&#39;JavaScript&#39;</span>
+		  ...</code></pre></li>
 </ol>
 
-<p>所以就出现了 React Hooks，来解决上面的问题。</p>
+<p>Hooks 的出现解决了上述的问题，</p>
 
-<p>React Hooks 有一些规则，但是如果你不了解 Hooks 被后的原理的话，记规则就不容易记了，而且容易忘。所以，我们先参考<a href="https://www.netlify.com/blog/2019/03/11/deep-dive-how-do-react-hooks-really-work/">这篇</a>文章，手写个 hooks 来体验下，然后我们再来具体讲下为什么 hooks 会有这些<a href="https://reactjs.org/docs/hooks-rules.html">规则</a>。</p>
+<p>(ノಥ,<em>｣ಥ)ノ彡 React.Component 🗑
+</em></p>
+
+<p>function ヾ(Ő‿Ő✿)</p>
+
+<p>它的使用有一些规则，但是如果你不了解 Hooks 被后的原理的话，记规则就不容易记了，而且容易忘。</p>
+
+<p>所以，我们先参考<a href="https://www.netlify.com/blog/2019/03/11/deep-dive-how-do-react-hooks-really-work/">这篇</a>文章，手写个 hooks 来体验下，然后我们再来具体讲下为什么 hooks 会有这些<a href="https://reactjs.org/docs/hooks-rules.html">规则</a>。</p>
 
 <ol>
 	<li>use at the top level of the function </li>
@@ -51,11 +68,6 @@
 </span><span class="syntax-all syntax-keyword">...</span></code></pre>
 
 <p>更详细的内容可以移步看下 React Fiber 系统。</p>
-
-<p>(ノಥ,<em>｣ಥ)ノ彡 React.Component 🗑
-</em></p>
-
-<p>function ヾ(Ő‿Ő✿)</p>
 
 <h2>参考</h2>
 
