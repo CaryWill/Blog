@@ -11,9 +11,11 @@
 
 <p><strong>2020.06.28</strong></p>
 
-<p><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">WeakMap</a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map">Map</a> 最重要的一个区别就是垃圾回收(GC) 了。</p>
+<h2>实现</h2>
 
-<h2>区别</h2>
+<p>我们先来两者的实现，再来对比下区别。</p>
+
+<h3>Map</h3>
 
 <p>Map 的<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap#why_weakmap">实现</a>可以简单利用两个数组来实现，一个用来存 keys，一个用来存 values，当你要设置值的时候，你再 push 那个 key 到 keys 数组的同时，push key 对应的 value 到 values 这个数组，那么当你要获取一个 key 的值的时候，从 keys 数组中找到对应的 key 的 index，然后拿着这个 index 取 values 数组中取就可以了。</p>
 
@@ -183,28 +185,7 @@ undefined
 
 <p>所以这也就是为什么 <code>weakMap</code> 和 <code>Map</code> 不一样，<code>weakMap</code> 里面的 keys 是不可遍历的，因为内部没有数组可以用来存这些 key，如果有，那么就有对 key 的引用了，这样就和 Map 一样了，会阻止浏览器的对 key 的 GC。</p>
 
-<h2>使用</h2>
-
-<p>那什么时候用它呢？</p>
-
-<p>“如果你需要在一个对象身上添加额外属性的时候，但是不希望修改原来的对象的时候，或者该对象根本不能被修改的时候但是你又希望在该对象身上添加一些属性的时候。“</p>
-
-<p>比如，我有一个对象，它是不可被修改的，只有一个 id，详情需要根据 id 去查，那么我们就可以写一个 WeakMap 在这个对象身上存一些额外的数据（详情），如果这个对象被删除了，就会被浏览器 GC 掉，也不用担心内存泄漏。</p>
-
-<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">person</span> <span class="syntax-all syntax-keyword">=</span> {
-  <span class="syntax-all syntax-string">id</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;123456&quot;</span>,
-};
-
-<span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">freeze</span>(<span class="syntax-all syntax-parameter">person</span>); <span class="syntax-all syntax-comment">// 属性直接改不掉
-</span>
-<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">weakMap</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">WeakMap</span>();
-<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">person</span>, { <span class="syntax-all syntax-string">name</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span>, <span class="syntax-all syntax-string">phone</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;12345678&quot;</span> });
-<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">person</span>)); <span class="syntax-all syntax-comment">// Object { name: &quot;cary&quot;, phone: &quot;12345678&quot; }
-</span><span class="syntax-all syntax-parameter">person</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
-<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">person</span>)); <span class="syntax-all syntax-comment">// undefined
-</span></code></pre>
-
-<h2>Polyfill</h2>
+<h3>WeakMap</h3>
 
 <p>一开始想的时候，觉得是行不通的，毕竟 weakMap 要存 KVP 的话，那就会阻止浏览器 GC 了。</p>
 
@@ -297,6 +278,50 @@ undefined
 
 <p>当然这也有个问题，就是这个只能模拟 key 被 GC 的时候，对应的 value 也被 GC 的行为，模拟不了 weakMap 本身被 GC 的时候，那些 key 被 GC的行为。</p>
 
+<h2>区别</h2>
+
+<p>可以看出，<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">WeakMap</a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map">Map</a> 最重要的一个区别就是垃圾回收(GC) 了。</p>
+
+<p>所以从因为 WeakMap 是不可遍历的，所以 WeakMap 身上和遍历相关的所有属性和方法都没有。</p>
+
+<h2>使用</h2>
+
+<h3>什么时候使用 Object，什么时候使用 Map 呢？</h3>
+
+<p>Map 和 Object 的<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map#objects_vs._maps">区别</a>，最不一样的有两点，其他的或多或少都可以写 utils 来实现，</p>
+
+<ol>
+	<li>Map 的 key 可以是任何类型的，而 Object 只能是 string 或者 Symbol，然后 WeakMap 的话，只能是 object。</li>
+	<li>Map 的 key 是有序的（由插入顺序决定），Object 的是<a href="https://stackoverflow.com/a/5525820">无序</a>的。</li>
+</ol>
+
+<p>正常情况下看个人喜好使用即可，如果对 key 的类型或者 key 的插入顺序有要求，那么可以考虑 Map。</p>
+
+<h3>什么时候用 WeakMap 呢？</h3>
+
+<p>“如果你需要在一个对象身上添加额外属性的时候，但是不希望修改原来的对象的时候，或者该对象根本不能被修改的时候但是你又希望在该对象身上添加一些属性的时候。“</p>
+
+<p>比如，我有一个对象，它是不可被修改的，只有一个 id，详情需要根据 id 去查，那么我们就可以写一个 WeakMap 在这个对象身上存一些额外的数据（详情），如果这个对象被删除了，就会被浏览器 GC 掉，也不用担心内存泄漏。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">person</span> <span class="syntax-all syntax-keyword">=</span> {
+  <span class="syntax-all syntax-string">id</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;123456&quot;</span>,
+};
+
+<span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">freeze</span>(<span class="syntax-all syntax-parameter">person</span>); <span class="syntax-all syntax-comment">// 属性直接改不掉
+</span>
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">weakMap</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">WeakMap</span>();
+<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">person</span>, { <span class="syntax-all syntax-string">name</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span>, <span class="syntax-all syntax-string">phone</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;12345678&quot;</span> });
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">person</span>)); <span class="syntax-all syntax-comment">// Object { name: &quot;cary&quot;, phone: &quot;12345678&quot; }
+</span><span class="syntax-all syntax-parameter">person</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">person</span>)); <span class="syntax-all syntax-comment">// undefined
+</span></code></pre>
+
+<h2>题外话</h2>
+
+<p>WeakSet 和 Set 的区别也同 WeakMap 和 Map 的区别一样，Weak 的都不能遍历，所以相对于 Strong（Set/Map）的少了遍历相关的方法和属性。</p>
+
+<p>不过感觉 WeakSet 没什么使用场景啊，官方就给了个用来<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet#use_case_detecting_circular_references">检查循环依赖</a>的用例。</p>
+
 <h2>参考</h2>
 
 <ol>
@@ -309,6 +334,7 @@ undefined
 	<li><a href="https://www.zhihu.com/question/62335874/answer/197299309">babel 如何poly出了weakmap？</a></li>
 	<li><a href="https://github.com/zloirock/core-js/blob/master/packages/core-js/internals/collection-weak.js">WeakMap polyfill</a></li>
 	<li><a href="https://v8.dev/blog/trash-talk">Trash talk: the Orinoco garbage collector - official document</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet">WeakSet</a></li>
 </ol>
 
 </body>
