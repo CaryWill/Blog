@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>手写 WeakMap</title>
+	</head>
+<body>
+<h1>手写 WeakMap</h1>
+
+<p><strong>2020.06.28</strong></p>
+
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">WeakMap</a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map">Map</a> 最重要的一个区别就是垃圾回收(GC) 了。</p>
+
+<h2>区别</h2>
+
+<p>Map 的<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap#why_weakmap">实现</a>可以简单利用两个数组来实现，一个用来存 keys，一个用来存 values，当你要设置值的时候，你再 push 那个 key 到 keys 数组的同时，push key 对应的 value 到 values 这个数组，那么当你要获取一个 key 的值的时候，从 keys 数组中找到对应的 key 的 index，然后拿着这个 index 取 values 数组中取就可以了。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">MyMap</span>() {
+  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">keys</span> <span class="syntax-all syntax-keyword">=</span> [];
+  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">values</span> <span class="syntax-all syntax-keyword">=</span> [];
+
+  <span class="syntax-all syntax-comment">// O(n)
+</span>  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">set</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">k</span>, <span class="syntax-all syntax-parameter">v</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">keys</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">k</span>);
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">values</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">v</span>);
+  };
+
+  <span class="syntax-all syntax-comment">// O(n)
+</span>  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">get</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">k</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">keys</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">findIndex</span>((<span class="syntax-all syntax-parameter">v</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">v</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">k</span>);
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">values</span>[<span class="syntax-all syntax-parameter">index</span>];
+  };
+
+  <span class="syntax-all syntax-keyword">...</span>
+}</code></pre>
+
+<p>不过这样就会有一个问题，就是可能会造成内存泄漏。</p>
+
+<p>如果我们有一个对象 <code>const b = new Object()</code>，和一个字面量 <code> Array(5*1024*1024)</code>，我们用 Map 设置一个 KVP，然后手动 GC，你会发现，不生效，原因就是，我们的 Map 实例内部的 keys 数组有一个对 b 这个对象的引用，这就导致我们的 Map 实例不会被 GC，从而导致我们的 Map 实例里面的 values 数据也不会被 GC，因为这两个值都是 Map 实例的属性。</p>
+
+<p>我们参考阮一峰老师的 <a href="https://www.ruanyifeng.com/blog/2017/04/memory-leak.html#comment-text">这篇教程</a> 来一起测试下，先在命令行跑下 <code>node --expose-gc</code> 命令来进入 node 命令行并允许手动 GC，然后跟着下面一步一步走，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 手动执行一次垃圾回收，保证获取的内存使用状态准确
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">global</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">gc</span>(); 
+<span class="syntax-all syntax-constant">undefined</span>
+
+<span class="syntax-all syntax-comment">// 查看内存占用的初始状态，heapUsed 为 4M 左右
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">memoryUsage</span>();
+{
+  <span class="syntax-all syntax-string">rss</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">32342016</span>,
+  <span class="syntax-all syntax-string">heapTotal</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">5701632</span>,
+  <span class="syntax-all syntax-string">heapUsed</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">4022016</span>,
+  <span class="syntax-all syntax-string">external</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">932211</span>,
+  <span class="syntax-all syntax-string">arrayBuffers</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">10073</span>
+}
+<span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">map</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Map</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+<span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">b</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Object</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+<span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">global</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">gc</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+
+<span class="syntax-all syntax-comment">// 此时，heapUsed 仍然为 4M 左右
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">memoryUsage</span>(); 
+{
+  <span class="syntax-all syntax-string">rss</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">33603584</span>,
+  <span class="syntax-all syntax-string">heapTotal</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">6242304</span>,
+  <span class="syntax-all syntax-string">heapUsed</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">4211664</span>,
+  <span class="syntax-all syntax-string">external</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">932252</span>,
+  <span class="syntax-all syntax-string">arrayBuffers</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">10074</span>
+}
+
+<span class="syntax-all syntax-comment">// 在 Map 中添加一个键值对，
+</span><span class="syntax-all syntax-comment">// 键名为对象 b，键值为一个 5*1024*1024 的数组  
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-parameter">map</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">b</span>, <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Array</span>(<span class="syntax-all syntax-constant">5</span><span class="syntax-all syntax-keyword">*</span><span class="syntax-all syntax-constant">1024</span><span class="syntax-all syntax-keyword">*</span><span class="syntax-all syntax-constant">1024</span>));
+<span class="syntax-all syntax-constant">Map</span>(<span class="syntax-all syntax-constant">1</span>) { {} <span class="syntax-all syntax-keyword">=&gt;</span> [ <span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-constant">5242880</span> <span class="syntax-all syntax-parameter">empty</span> <span class="syntax-all syntax-parameter">items</span><span class="syntax-all syntax-keyword">&gt;</span> ] }
+
+<span class="syntax-all syntax-comment">// 手动执行一次垃圾回收
+</span><span class="syntax-all syntax-keyword">&gt;</span>  <span class="syntax-all syntax-constant">global</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">gc</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+
+<span class="syntax-all syntax-comment">// 此时，heapUsed 为 46M 左右
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">memoryUsage</span>(); 
+{
+  <span class="syntax-all syntax-string">rss</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">75677696</span>,
+  <span class="syntax-all syntax-string">heapTotal</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">48201728</span>,
+  <span class="syntax-all syntax-string">heapUsed</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">46145800</span>,
+  <span class="syntax-all syntax-string">external</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">932252</span>,
+  <span class="syntax-all syntax-string">arrayBuffers</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">10074</span>
+}
+
+<span class="syntax-all syntax-comment">// 解除对象 b 的引用 
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-parameter">b</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+<span class="syntax-all syntax-constant">null</span>
+
+<span class="syntax-all syntax-comment">// 再次执行垃圾回收
+</span><span class="syntax-all syntax-keyword">&gt;</span>  <span class="syntax-all syntax-constant">global</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">gc</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+
+<span class="syntax-all syntax-comment">// 解除 b 的引用以后，heapUsed 还是 46M 左右
+</span><span class="syntax-all syntax-comment">// 说明 Map 中的那个长度为 5*1024*1024 的数组还在
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">memoryUsage</span>(); 
+{
+  <span class="syntax-all syntax-string">rss</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">75382784</span>,
+  <span class="syntax-all syntax-string">heapTotal</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">47677440</span>,
+  <span class="syntax-all syntax-string">heapUsed</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">45962752</span>,
+  <span class="syntax-all syntax-string">external</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">932252</span>,
+  <span class="syntax-all syntax-string">arrayBuffers</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">10074</span>
+}</code></pre>
+
+<p>而 WeakMap，字如其名，<code>hold &quot;weak&quot; references to key objects</code>，就是 key 是 weak 的，当作为 key 的 object 被回收，这个 key 就真的被回收了，WeakMap 也不会再引用这个 object 了，也走下测试，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 手动执行一次垃圾回收，保证获取的内存使用状态准确
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">global</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">gc</span>(); 
+<span class="syntax-all syntax-constant">undefined</span>
+<span class="syntax-all syntax-comment">// 查看内存占用的初始状态，heapUsed 为 4M 左右
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">memoryUsage</span>(); 
+{
+  <span class="syntax-all syntax-string">rss</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">32161792</span>,
+  <span class="syntax-all syntax-string">heapTotal</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">5439488</span>,
+  <span class="syntax-all syntax-string">heapUsed</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">3944728</span>,
+  <span class="syntax-all syntax-string">external</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">932212</span>,
+  <span class="syntax-all syntax-string">arrayBuffers</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">10074</span>
+}
+<span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">wm</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">WeakMap</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+<span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">b</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Object</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+<span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">global</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">gc</span>();
+<span class="syntax-all syntax-constant">undefined</span>
+
+<span class="syntax-all syntax-comment">// 此时，heapUsed 仍然为 4M 左右
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">memoryUsage</span>(); 
+{
+  <span class="syntax-all syntax-string">rss</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">27246592</span>,
+  <span class="syntax-all syntax-string">heapTotal</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">5718016</span>,
+  <span class="syntax-all syntax-string">heapUsed</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">4029120</span>,
+  <span class="syntax-all syntax-string">external</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">932265</span>,
+  <span class="syntax-all syntax-string">arrayBuffers</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">10087</span>
+}
+
+<span class="syntax-all syntax-comment">// 在 WeakMap 中添加一个键值对，
+</span><span class="syntax-all syntax-comment">// 键名为对象 b，键值为一个 5*1024*1024 的数组  
+</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-parameter">wm</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">b</span>, <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Array</span>(<span class="syntax-all syntax-constant">5</span><span class="syntax-all syntax-keyword">*</span><span class="syntax-all syntax-constant">1024</span><span class="syntax-all syntax-keyword">*</span><span class="syntax-all syntax-constant">1024</span>));
+<span class="syntax-all syntax-constant">WeakMap</span> { &lt;<span class="syntax-all syntax-tag">items</span> <span class="syntax-all syntax-entity">unknown</span>&gt; }
+
+// 手动执行一次垃圾回收
+&gt; global.gc();
+undefined
+
+// 此时，heapUsed 为 46M 左右
+&gt; process.memoryUsage(); 
+{
+  <span class="syntax-all syntax-parameter">rss</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">69730304</span>,
+  <span class="syntax-all syntax-parameter">heapTotal</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">48988160</span>,
+  <span class="syntax-all syntax-parameter">heapUsed</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">46091144</span>,
+  <span class="syntax-all syntax-parameter">external</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">932252</span>,
+  <span class="syntax-all syntax-parameter">arrayBuffers</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">10074</span>
+}
+
+// 解除对象 b 的引用  
+&gt;  b = null;
+null
+
+// 再次执行垃圾回收
+&gt; global.gc();
+undefined
+
+// 解除 b 的引用以后，heapUsed 变回 4M 左右
+// 说明 WeakMap 中的那个长度为 5*1024*1024 的数组被销毁了
+&gt; process.memoryUsage(); 
+{
+  <span class="syntax-all syntax-parameter">rss</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">27721728</span>,
+  <span class="syntax-all syntax-parameter">heapTotal</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">5718016</span>,
+  <span class="syntax-all syntax-parameter">heapUsed</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">3987144</span>,
+  <span class="syntax-all syntax-parameter">external</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">932252</span>,
+  <span class="syntax-all syntax-parameter">arrayBuffers</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">10074</span>
+}
+// wm 对象还是在的，没有被 GC 了，只是 b 之前引用的对象被 GC 了
+// 如果你希望 wm 也被 GC，那么需要 `wm = null;` 才行</code></pre>
+
+<p>所以这也就是为什么 <code>weakMap</code> 和 <code>Map</code> 不一样，<code>weakMap</code> 里面的 keys 是不可遍历的，因为内部没有数组可以用来存这些 key，如果有，那么就有对 key 的引用了，这样就和 Map 一样了，会阻止浏览器的对 key 的 GC。</p>
+
+<h2>使用</h2>
+
+<p>那什么时候用它呢？</p>
+
+<p>“如果你需要在一个对象身上添加额外属性的时候，但是不希望修改原来的对象的时候，或者该对象根本不能被修改的时候但是你又希望在该对象身上添加一些属性的时候。“</p>
+
+<p>比如，我有一个对象，它是不可被修改的，只有一个 id，详情需要根据 id 去查，那么我们就可以写一个 WeakMap 在这个对象身上存一些额外的数据（详情），如果这个对象被删除了，就会被浏览器 GC 掉，也不用担心内存泄漏。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">person</span> <span class="syntax-all syntax-keyword">=</span> {
+  <span class="syntax-all syntax-string">id</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;123456&quot;</span>,
+};
+
+<span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">freeze</span>(<span class="syntax-all syntax-parameter">person</span>); <span class="syntax-all syntax-comment">// 属性直接改不掉
+</span>
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">weakMap</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">WeakMap</span>();
+<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">set</span>(<span class="syntax-all syntax-parameter">person</span>, { <span class="syntax-all syntax-string">name</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span>, <span class="syntax-all syntax-string">phone</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;12345678&quot;</span> });
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">person</span>)); <span class="syntax-all syntax-comment">// Object { name: &quot;cary&quot;, phone: &quot;12345678&quot; }
+</span><span class="syntax-all syntax-parameter">person</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">weakMap</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-parameter">person</span>)); <span class="syntax-all syntax-comment">// undefined
+</span></code></pre>
+
+<h2>Polyfill</h2>
+
+<p>一开始想的时候，觉得是行不通的，毕竟 weakMap 要存 KVP 的话，那就会阻止浏览器 GC 了。</p>
+
+<figure><img src="15660446075887.jpeg"/></figure>
+
+<p>但是搜了下，发现是可以实现，只是实现的不完全，比如 <a href="https://www.zhihu.com/question/62335874">这一种</a>，着眼点放在了 key 本身，而不是 weakMap 上，妙啊！</p>
+
+<blockquote>
+<p>在 key 对象上增加一个 non-enumerable 属性，指向 internal weak object ，把 value 放在里面。</p>
+</blockquote>
+
+<p>来看代码（如果 key 本身是只读的，还得处理下），</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">MyWeakMap</span>() {
+  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">uniqueKey</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">Symbol</span>(<span class="syntax-all syntax-string">&quot;foo&quot;</span>);
+
+  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">set</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">k</span>, <span class="syntax-all syntax-parameter">v</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-parameter">k</span>[<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">uniqueKey</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">v</span>;
+  };
+
+  <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">get</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">k</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">k</span>[<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">uniqueKey</span>];
+  };
+}</code></pre>
+
+<p>我们的目标是，当作为 key 的对象被 GC 了，那就真的 GC 了，weakMap 不会有额外的引用这个 key 导致 GC 失败，所以，上面的思路就是既然如此，那么我的 weakMap 不用来存东西，直接在 key 本身上存不就行了，读写都在 key 上，当 key 被 GC，因为 weakMap 本来就没有做什么，所以 key 就真的直接被 GC 了。</p>
+
+<p>跑下测试看下，</p>
+
+<pre><code>&gt; function MyWeakMap() {
+...   this.uniqueKey = Symbol(&quot;foo&quot;);
+... 
+...   this.set = (k, v) =&gt; {
+...     k[this.uniqueKey] = v;
+...   };
+... 
+...   this.get = (k) =&gt; {
+...     return k[this.uniqueKey];
+...   };
+... }
+undefined
+&gt; global.gc()
+undefined
+&gt; process.memoryUsage(); 
+{
+  rss: 36241408,
+  heapTotal: 5980160,
+  heapUsed: 4267632,
+  external: 932212,
+  arrayBuffers: 10074
+}
+&gt; let wm = new MyWeakMap();
+undefined
+&gt; let b = new Object();
+undefined
+&gt; global.gc();
+undefined
+&gt; process.memoryUsage(); 
+{
+  rss: 36700160,
+  heapTotal: 5980160,
+  heapUsed: 4440264,
+  external: 932252,
+  arrayBuffers: 10074
+}
+&gt; wm.set(b, new Array(5*1024*1024));
+undefined
+&gt; global.gc();
+undefined
+&gt; process.memoryUsage(); 
+{
+  rss: 78725120,
+  heapTotal: 47939584,
+  heapUsed: 46021296,
+  external: 932252,
+  arrayBuffers: 10074
+}
+&gt; b = null;
+null
+&gt; global.gc();
+undefined
+&gt; process.memoryUsage(); 
+{
+  rss: 36847616,
+  heapTotal: 5980160,
+  heapUsed: 4094912,
+  external: 932252,
+  arrayBuffers: 10074
+}</code></pre>
+
+<p>当然这也有个问题，就是这个只能模拟 key 被 GC 的时候，对应的 value 也被 GC 的行为，模拟不了 weakMap 本身被 GC 的时候，那些 key 被 GC的行为。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://github.com/ruanyf/es6tutorial/issues/362">如何观测 weakMap 内存是否被释放</a></li>
+	<li><a href="https://www.ruanyifeng.com/blog/2017/04/memory-leak.html">JavaScript 内存泄漏教程 - 阮一峰</a></li>
+	<li><a href="https://techtldr.com/simple-guide-to-finding-a-javascript-memory-leak-in-node-js/">Simple Guide to Finding a JavaScript Memory Leak in Node.js </a></li>
+	<li><a href="https://www.dynatrace.com/news/blog/understanding-garbage-collection-and-hunting-memory-leaks-in-node-js/">V8’s Memory Scheme </a></li>
+	<li><a href="https://blog.sessionstack.com/how-javascript-works-memory-management-how-to-handle-4-common-memory-leaks-3f28b94cfbec">GC algorithm </a></li>
+	<li><a href="https://javascript.plainenglish.io/weakmaps-illustrated-8169ce4764bb">When to use WeakMap?</a></li>
+	<li><a href="https://www.zhihu.com/question/62335874/answer/197299309">babel 如何poly出了weakmap？</a></li>
+	<li><a href="https://github.com/zloirock/core-js/blob/master/packages/core-js/internals/collection-weak.js">WeakMap polyfill</a></li>
+	<li><a href="https://v8.dev/blog/trash-talk">Trash talk: the Orinoco garbage collector - official document</a></li>
+</ol>
+
+</body>
+</html>
+
