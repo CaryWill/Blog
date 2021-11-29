@@ -86,6 +86,12 @@ var outline = [
         date: "July 10, 2021",
         href: "/src/2021/class-from-pre-es6/index.html",
       },
+      {
+        title: "手写 WeakMap",
+        desc: "WeakMap 和 GC 的关系",
+        date: "July 28, 2020",
+        href: "/src/2021/weakMap/index.html",
+      },
     ],
   },
 ];
