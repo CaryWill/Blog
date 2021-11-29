@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>分析如何手写一个 AMD loader</title>
+	</head>
+<body>
+<h1>分析如何手写一个 AMD loader</h1>
+
+<p><strong>2021.11.28</strong></p>
+
+<h2>为什么需要 AMD</h2>
+
+<p>首先说下为什么需要模块化编程，它带来了什么好处？</p>
+
+<ul>
+	<li>可复用</li>
+	<li>不会污染全局变量/函数</li>
+</ul>
+
+<p>所以，一个模块就涉及到两个东西，定义一个模块和引用其他模块。</p>
+
+<p>而现在的 web 开发<a href="https://requirejs.org/docs/whyamd.html#today">现状</a>，是使用一堆精心排好序的 <code>script</code> 脚本来指定模块和顺序并挂到 <code>window</code> 变量上，来看个<a href="https://github.com/jashkenas/backbone/blob/master/examples/todos/index.html">例子</a>，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">&lt;!</span><span class="syntax-all syntax-constant">DOCTYPE</span> <span class="syntax-all syntax-parameter">html</span><span class="syntax-all syntax-keyword">&gt;</span>
+&lt;<span class="syntax-all syntax-tag">html</span> <span class="syntax-all syntax-entity">lang</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;en&quot;</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">head</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">meta</span> <span class="syntax-all syntax-entity">charset</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;utf-8&quot;</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">title</span>&gt;Backbone.js Todos&lt;/<span class="syntax-all syntax-tag">title</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">link</span> <span class="syntax-all syntax-entity">rel</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;stylesheet&quot;</span> <span class="syntax-all syntax-entity">href</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;todos.css&quot;</span>/&gt;
+    &lt;/<span class="syntax-all syntax-entity">head</span>&gt;
+
+    &lt;<span class="syntax-all syntax-tag">body</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;../../test/vendor/json2.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;../../test/vendor/jquery.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;../../test/vendor/underscore.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;../../backbone.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;../backbone.localStorage.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;todos.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+    &lt;/<span class="syntax-all syntax-tag">body</span>&gt;
+
+    <span class="syntax-all syntax-error">&lt;</span>!-- (...) --&gt;
+
+&lt;/<span class="syntax-all syntax-entity">html</span>&gt;</code></pre>
+
+<p>你会发现几个问题，</p>
+
+<ol>
+	<li>项目大了管理依赖将变得十分困难。你需要手动给 <code>script</code> 脚本排序，因为后面的模块可能依赖前面的模块。</li>
+	<li>脚本的加载是同步的。这会造成性能问题，虽然 <code>script</code> 脚本支持异步加载（添加 async 或者 defer 属性），但这样就保证不了各个有依赖关系的模块的顺序了。</li>
+</ol>
+
+<p>而 AMD 的出现就是为了解决这些问题，你可以通过 <code>AMD</code> 提供的 <code>define</code> 和 <code>require</code> 函数来定义和执行模块，下面我们来具体看下这两个函数是怎么解决我们上面的问题的，</p>
+
+<h2>define</h2>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">define</span>(<span class="syntax-all syntax-parameter">name</span>, <span class="syntax-all syntax-parameter">deps</span>, <span class="syntax-all syntax-parameter">definition</span>) {}</code></pre>
+
+<p>定义一个模块（name），该模块可能会依赖其他模块（deps），只有当该模块所依赖的所有模块都被定义好了，这个模块才算被定义完成。</p>
+
+<p>怎么才算定义好了？我们这个 amd loader 内部会维护一张模块表（module map，一堆 KVP），key 为模块名，value 为模块的值（definition 函数调用后的值）。</p>
+
+<p>那模块表是怎么更新的？当一个模块被定义好了就会被写到这个模块表里。</p>
+
+<p>如果我们要定义的模块依赖其他模块，我们不会等待这些模块一个一个同步（sync）的执行完了才会完成这个模块的定义，相反，我们遇到没有定义的模块，会对这些依赖的模块设置一个监听（listener），后面遇到定义这些依赖模块的时候，当他们定义完成，会调用我们的监听，并将依赖模块的只传给我们的监听，在监听里面我们还会确认当前模块是否已经完成了依赖的加载，如果完成了，加载那我们就执行该模块的定义，完成对该模块的加载，并注册到内部的模块表里。</p>
+
+<h2>require</h2>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">require</span>(<span class="syntax-all syntax-parameter">deps</span>, <span class="syntax-all syntax-parameter">definition</span>) {}</code></pre>
+
+<p>执行一个模块，该模块可能会依赖其他模块（deps），遍历依赖模块，去模块表里查值，按顺序将查到的值加入到一个数组里去（arguments），这会最终做为模块的定义函数（definition）的入参，在查表的过程中，如果能查到依赖模块，那么直接加入到 arguments 数组去，如果没查到，那么设置对该模块的监听（因为有可能会有很多的模块依赖这个模块，所以对于这个模块监听可以是个数组），当该模块被定义加到表里的时候，它会遍历监听了这个模块的监听数组，并将模块的值作为入参依次调用监听数组里面的监听，当监听调用的时候，会更新我们的 arguments 数组，如果更新完了发现 arugments 数组的长度和执行模块的依赖模块的长度一致，说明依赖加载完全了，那么就可以调用执行模块的定义函数了（definition），执行完后，该模块也就被定义完成了，因为很多其他的模块也有可能会依赖我们这个模块，所以在定义完成后同样会调用监听该模块的监听，并将该模块的值作为入参调用监听。</p>
+
+<p>说了那么多应该还是很抽象的，所以来看下代码，后面回过头来继续看。</p>
+
+<h2>实现</h2>
+
+<p><a href="https://curiosity-driven.org/minimal-loader">原文</a>,<a href="https://github.com/CaryWill/Frontend/blob/master/minimal-amd-loader/my.js">修改</a>，可以用 http-server 来跑下这个<a href="https://github.com/CaryWill/Frontend/blob/master/minimal-amd-loader/index.html">页面</a>，打断点方便理解，</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<figure><img src="DraggedImage.e2b6fc483a7c45e98991eb088e91a69f%20copy.jpg"/></figure>
+
+<figure><img src="DraggedImage%20copy.jpg" alt="大致思路如图"/><figcaption>大致思路如图</figcaption></figure>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 参考 // https://curiosity-driven.org/minimal-loader
+</span><span class="syntax-all syntax-comment">// 手写一遍对 amd 的理解，并添加了注释
+</span>
+(<span class="syntax-all syntax-keyword">function</span> () {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">moduleMap</span> <span class="syntax-all syntax-keyword">=</span> {}; <span class="syntax-all syntax-comment">// 已经定义好的模块 // 也就是一个模块里所有依赖都以完成了定义的模块
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">listeners</span> <span class="syntax-all syntax-keyword">=</span> {};
+
+  <span class="syntax-all syntax-comment">/**
+</span><span class="syntax-all syntax-comment">   * @title 加载依赖或者设置对依赖的监听
+</span><span class="syntax-all syntax-comment">   */</span>
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">onLoadDependency</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">dep</span>, <span class="syntax-all syntax-parameter">listener</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">moduleMap</span>[<span class="syntax-all syntax-parameter">dep</span>]) {
+      <span class="syntax-all syntax-comment">// 模块已经被定义的话，那么直接更新我们的 _arguments 数组
+</span>      <span class="syntax-all syntax-variable">listener</span>(<span class="syntax-all syntax-parameter">moduleMap</span>[<span class="syntax-all syntax-parameter">dep</span>]);
+    } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">listeners</span>[<span class="syntax-all syntax-parameter">dep</span>]) {
+      <span class="syntax-all syntax-comment">// 已经有别的模块监听该依赖了
+</span>      <span class="syntax-all syntax-comment">// 所以这个依赖模块的监听是个数组
+</span>      <span class="syntax-all syntax-parameter">listeners</span>[<span class="syntax-all syntax-parameter">dep</span>]<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">listener</span>);
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-parameter">listeners</span>[<span class="syntax-all syntax-parameter">dep</span>] <span class="syntax-all syntax-keyword">=</span> [<span class="syntax-all syntax-parameter">listener</span>];
+    }
+  };
+
+  <span class="syntax-all syntax-comment">/**
+</span><span class="syntax-all syntax-comment">   * @desc 将模块加入到 moduleMap 中并调用其它依赖该模块的 listener 来更新其他依赖该模块的模块的 _arguments 值
+</span><span class="syntax-all syntax-comment">   * @param {*} name 模块名
+</span><span class="syntax-all syntax-comment">   * @param {*} module 模块(定义的返回值 definition())
+</span><span class="syntax-all syntax-comment">   */</span>
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">resolve</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">name</span>, <span class="syntax-all syntax-parameter">module</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-parameter">moduleMap</span>[<span class="syntax-all syntax-parameter">name</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">module</span>;
+    <span class="syntax-all syntax-comment">// 完成了该模块的定义之后 去处理监听了这个模块的监听
+</span>    <span class="syntax-all syntax-comment">// 每一个 listener 其实就是 updateValues 方法，用来更新其 listner 模块的 values
+</span>    <span class="syntax-all syntax-parameter">listeners</span>[<span class="syntax-all syntax-parameter">name</span>]<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">l</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-variable">l</span>(<span class="syntax-all syntax-constant">module</span>);
+    });
+    <span class="syntax-all syntax-parameter">listeners</span>[<span class="syntax-all syntax-parameter">name</span>]<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>;
+  };
+
+  <span class="syntax-all syntax-comment">/**
+</span><span class="syntax-all syntax-comment">   * @title 执行一个模块
+</span><span class="syntax-all syntax-comment">   * @param {*} deps 执行该定义依赖的模块
+</span><span class="syntax-all syntax-comment">   * @param {*} definition 定义在依赖模块加载（定义）完成后被调用
+</span><span class="syntax-all syntax-comment">   */</span>
+  <span class="syntax-all syntax-constant">window</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">require</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-parameter">deps</span>, <span class="syntax-all syntax-parameter">definition</span>) {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">deps</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>) {
+      <span class="syntax-all syntax-comment">// 去 module map 里拿对应的值, 构造一个 _arguments 的数组给 definition 函数
+</span>      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">_arguments</span> <span class="syntax-all syntax-keyword">=</span> [];
+      <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">depsLoaded</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>;
+      <span class="syntax-all syntax-parameter">deps</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">dep</span>, <span class="syntax-all syntax-parameter">index</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+        <span class="syntax-all syntax-comment">// 更新 _arguments 的值，这个值最终会被我们的 definition 函数所消费
+</span>        <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">updateArguments</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">v</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+          <span class="syntax-all syntax-parameter">_arguments</span>[<span class="syntax-all syntax-parameter">index</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">v</span>;
+          <span class="syntax-all syntax-parameter">depsLoaded</span><span class="syntax-all syntax-keyword">++</span>;
+          <span class="syntax-all syntax-comment">// 当所有的 deps 都加载完成的时候，按照 deps 里 dep 的顺序，构造一个 _arguments 数组，每一项都是 dep 对应的值，也就是每一个模块的 definition()
+</span>          <span class="syntax-all syntax-comment">// 然后 definition 函数会被调用 _arguements 作为入参被消费（注意，数组要展开）
+</span>          <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">depsLoaded</span> <span class="syntax-all syntax-keyword">&gt;=</span> <span class="syntax-all syntax-parameter">deps</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span>) {
+            <span class="syntax-all syntax-variable">definition</span>(<span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">_arguments</span>);
+          }
+        };
+        <span class="syntax-all syntax-comment">// 设置对 dep 的监听
+</span>        <span class="syntax-all syntax-comment">// 如果发现 dep 已完成加载(加载完成的能在 module map 里找到)，那么直接更新我们的 _arguements
+</span>        <span class="syntax-all syntax-comment">// 如果发现 dep 还没加载完成，那么设置对 dep 的监听，当 dep 加载完成，会调用我们的 updateArugments 方法来更新我们的 _arguments
+</span>        <span class="syntax-all syntax-variable">onLoadDependency</span>(<span class="syntax-all syntax-parameter">dep</span>, <span class="syntax-all syntax-parameter">updateArguments</span>);
+      });
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-variable">definition</span>([]);
+    }
+  };
+
+  <span class="syntax-all syntax-comment">/**
+</span><span class="syntax-all syntax-comment">   * @title 定义一个模块
+</span><span class="syntax-all syntax-comment">   * @desc 和 require 函数功能一样，但是 define 函数会在依赖模块定义完成后将该模块加入到 moduleMap 中去，表示该模块被定义了
+</span><span class="syntax-all syntax-comment">   * @param {*} name 模块名
+</span><span class="syntax-all syntax-comment">   * @param {*} deps 该模块所依赖的模块
+</span><span class="syntax-all syntax-comment">   * @param {*} definition 该模块的定义
+</span><span class="syntax-all syntax-comment">   */</span>
+  <span class="syntax-all syntax-constant">window</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">define</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-parameter">name</span>, <span class="syntax-all syntax-parameter">deps</span>, <span class="syntax-all syntax-parameter">definition</span>) {
+    <span class="syntax-all syntax-constant">window</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">require</span>(<span class="syntax-all syntax-parameter">deps</span>, <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">args</span>) {
+      <span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-parameter">name</span>, <span class="syntax-all syntax-variable">definition</span>(<span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">args</span>));
+    });
+  };
+})();</code></pre>
+
+<p>define 和 require 主要的区别就是，define 会定义模块，require 不会，但是都会“设置对依赖模块的监听”是一样的，所以 define 复用了大部分的 require 的逻辑。</p>
+
+<p>手写过程中遇到的问题，因为 <a href="https://curiosity-driven.org/minimal-loader">原文</a> 里一开始写了 helper 函数，为了思路不被影响，所以一开始将所有的实现都写在了 <code>define</code> 函数里面，然后抽离到 <code>require</code> 函数里的时候，发现了 <code>resolve</code> 和 <code>onLoadDependency</code> 是需要抽离的。</p>
+
+<p>到此一个简单的 amd loader 就写好了。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://curiosity-driven.org/minimal-loader">minimal-amd-loader</a></li>
+	<li><a href="https://requirejs.org/docs/api.html#data-main">require function -requirejs</a></li>
+	<li><a href="https://requirejs.org/docs/api.html#define">define function - requirejs</a></li>
+	<li><a href="https://github.com/amdjs/amdjs-api/blob/master/AMD.md">What is AMD?</a></li>
+	<li><a href="https://javascript.ruanyifeng.com/tool/requirejs.html">RequireJS和AMD规范 - 阮一峰 </a></li>
+	<li><a href="https://github.com/amdjs/amdjs-api">AMD Spec</a></li>
+</ol>
+
+</body>
+</html>
+

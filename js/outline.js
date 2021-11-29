@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "手写一个 AMD loader",
+        desc: "web 前端是如何使用 amd loader 解决依赖管理的？",
+        date: "Nov 28, 2021",
+        href: "/src/2021/amd-loader/index.html",
+      },
+      {
         title: "BFC",
         desc: "什么是 BFC？以及 BFC 解决了什么问题？",
         date: "Nov 24, 2021",
