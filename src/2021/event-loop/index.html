@@ -1,78 +1,43 @@
-<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta charset="utf-8" />
-    <title>Event loop</title>
-  </head>
-  <body>
-    <h1>Event loop</h1>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Event loop</title>
+	</head>
+<body>
+<h1>Event loop</h1>
 
-    <p><strong>2021.09.30</strong></p>
+<p><strong>2021.09.30</strong></p>
 
-    <p>在讲解微任务前，先了解几个知识点，</p>
+<figure><img src="DraggedImage.tiff" alt="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop"/><figcaption>https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop</figcaption></figure>
 
-    <ol>
-      <li>
-        Execution stack。
+<p>JavaScript 是单线程的，一般发送的网络请求是异步的吧，但是网络请求也不会阻塞页面渲染，这又是怎么回事呢？</p>
 
-        <p>
-          因为 JavaScript 是单线程的，也就意味着它只有一个
-          <a
-            href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#stack"
-            >call stack</a
-          >
-          和 memory heap，也就意味着所有的代码都必须在这一个 call stack
-          执行，前面的代码执行完了才能执行后一段代码，就是说所有的代码执行都是同步的，如果想要实现异步执行的话，就要通过
-          event loop，也就是先将代码存到别处，等到一定时间再将代码放到我们的
-          call stack 上执行。
-        </p>
+<p>对 eventloop 就是为了解决异步编程而出现的模型。JavaScript 的运行时包含3个概念，</p>
 
-        <p>
-          一个 stack 由一堆 frames 组成，一个函数的调用会在 stack 上创建一个
-          frame，一个函数的 return 会销毁调用时创建的 frame。当 stack
-          为空的时候，浏览器才会将 event loop
-          里面的宏任务和微任务队列里面的任务（Job）按顺序拿出来放到 stack
-          上执行。
-        </p>
-      </li>
-      <li>
-        Jobs。
+<ol>
+	<li>stack
 
-        <p>Jobs 分为宏任务和微任务。</p>
+		<p>一个 stack 由一堆 frames 组成，一个函数的调用会在 stack 上创建一个 frame，一个函数的 return 会销毁调用时创建的 frame。当所有的 frame 都被销毁的时候，stack 就空了。</p></li>
+	<li>heap
 
-        <p>
-          宏任务在 ecma
-          <a
-            href="http://262.ecma-international.org/6.0/#sec-jobs-and-job-queues"
-            >规范</a
-          >里面叫做 <em>ScriptJobs</em>，微任务叫做
-          <em>PromiseJobs</em>。微任务会在 stack
-          为空的时候先执行，而且是等到所有的微任务执行完毕后才会执行下一个宏任务。微任务执行的时候还可以往微任务队列里面加入加入新的微任务，这些微任务包括新加的微任务执行完才会执行下一个宏任务。
-        </p>
-      </li>
-      <li>
-        Event loop。
+		<p>JS 对象就被分配在这一块内存区。</p></li>
+	<li>queue（macro task queue &amp; micro task queue）
 
-        <p>
-          它负责异步逻辑的实现。Event loop
-          里有两个任务队列，一个是宏任务队列，一个是微任务队列。
-        </p>
-      </li>
-    </ol>
+		<p>由一堆待处理的异步消息（task/message）组成，而消息其实分为两种，宏任务和微任务，对应的也有两个 queue，micro task queue 和 macro task queue。setTimeout，event listener 等会作为宏任务被 enqueue 到这个 macro task queue 去， promise 会作为微任务被 enqueue 到 micro task queue。</p>
 
-    <p>
-      参考这个<a
-        href="https://stackoverflow.com/questions/55676922/javascript-promises-the-event-loop-and-the-job-queue%20"
-        >例子</a
-      >写了个
-      <a href="https://codesandbox.io/s/micro-macro-task-example-bgs7i">demo</a>
-      用来解释，这里不会涉及到过多的 promise 相关的知识点，你只需知道 promise
-      会用 event loop 里的微任务队列来执行
-      <code>.then</code> 注册的回调函数就可以了，
-    </p>
+		<p>当 stack 为空的时候，event loop 会先从 macro task queue 里 dequeue 一个消息，并调用，调用会在 stack 上生成一堆 frame，等待 stack 又变空的时候，event loop 会在 dequeue 下一个 message 之前，先会清空 microtask queue（dequeue 一个，到 stack 上执行一个，等 stack 为空再去 check micro task queue，有的话再 dequeue，执行，直到 micro task queue 被清空），清空后 event loop 才会继续 dequeue 下一个 macrotask queue，依次往复）</p>
 
-    <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">foo</span>() {
+		<p>题外话：宏任务在 ecma <a href="http://262.ecma-international.org/6.0/#sec-jobs-and-job-queues">规范</a>里面叫做 <em>ScriptJobs</em>，微任务叫做 <em>PromiseJobs</em>。</p></li>
+</ol>
+
+<figure><img src="DraggedImage-1.tiff" alt="https://www.educative.io/edpresso/what-is-an-event-loop-in-javascript"/><figcaption>https://www.educative.io/edpresso/what-is-an-event-loop-in-javascript</figcaption></figure>
+
+<p>参考这个<a href="https://stackoverflow.com/questions/55676922/javascript-promises-the-event-loop-and-the-job-queue%20">例子</a>写了个 <a href="https://codesandbox.io/s/micro-macro-task-example-bgs7i">demo</a>，这里不会涉及到过多的 promise 相关的知识点，你只需知道 promise resolve 的时候，<code>.then</code> 注册的回调函数会作为微任务被 enqueue 到 micro task queue 去，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">foo</span>() {
     <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;foo&#39;</span>);
     <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Promise</span>(
         <span class="syntax-all syntax-keyword">function</span>(<span class="syntax-all syntax-parameter">resolve</span>, <span class="syntax-all syntax-parameter">reject</span>) {
@@ -89,215 +54,72 @@
 }
 <span class="syntax-all syntax-variable">foo</span>();</code></pre>
 
-    <p><strong>上面 foo 被调用的时候会发生什么？</strong></p>
+<p><strong>上面 foo 被调用的时候会发生什么？</strong></p>
 
-    <ul>
-      <li>
-        浏览器加载包含我们这段代码的脚本文件（一般就是 script tag）并将它加入到
-        ScriptJobs 队列。
+<ul>
+	<li>浏览器加载包含我们这段代码的脚本文件（一般就是 script tag）并将它加入到 ScriptJobs 队列。
 
-        <ul>
-          <li>
-            等到 stack 变空，event loop dequeue 我们刚才加入的 job 并开始跑这个
-            job。
-          </li>
-          <li>
-            我们这个 ScriptJob 定义了
-            <code>foo</code> 这个函数并执行了这个函数，执行
-            <code>foo</code> 的时候往 stack 上加了一帧。
-          </li>
-          <li>
-            在 <code>foo</code> 里面，你先调用了
-            <code>console.log</code> 函数，也就又往 stack 上加了一帧，现在 stack
-            上一共有两帧，等 <code>console.log</code> 执行完
-            <em>return</em> 的时候这一帧又从 stack 上被移除了，现在只有调用
-            <code>foo</code> 函数时创建的一帧了。
-          </li>
-          <li>
-            下一步，我们通过 <em>new</em> 创建一个 promise 实例， promise
-            的构造函数接受的入参是一个函数，我们称为 <em>executor</em>，
-            <code>function(resolve, reject){...}</code>
-            ，它又接受两个入参，都是用来 settle promise
-            的。在创建实例的时候会立刻调用
-            <em>executor</em> 函数，这里我们调用完会设置一个 5秒后 expire
-            的定时器，5秒后将 settle 这个 promise
-            实例。到目前为止我们还没有创建一个
-            <em>PromiseJobs</em>。(这里因为不知道 promise
-            的内部实现具体是怎么样的，所以不讨论 stack 和 frame 了）
-          </li>
-          <li>
-            <code>then</code> 往我们上一步创建好的 promise 身上添加了一个
-            fulfillment handler
-            <code>function(value){ console.log(value);}</code>。
-          </li>
-          <li>
-            这样我们的 <code>foo</code> 就执行完了，现在 stack 就变空了。这个
-            ScriptJobs 就执行完了。
-          </li>
-        </ul>
-      </li>
-      <li>
-        大约 5秒后我们的定时器 expired，浏览器往我们的
-        <em>ScriptJobs</em> 队列里面加了个 job 用来执行定时器的回调函数。
-      </li>
-      <li>
-        因为现在 stack 是空的，而且
-        <em>PromiseJobs</em> 队列也是空的，我们就可以执行下一个
-        <em>ScriptJobs</em> job 了，也就是我们上一步定时器 expired
-        后浏览器添加的 job。
-      </li>
-      <li>
-        Event loop 就 dequeue 了那个 job 然后开始跑那个 job。
+		<ul>
+			<li>等到 stack 变空，event loop dequeue 我们刚才加入的 job 并开始跑这个 job。</li>
+			<li>我们这个 ScriptJob 定义了 <code>foo</code> 这个函数并执行了这个函数，执行 <code>foo</code> 的时候往 stack 上加了一帧。</li>
+			<li>在 <code>foo</code> 里面，你先调用了 <code>console.log</code> 函数，也就又往 stack 上加了一帧，现在 stack 上一共有两帧，等 <code>console.log</code> 执行完 <em>return</em> 的时候这一帧又从 stack 上被移除了，现在只有调用 <code>foo</code> 函数时创建的一帧了。</li>
+			<li>下一步，我们通过 <em>new</em> 创建一个 promise 实例， promise 的构造函数接受的入参是一个函数，我们称为 <em>executor</em>， <code>function(resolve, reject){...}</code> ，它又接受两个入参，都是用来 settle promise 的。在创建实例的时候会立刻调用 <em>executor</em> 函数，这里我们调用完会设置一个 5秒后 expire 的定时器，5秒后将 settle 这个 promise 实例。到目前为止我们还没有创建一个 <em>PromiseJobs</em>。(这里因为不知道 promise 的内部实现具体是怎么样的，所以不讨论 stack 和 frame 了）</li>
+			<li><code>then</code> 往我们上一步创建好的 promise 身上添加了一个 fulfillment handler <code>function(value){ console.log(value);}</code>。</li>
+			<li>这样我们的 <code>foo</code> 就执行完了，现在 stack 就变空了。这个 ScriptJobs 就执行完了。</li>
+		</ul></li>
+	<li>大约 5秒后我们的定时器 expired，浏览器往我们的 <em>ScriptJobs</em> 队列里面加了个 job 用来执行定时器的回调函数。</li>
+	<li>因为现在 stack 是空的，而且 <em>PromiseJobs</em> 队列也是空的，我们就可以执行下一个 <em>ScriptJobs</em> job 了，也就是我们上一步定时器 expired 后浏览器添加的 job。</li>
+	<li>Event loop 就 dequeue 了那个 job 然后开始跑那个 job。
 
-        <ul>
-          <li>
-            定时器的那个 callback 执行后会 resolve 我们的 promise 实例，resolve
-            后 promise 会将我们一开始调用 <code>.then</code> 后往 promise
-            实例身上添加的 callback 一个个创建 <em>PromiseJobs</em> 往
-            <em>PromiseJobs</em> 队列中添加。
-          </li>
-          <li>
-            定时器的回调函数的那个
-            <em>ScriptJobs</em> 就执行完毕了。然后因为现在 stack
-            也是空的，所以就开始按照顺序执行 <em>PromiseJobs</em> 队列里的任务：
+		<ul>
+			<li>定时器的那个 callback 执行后会 resolve 我们的 promise 实例，resolve 后 promise 会将我们一开始调用 <code>.then</code> 后往 promise 实例身上添加的 callback 一个个创建 <em>PromiseJobs</em> 往 <em>PromiseJobs</em> 队列中添加。</li>
+			<li>定时器的回调函数的那个 <em>ScriptJobs</em> 就执行完毕了。然后因为现在 stack 也是空的，所以就开始按照顺序执行 <em>PromiseJobs</em> 队列里的任务：
 
-            <ul>
-              <li>
-                event loop dequeue 了 <em>PromiseJobs</em> 队列里面我们加入的
-                fulfillment handler 的这个 callback 的 job，调用了
-                <code>console.log</code>，这个
-                <em>PromiseJobs</em> 也就执行完毕了。
-              </li>
-            </ul>
-          </li>
-          <li>
-            然后 <em>PromiseJobs</em> 队列也空了，event loop 开始执行下一个
-            <em>ScriptJobs</em> job，但是现在
-            <em>ScriptJobs</em> 队列也是空的，所以就继续等待中。
-          </li>
-        </ul>
-      </li>
-    </ul>
+				<ul>
+					<li>event loop dequeue 了 <em>PromiseJobs</em> 队列里面我们加入的 fulfillment handler 的这个 callback 的 job，调用了 <code>console.log</code>，这个 <em>PromiseJobs</em> 也就执行完毕了。</li>
+				</ul></li>
+			<li>然后 <em>PromiseJobs</em> 队列也空了，event loop 开始执行下一个 <em>ScriptJobs</em> job，但是现在 <em>ScriptJobs</em> 队列也是空的，所以就继续等待中。</li>
+		</ul></li>
+</ul>
 
-    <p>所以最终打印出来的应该是，</p>
+<p>所以最终打印出来的应该是，</p>
 
-    <pre><code class="code-highlighted code-Console">foo
+<pre><code class="code-highlighted code-Console">foo
 RESOLVING // 大约五秒后</code></pre>
 
-    <p>
-      总结：<strong
-        >其实微任务和宏任务解释起来也比较简单，微任务就是优先级比较高的宏任务，需要在
-        stack 为空的时候，但是又在下一个宏任务前需要执行的任务。</strong
-      >
-    </p>
+<p>总结：<strong>其实微任务和宏任务解释起来也比较简单，微任务就是优先级比较高的宏任务，需要在 stack 为空的时候，但是又在下一个宏任务前需要执行的任务。</strong></p>
 
-    <hr />
+<hr />
 
-    <p>
-      学习的时候遇到的一个坑，之前看 MDN 上的
-      <a
-        href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide"
-      >
-        Microtask
-      </a>
-      文档的时候，发现有一个例子好像不对，<em
-        >dispatch 了一个 event 后，不是加到 ScriptJobs 队列里去的吗</em
-      >？然后自己还写了个
-      <a href="https://codesandbox.io/s/micro-task-usecase1-order-fwz3d">demo</a
-      >，不过最初 demo 写的有问题所以让自己愈发觉得 MDN
-      上文档这部分写的有问题，于是提了个
-      <a href="https://github.com/mdn/sprints/issues/4009">bug</a> 给
-      MDN，过了两个小时，觉得可能还是自己的问题，那么多人看怎么就自己觉得有问题，是不是自己的
-      demo
-      写的有问题，觉果发现还真的是，那么我理解上还是有问题，于是自己看了看，发现
-      <code>dispatchEvent</code>
-      <a
-        href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/dispatchEvent"
-        >这个方法</a
-      >竟然是同步执行的。。。 然后立马 close 了那个 issue （汗
-    </p>
+<p>学习的时候遇到的一个坑，之前看 MDN 上的 <a href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide"> Microtask </a> 文档的时候，发现有一个例子好像不对，<em>dispatch 了一个 event 后，不是加到 ScriptJobs 队列里去的吗</em>？然后自己还写了个 <a href="https://codesandbox.io/s/micro-task-usecase1-order-fwz3d">demo</a>，不过最初 demo 写的有问题所以让自己愈发觉得 MDN 上文档这部分写的有问题，于是提了个 <a href="https://github.com/mdn/sprints/issues/4009">bug</a> 给 MDN，过了两个小时，觉得可能还是自己的问题，那么多人看怎么就自己觉得有问题，是不是自己的 demo 写的有问题，觉果发现还真的是，那么我理解上还是有问题，于是自己看了看，发现 <code>dispatchEvent</code> <a href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/dispatchEvent">这个方法</a>竟然是同步执行的。。。 然后立马 close 了那个 issue （汗</p>
 
-    <figure>
-      <img
-        src="DraggedImage.png"
-        alt="这个应该是错的 我本来想 但发现自己错了..."
-      />
-      <figcaption>这个应该是错的 我本来想 但发现自己错了...</figcaption>
-    </figure>
+<figure><img src="DraggedImage.png" alt="这个应该是错的 我本来想 但发现自己错了..."/><figcaption>这个应该是错的 我本来想 但发现自己错了...</figcaption></figure>
 
-    <h2>其他</h2>
+<h2>其他</h2>
 
-    <p>
-      关于为什么要使用微任务呢，<a
-        href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide"
-        >官方的解释</a
-      >是，
-    </p>
+<p>关于为什么要使用微任务呢，<a href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide">官方的解释</a>是，</p>
 
-    <ol>
-      <li>Ensuring ordering on conditional use of promises</li>
-      <li>Batching operations</li>
-    </ol>
+<ol>
+	<li>Ensuring ordering on conditional use of promises</li>
+	<li>Batching operations</li>
+</ol>
 
-    <h2>参考</h2>
+<h2>参考</h2>
 
-    <ol>
-      <li>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide"
-          >Microtask guide - MDN</a
-        >
-      </li>
-      <li>
-        <a href="https://github.com/github/fetch/blob/master/fetch.js"
-          >fetch Polyfill use XHR - github</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#stack"
-          >stack, frame - MDN</a
-        >
-      </li>
-      <li>
-        <a href="https://stackoverflow.com/a/55677045/10190407">
-          javascript promises, the event loop, and the job queue -
-          stackoverflow</a
-        >
-      </li>
-      <li>
-        <a href="https://tc39.es/ecma262/#sec-jobs-and-job-queues"
-          >sec-jobs-and-job-queues - ecma</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new"
-        >
-          new operator
-        </a>
-      </li>
-      <li>
-        <a href="https://tc39.es/ecma262/#sec-runjobs">
-          Jobs and Host Operations to Enqueue Jobs - ecma
-        </a>
-      </li>
-      <li>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest"
-          >XMLHttpRequest</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/Events/Creating_and_triggering_events"
-        >
-          dispatchEvent
-        </a>
-      </li>
-    </ol>
-  </body>
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide">Microtask guide - MDN</a></li>
+	<li><a href="https://github.com/github/fetch/blob/master/fetch.js">fetch Polyfill use XHR - github</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#stack">stack, frame - MDN</a></li>
+	<li><a href="https://stackoverflow.com/a/55677045/10190407"> javascript promises, the event loop, and the job queue - stackoverflow</a></li>
+	<li><a href="https://tc39.es/ecma262/#sec-jobs-and-job-queues">sec-jobs-and-job-queues - ecma</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new"> new operator </a></li>
+	<li><a href="https://tc39.es/ecma262/#sec-runjobs"> Jobs and Host Operations to Enqueue Jobs - ecma </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest">XMLHttpRequest</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/Events/Creating_and_triggering_events"> dispatchEvent </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop"> Concurrency model and the event loop</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop#stack">callStack - MDN</a></li>
+</ol>
+
+</body>
 </html>
 
-
-<script src="/js/index.js" defer></script>
