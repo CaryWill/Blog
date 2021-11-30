@@ -173,6 +173,49 @@
 
 <p>到此一个简单的 amd loader 就写好了。</p>
 
+<p>感觉这种模式还挺有意思的，感觉好比我要写一篇周报，但我依赖我管的下面的人的周报，这样我就可以总结了，</p>
+
+<p>一种方式，主动的，我不时的去询问我下面的人，等他们写好了我在一个个的整理到我的周报去。</p>
+
+<p>另一种方式，被动的，对方写好会在我的周报上写上他那一部分的，每个人都这样，等待最后一个人写完，会通知我所有的人都写完了，这样我只要最终审阅一下就行了。</p>
+
+<p>也有点像前端轮询和后端主动推送消息的感觉。</p>
+
+<h2>应用</h2>
+
+<p>比如我们引了 requirejs 的 amd loader，我们可以写一个 react 组件的 app loader，只要给一个 CDN 地址就可以将你的组件渲染出来，<a href="https://codesandbox.io/s/amd-apploader-og1z5">demo</a>，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">React</span>, { <span class="syntax-all syntax-parameter">useEffect</span>, <span class="syntax-all syntax-parameter">useRef</span> } <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;react&quot;</span>;
+<span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-string">&quot;antd/dist/antd.css&quot;</span>;
+
+<span class="syntax-all syntax-keyword">export</span> <span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">Apploader</span>(<span class="syntax-all syntax-parameter">props</span>) {
+  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">url</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">props</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">ref</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">useRef</span>(<span class="syntax-all syntax-constant">null</span>);
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">app</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">btoa</span>(<span class="syntax-all syntax-parameter">url</span>); <span class="syntax-all syntax-comment">// 如果直接使用 url 作为 paths 的应用名的话 会报错
+</span>
+  <span class="syntax-all syntax-variable">useEffect</span>(() <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-constant">window</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">require</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">config</span>({
+      <span class="syntax-all syntax-string">paths</span><span class="syntax-all syntax-constant">:</span> {
+        <span class="syntax-all syntax-string">react</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;https://unpkg.com/react@17/umd/react.development&quot;</span>,
+        <span class="syntax-all syntax-string">&quot;react-dom&quot;</span>: <span class="syntax-all syntax-string">&quot;https://unpkg.com/react-dom@17/umd/react-dom.development&quot;</span>,
+        <span class="syntax-all syntax-string">antd</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;https://cdnjs.cloudflare.com/ajax/libs/antd/3.26.20/antd.min&quot;</span>,
+        <span class="syntax-all syntax-string">moment</span><span class="syntax-all syntax-constant">:</span>
+          <span class="syntax-all syntax-string">&quot;https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min&quot;</span>,
+        [<span class="syntax-all syntax-parameter">app</span>]: <span class="syntax-all syntax-parameter">url</span>
+      }
+    });
+    <span class="syntax-all syntax-constant">window</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">requirejs</span>([<span class="syntax-all syntax-string">&quot;react&quot;</span>, <span class="syntax-all syntax-string">&quot;react-dom&quot;</span>, <span class="syntax-all syntax-parameter">app</span>], <span class="syntax-all syntax-keyword">function</span> (
+      <span class="syntax-all syntax-parameter">React</span>,
+      <span class="syntax-all syntax-parameter">ReactDOM</span>,
+      <span class="syntax-all syntax-parameter">App</span>
+    ) {
+      <span class="syntax-all syntax-parameter">ReactDOM</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>(<span class="syntax-all syntax-parameter">React</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-parameter">App</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">default</span>), <span class="syntax-all syntax-parameter">ref</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">current</span>);
+    });
+  }, []);
+
+  <span class="syntax-all syntax-keyword">return</span> &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">ref</span><span class="syntax-all syntax-keyword">=</span>{<span class="syntax-all syntax-parameter">ref</span>}&gt;&lt;/<span class="syntax-all syntax-tag">div</span>&gt;;
+}</code></pre>
+
 <h2>参考</h2>
 
 <ol>
