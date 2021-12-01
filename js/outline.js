@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "Event delegation 设计模式",
+        desc: "你知道有时候为什么 React 里的 `e.stopPropgation()` 不生效吗？",
+        date: "Nov 30, 2021",
+        href: "/src/2021/amd-loader/index.html",
+      },
+      {
         title: "手写一个 AMD loader",
         desc: "web 前端是如何使用 amd loader 解决依赖管理的？",
         date: "Nov 28, 2021",
