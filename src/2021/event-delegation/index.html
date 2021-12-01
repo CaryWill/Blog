@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		
 		<title>Event delegation</title>
 	</head>
 <body>
@@ -120,19 +120,19 @@
   );
 &lt;/<span class="syntax-all syntax-tag">script</span>&gt;</code></pre>
 
-<figure><img src="DraggedImage.tiff"/></figure>
+<figure><img src="DraggedImage.png"/></figure>
 
 <p>两个框框都加了点击事件，点击事件都调用了 <code>e.stopPropagation()</code> 想要阻止冒泡，你觉得会发生什么？</p>
 
 <p>是不是觉得只会打印 “innerOnClick” ？可是两个打印都出来了，没想到吧，是不是很奇怪 ？？？</p>
 
-<figure><img src="DraggedImage-1.tiff"/></figure>
+<figure><img src="DraggedImage-1.png"/></figure>
 
 <p>为什么呢？这就和 React 的 <a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">event delegation</a> 实现有关了。</p>
 
 <p>React DOM 会在 <strong>document</strong> 上设置一个总的对应 event type 的单个 event listener，比如，<code>click</code> 事件的话，<code>document.addEventListener(&#39;click&#39;, eventHandler)</code>，这样来进行事件委托（event delegation），</p>
 
-<figure><img src="DraggedImage-2.tiff"/></figure>
+<figure><img src="DraggedImage-2.png"/></figure>
 
 <p>你可以看到，两个版本的 React DOM 分别往 <strong>document</strong> 上添加了一个 <code>click</code> 的 event handler（初始化 fiber tree 的时候，根据 fiber node 上的属性来创建对应 event type 的单个 event listener），两个框框也被加了一个（<code>noop</code> 函数，就是啥也不做的意思，这个其实是用来解决的 iOS Safari 的一个 <a href="https://github.com/facebook/react/issues/13635">bug</a> 用的，你就理解为 <strong>框框</strong> 本身并没有添加 <code>click</code> 的 event listener），</p>
 
@@ -189,7 +189,7 @@
 
 <p>我们将里面的蓝色框框所用的 React 16 的库替换为 React 17 的，外面的还是 React 16 的，逻辑不变，来看下 <a href="https://react-17-nested-tree-demo.netlify.app/">demo</a>，</p>
 
-<figure><img src="DraggedImage-3.tiff"/></figure>
+<figure><img src="DraggedImage-3.png"/></figure>
 
 <p><strong>现在只会打印最里面的了</strong>。WOW～</p>
 
@@ -223,3 +223,4 @@
 </body>
 </html>
 
+<script src="/js/index.js" defer></script>

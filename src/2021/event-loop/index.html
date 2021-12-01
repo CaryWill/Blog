@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		
 		<title>Event loop</title>
 	</head>
 <body>
@@ -11,7 +11,7 @@
 
 <p><strong>2021.09.30</strong></p>
 
-<figure><img src="DraggedImage.tiff" alt="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop"/><figcaption>https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop</figcaption></figure>
+<figure><img src="DraggedImage.png" alt="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop"/><figcaption>https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop</figcaption></figure>
 
 <p>JavaScript 是单线程的，一般发送的网络请求是异步的吧，但是网络请求也不会阻塞页面渲染，这又是怎么回事呢？</p>
 
@@ -33,7 +33,7 @@
 		<p>题外话：宏任务在 ecma <a href="http://262.ecma-international.org/6.0/#sec-jobs-and-job-queues">规范</a>里面叫做 <em>ScriptJobs</em>，微任务叫做 <em>PromiseJobs</em>。</p></li>
 </ol>
 
-<figure><img src="DraggedImage-1.tiff" alt="https://www.educative.io/edpresso/what-is-an-event-loop-in-javascript"/><figcaption>https://www.educative.io/edpresso/what-is-an-event-loop-in-javascript</figcaption></figure>
+<figure><img src="DraggedImage-1.png" alt="https://www.educative.io/edpresso/what-is-an-event-loop-in-javascript"/><figcaption>https://www.educative.io/edpresso/what-is-an-event-loop-in-javascript</figcaption></figure>
 
 <p>参考这个<a href="https://stackoverflow.com/questions/55676922/javascript-promises-the-event-loop-and-the-job-queue%20">例子</a>写了个 <a href="https://codesandbox.io/s/micro-macro-task-example-bgs7i">demo</a>，这里不会涉及到过多的 promise 相关的知识点，你只需知道 promise resolve 的时候，<code>.then</code> 注册的回调函数会作为微任务被 enqueue 到 micro task queue 去，</p>
 
@@ -123,3 +123,4 @@ RESOLVING // 大约五秒后</code></pre>
 </body>
 </html>
 
+<script src="/js/index.js" defer></script>
