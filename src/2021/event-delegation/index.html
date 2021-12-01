@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Event delegation</title>
+	</head>
+<body>
+<h1>Event delegation</h1>
+
+<p><strong>2021.11.30</strong></p>
+
+<h2>什么是 Event delegation</h2>
+
+<p>具体可以看下 <a href="https://davidwalsh.name/event-delegate">这篇文档</a>，文中举的简单的例子，比如你有一个 list，列表里面有 100 个 item，如何在点击 item 的时候，打印 item 的内容呢？</p>
+
+<p>你有两种解决办法，</p>
+
+<p>第一种：遍历 list 的时候，给每个 item 设置一个 <code>onClick</code> event listener ，这样就会设置 100 个 event listener，当你移除 item 的时候还需要手动移除该 item 的 event listener，添加 item 的时候，需要手动添加 event listener，😡</p>
+
+<p>第二种：直接在 ul 上直接加 <strong>一个</strong> <code>onClick</code> 事件就完了，当你点击 li，li 的 <code>onClick</code> 事件 bubble 到 ul 上，ul 直接从 event 里的 target 里获取 li 的引用再获取对应的属性即可（使用 <code>data-*</code> 属性也不错），这样就不用担心添加/移除 item 了，因为你的 listener 是挂在 ul 上的），🥳</p>
+
+<h2>谁在用</h2>
+
+<p><strong>React</strong></p>
+
+<p>React 从第一个版本就使用 <strong>event delegation</strong> 这种设计模式。</p>
+
+<blockquote>
+<p>React has been doing event delegation automatically since its first release. When a DOM event fires on the document, React figures out which component to call, and then the React event “bubbles” upwards through your components. But behind the scenes, the native event has already bubbled up to the document level, where React installs its event handlers. - <a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">react official doc</a></p>
+</blockquote>
+
+<p>就像我们一开始的例子，我们在 <strong>ul</strong> 上挂了个 <code>click</code> 的 event handler 来处理 <strong>li</strong> 的 <code>onclick</code> 事件，React （React 17 之前）则是在 <strong>document</strong> 上挂的对应的 event type 的 event listener。</p>
+
+<h3>React 16</h3>
+
+<p>在 React 17 之前，一直是将 event listener 挂在 <strong>document</strong> 上的，但是这样会导致一些问题，比如，<code>e.stopPropagation()</code> “有时”<a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">无效的问题</a>。</p>
+
+<p>就拿很早之前（4年前）atom editor 就遇到过 <a href="https://github.com/facebook/react/pull/8117">这个问题</a> 举个例子，这个是由于多版本的 react 嵌套导致的 <code>e.stopPropagation()</code> 无效，这里参考了这个问题里的测试用例，写了个 <a href="https://react-16-nest-react-16.netlify.app/">demo</a>，一起来看下，</p>
+
+<p>Demo 里是两个嵌套的 react dom tree，版本都是 16，一个是 16.13 一个是 16.14，</p>
+
+<pre><code class="code-highlighted code-html"><span class="syntax-all syntax-comment">&lt;!-- https://reactjs.org/docs/add-react-to-a-website.html --&gt;</span>
+<span class="syntax-all syntax-comment">&lt;!-- https://codesandbox.io/s/amd-apploader-og1z5?file=/src/Apploader.js --&gt;</span>
+<span class="syntax-all syntax-comment">&lt;!-- https://cdnjs.com/libraries/react-dom/16.13.0 --&gt;</span>
+
+<span class="syntax-all syntax-comment">&lt;!-- 这个是期望的版本 作者修改了代码 挂在 react root tree 上面了 而不是 document 上--&gt;</span>
+<span class="syntax-all syntax-comment">&lt;!-- http://fooo.fr/~vjeux/fb/vjeux-test/test-event-boundary.html  --&gt;</span>
+
+<span class="syntax-all syntax-comment">&lt;!-- NOTE: 测试两个 不同版本的 react 嵌套在一起的时候 stopPropgation 的 bug --&gt;</span>
+&lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span>=<span class="syntax-all syntax-string">&quot;./require.min.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+&lt;<span class="syntax-all syntax-tag">script</span>&gt;
+  <span class="syntax-all syntax-constant">window</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">require</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">config</span>({
+    <span class="syntax-all syntax-string">paths</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-string">react</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;../react16.14.development&quot;</span>,
+      <span class="syntax-all syntax-string">react2</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;./react.16.13.development&quot;</span>,
+      <span class="syntax-all syntax-string">&quot;react-dom&quot;</span>: <span class="syntax-all syntax-string">&quot;./react-dom16.14.development&quot;</span>,
+      <span class="syntax-all syntax-string">&quot;react-dom2&quot;</span>: <span class="syntax-all syntax-string">&quot;./react-dom16.13.development&quot;</span>,
+    },
+  });
+&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+&lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">id</span>=<span class="syntax-all syntax-string">&quot;root&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+&lt;<span class="syntax-all syntax-tag">script</span>&gt;
+  <span class="syntax-all syntax-constant">window</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">require</span>(
+    [<span class="syntax-all syntax-string">&quot;react&quot;</span>, <span class="syntax-all syntax-string">&quot;react-dom&quot;</span>, <span class="syntax-all syntax-string">&quot;react2&quot;</span>, <span class="syntax-all syntax-string">&quot;react-dom2&quot;</span>],
+    <span class="syntax-all syntax-keyword">function</span> (<span class="syntax-all syntax-parameter">React</span>, <span class="syntax-all syntax-parameter">ReactDOM</span>, <span class="syntax-all syntax-parameter">React2</span>, <span class="syntax-all syntax-parameter">ReactDOM2</span>) {
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">e</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">React</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">createElement</span>;
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">e2</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">React2</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">createElement</span>;
+
+	  <span class="syntax-all syntax-comment">// 蓝色（里面的）
+</span>      <span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">InnerComponent</span> <span class="syntax-all syntax-keyword">extends</span> <span class="syntax-all syntax-parameter">React2</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">Component</span> {
+        <span class="syntax-all syntax-entity">render</span>() {
+          <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-variable">e2</span>(
+            <span class="syntax-all syntax-string">&quot;div&quot;</span>,
+            {
+              <span class="syntax-all syntax-entity">onClick</span>: (<span class="syntax-all syntax-parameter">e</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+                <span class="syntax-all syntax-parameter">e</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stopPropagation</span>();
+                <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;innerOnClick&quot;</span>);
+              },
+              <span class="syntax-all syntax-string">style</span><span class="syntax-all syntax-constant">:</span> { <span class="syntax-all syntax-string">border</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;1px solid blue&quot;</span>, <span class="syntax-all syntax-string">padding</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">50</span> },
+            },
+            <span class="syntax-all syntax-parameter">React2</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-string">&quot;div&quot;</span>, {
+              <span class="syntax-all syntax-string">className</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;inner&quot;</span>,
+            })
+          );
+        }
+      }
+
+	  <span class="syntax-all syntax-comment">// 红色（外面的）
+</span>      <span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">OuterComponent</span> <span class="syntax-all syntax-keyword">extends</span> <span class="syntax-all syntax-parameter">React</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">Component</span> {
+        <span class="syntax-all syntax-parameter">componentDidMount</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">function</span> () {
+          <span class="syntax-all syntax-comment">// React 16.13 
+</span>          <span class="syntax-all syntax-parameter">ReactDOM2</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>(
+            <span class="syntax-all syntax-parameter">React2</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-parameter">InnerComponent</span>),
+            <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">refs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">inner</span>
+          );
+        };
+
+        <span class="syntax-all syntax-entity">render</span>() {
+          <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-variable">e</span>(
+            <span class="syntax-all syntax-string">&quot;div&quot;</span>,
+            {
+              <span class="syntax-all syntax-entity">onClick</span>: (<span class="syntax-all syntax-parameter">e</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+                <span class="syntax-all syntax-parameter">e</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stopPropagation</span>();
+                <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;outerOnClick&quot;</span>);
+              },
+              <span class="syntax-all syntax-string">style</span><span class="syntax-all syntax-constant">:</span> { <span class="syntax-all syntax-string">border</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;1px solid red&quot;</span>, <span class="syntax-all syntax-string">padding</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">20</span> },
+            },
+            <span class="syntax-all syntax-parameter">React</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-string">&quot;div&quot;</span>, {
+              <span class="syntax-all syntax-string">ref</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;inner&quot;</span>,
+              <span class="syntax-all syntax-string">className</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;outer&quot;</span>,
+            })
+          );
+        }
+      }
+
+      <span class="syntax-all syntax-parameter">ReactDOM</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>(<span class="syntax-all syntax-variable">e</span>(<span class="syntax-all syntax-parameter">OuterComponent</span>), <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getElementById</span>(<span class="syntax-all syntax-string">&quot;root&quot;</span>));
+    }
+  );
+&lt;/<span class="syntax-all syntax-tag">script</span>&gt;</code></pre>
+
+<figure><img src="DraggedImage.tiff"/></figure>
+
+<p>两个框框都加了点击事件，点击事件都调用了 <code>e.stopPropagation()</code> 想要阻止冒泡，你觉得会发生什么？</p>
+
+<p>是不是觉得只会打印 “innerOnClick” ？可是两个打印都出来了，没想到吧，是不是很奇怪 ？？？</p>
+
+<figure><img src="DraggedImage-1.tiff"/></figure>
+
+<p>为什么呢？这就和 React 的 <a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">event delegation</a> 实现有关了。</p>
+
+<p>React DOM 会在 <strong>document</strong> 上设置一个总的对应 event type 的单个 event listener，比如，<code>click</code> 事件的话，<code>document.addEventListener(&#39;click&#39;, eventHandler)</code>，这样来进行事件委托（event delegation），</p>
+
+<figure><img src="DraggedImage-2.tiff"/></figure>
+
+<p>你可以看到，两个版本的 React DOM 分别往 <strong>document</strong> 上添加了一个 <code>click</code> 的 event handler（初始化 fiber tree 的时候，根据 fiber node 上的属性来创建对应 event type 的单个 event listener），两个框框也被加了一个（<code>noop</code> 函数，就是啥也不做的意思，这个其实是用来解决的 iOS Safari 的一个 <a href="https://github.com/facebook/react/issues/13635">bug</a> 用的，你就理解为 <strong>框框</strong> 本身并没有添加 <code>click</code> 的 event listener），</p>
+
+<p>你会想，我们在写 React 的组件的时候不是会在组件上面写一个行内的 <code>onClick</code> 的 event listener 吗？</p>
+
+<p>是的，但是这个行内 <code>onClick</code> 不是这样用的。</p>
+
+<p>还记得我们说的 React 有一套自己的 <a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">event delegation</a> 机制吗？你的 <code>onClick</code> props 是不会直接在 DOM node 节点上直接创建 event listener 的，React DOM 会使用这个 props 属性利用 fiber tree 模拟出一个事件队列。</p>
+
+<p>整个流程是这样的，当你点击里面的蓝色框框的时候，触发了一个 <code>click</code> 事件，然后该事件（event）被一路往上 bubble，因为红色的框框也是在另一个 React DOM tree 里，所以红色的框框也没有点击事件（除了兼容用的 <code>noop</code> 的一个 click 事件），然后其他的 DOM node 节点上面也没有设置 click 的 event listener，最后bubble 到了 <strong>document</strong> 节点，因为红色的框框所在的 React DOM是先初始化的，而蓝色的是后面初始化的（因为在红色框框 mount 后才 mount 的），所以红色的框框会先在 <strong>document</strong> 上设置 event listener 的，所以红色框框的 React DOM 在 <strong>document</strong> 上设置的 click event listener 会先被调用，调用的时候，React DOM 会根据 <code>event</code> 的 <em>target</em> 属性获取 DOM node 节点引用，然后找到对应的 fiber node，再看上面有没有 <code>onClick</code> 的 props，有的话加入到内部待执行的 event handler queue（事件队列） 里去，然后再 traverse <em>target</em> 的 DOM node 节点的 parent DOM node 节点，对每一个 parent DOM node 依次找到其对应的 fiber node，然后看有没有 <code>onClick</code> props，有的话加入到事件队列，没有的话继续 traverse，直到到 React DOM root节点，这样就模拟出了原生 DOM 的 event 的 bubble 逻辑（capture 同理），然后挨个执行，如果有发现某个调用的 <code>onClick</code> event handler 有 <code>e.stopPropagation()</code> 逻辑的话，React DOM 会首先在 <em>native event</em> 上调用 <code>e.stopPropagation()</code>，然后将再在包了 <em>native event</em> 一层的 Synthetic Event（合成事件）上的 <em> isDefaultPrevented</em> 设为 <em>true</em>（ <code>this.isDefaultPrevented = functionThatReturnsTrue</code>），这样 React DOM 自己模拟的事件队列就可以根据这个属性来模拟浏览器的 <code>stopPropagation</code> 行为了，</p>
+
+<pre><code class="code-highlighted code-js">    <span class="syntax-all syntax-comment">//`onClick` 事件的 `e.stopPropagation()` 逻辑
+</span>	<span class="syntax-all syntax-entity">stopPropagation</span>: <span class="syntax-all syntax-keyword">function</span> () {
+      <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">event</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">nativeEvent</span>;
+
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">event</span>) {
+        <span class="syntax-all syntax-keyword">return</span>;
+      }
+
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">event</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stopPropagation</span>) {
+        <span class="syntax-all syntax-parameter">event</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stopPropagation</span>();
+      } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">event</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">cancelBubble</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&#39;unknown&#39;</span>) {
+        <span class="syntax-all syntax-parameter">event</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">cancelBubble</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">true</span>;
+      }
+
+      <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">isPropagationStopped</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">functionThatReturnsTrue</span>;
+    },</code></pre>
+
+<pre><code class="code-highlighted code-js">    <span class="syntax-all syntax-comment">// 遍历执行模拟出来的 bubble path 的 onclick 事件
+</span>	<span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">isArray</span>(<span class="syntax-all syntax-parameter">dispatchListeners</span>)) {
+      <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">i</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>; <span class="syntax-all syntax-parameter">i</span> <span class="syntax-all syntax-keyword">&lt;</span> <span class="syntax-all syntax-parameter">dispatchListeners</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span>; <span class="syntax-all syntax-parameter">i</span><span class="syntax-all syntax-keyword">++</span>) {
+        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">event</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">isPropagationStopped</span>()) {
+          <span class="syntax-all syntax-keyword">break</span>;
+        } <span class="syntax-all syntax-comment">// Listeners and Instances are two parallel arrays that are always in sync.
+</span>
+
+        <span class="syntax-all syntax-variable">executeDispatch</span>(<span class="syntax-all syntax-parameter">event</span>, <span class="syntax-all syntax-parameter">dispatchListeners</span>[<span class="syntax-all syntax-parameter">i</span>], <span class="syntax-all syntax-parameter">dispatchInstances</span>[<span class="syntax-all syntax-parameter">i</span>]);
+      }
+    } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">dispatchListeners</span>) {
+      <span class="syntax-all syntax-variable">executeDispatch</span>(<span class="syntax-all syntax-parameter">event</span>, <span class="syntax-all syntax-parameter">dispatchListeners</span>, <span class="syntax-all syntax-parameter">dispatchInstances</span>);
+    }</code></pre>
+
+<p>执行完了之后，蓝色的框框也同样和红色的框框走一遍流程，所以，蓝色的框框里的 <code>onclick</code> event handler 调用 <code>e.stopPropagation()</code> 不生效的原因是，红色框框在执行蓝色的模拟事件队列前就已经执行了。</p>
+
+<p>React 17 来了，解决了这个问题。</p>
+
+<h3>React 17</h3>
+
+<p>办法也很简单，就是在原来在 <strong> document</strong> 节点添加总的 event listener，现在在 <strong>react DOM root node</strong> 添加。</p>
+
+<p>这样可以解决问题吗？</p>
+
+<p>花五分钟想下。</p>
+
+<p>我们将里面的蓝色框框所用的 React 16 的库替换为 React 17 的，外面的还是 React 16 的，逻辑不变，来看下 <a href="https://react-17-nested-tree-demo.netlify.app/">demo</a>，</p>
+
+<figure><img src="DraggedImage-3.tiff"/></figure>
+
+<p><strong>现在只会打印最里面的了</strong>。WOW～</p>
+
+<p>来看下发生了什么。</p>
+
+<p>在内部的蓝色框框里，在点击后，首先蓝色框框的点击事件 bubble 到了蓝色框框的 React DOM root 节点，然后 React DOM root 节点的 <code>click</code> event handler 就被调用了，调用的时候开始模拟合成事件队列，然后执行，队列里的现在就一个 event handler，就是蓝色框框的，然后执行就触发了 <code>e.stopPropagation();</code>，这时，React DOM 先是调用了 <em>native event</em> 的 <code>e.stopPropagation();</code>，保证了 蓝色框框的 React DOM root 的 <em>native event </em>不会继续 bubble 上去了（所以就到不了红色框框了），然后将再在包了 <em>native event</em> 一层的 Synthetic Event（合成事件）上的 <em> isDefaultPrevented</em> 设为 <em>true</em>，这样内部的事件队列在这个 event handler 调用后，后面的也不会调用了（虽然现在就只有一个</p>
+
+<p>以上。</p>
+
+<hr />
+
+<p><strong>题外话</strong>：跑 demo 打断点看逻辑的时候，发现 Chrome 在打断点的时候和不打断点的时候跑的 <a href="https://react-16-nest-react-16.netlify.app/">React V16 nested demo</a> demo 竟然结果是不一样的。。。 Safari 到没事。。。</p>
+
+<h3>参考文献</h3>
+
+<ol>
+	<li><a href="https://javascript.info/bubbling-and-capturing">Bubbling and capturing</a></li>
+	<li><a href="https://www.w3.org/TR/DOM-Level-3-Events/#current-event-target">current event target</a></li>
+	<li><a href="https://www.w3.org/TR/DOM-Level-3-Events/#event-target">event target</a></li>
+	<li><a href="https://www.w3.org/TR/DOM-Level-3-Events/#dom-event-architecture">Event dispatch and DOM event flow</a></li>
+	<li><a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">React 17 changes-to-event-delegation - React official doc </a></li>
+	<li><a href="https://reactjs.org/docs/handling-events.html">Handling Events - React official doc</a></li>
+	<li><a href="https://maddevs.io/insights/blog/a-bit-about-event-delegation-in-react/">A Bit about Event Delegation in React ★ ★ ★ ★ ★</a></li>
+	<li><a href="https://davidwalsh.name/event-delegate">How JavaScript Event Delegation Works ★ ★ ★ ★ ★ </a></li>
+	<li><a href="https://reactjs.org/docs/events.html">SyntheticEvent - React official doc</a></li>
+	<li><a href="https://github.com/facebook/react/pull/8117">Nested React Dom Tree Issue(atom editor) - GitHub issue</a></li>
+	<li><a href="https://github.com/facebook/react/issues/7094#issuecomment-228931737">Event delegation issue - Global event handlers on document.body (or other containing element) run BEFORE react event handlers #7094 - gaearon </a></li>
+	<li><a href="https://reactjs.org/docs/testing-recipes.html#events">Testing in React event part - React official doc</a></li>
+</ol>
+
+</body>
+</html>
+
