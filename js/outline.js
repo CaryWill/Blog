@@ -6,7 +6,7 @@ var outline = [
         title: "Event delegation 设计模式",
         desc: "你知道有时候为什么 React 里的 `e.stopPropgation()` 不生效吗？",
         date: "Nov 30, 2021",
-        href: "/src/2021/amd-loader/index.html",
+        href: "/src/2021/event-delegation/index.html",
       },
       {
         title: "手写一个 AMD loader",
