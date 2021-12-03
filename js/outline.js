@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "浏览器渲染优化",
+        desc: "你知道浏览器是如何完成一帧的渲染的吗？",
+        date: "Dec 03, 2021",
+        href: "/src/2021/chrome-render-peft/index.html",
+      },
+      {
         title: "Event delegation 设计模式",
         desc: "你知道有时候为什么 React 里的 `e.stopPropgation()` 不生效吗？",
         date: "Nov 30, 2021",

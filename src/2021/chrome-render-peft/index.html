@@ -1,0 +1,155 @@
+<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		
+		<title>浏览器渲染优化</title>
+	</head>
+<body>
+<h1>浏览器渲染优化</h1>
+
+<p><strong>2021.12.02</strong></p>
+
+<h2>渲染</h2>
+
+<p>为了保证页面的流畅，浏览器需要将 <a href="https://en.wikipedia.org/wiki/Frame_rate">FPS</a> 和屏幕刷新率（<a href="https://www.intel.com/content/www/us/en/gaming/resources/highest-refresh-rate-gaming.html">refresh rate</a>）尽量保持一致。一般屏幕的刷新率是 60 hz，也就是每秒刷新 60 下，所以浏览器也需要每秒生成 60 帧（frame）以保证页面的流畅。</p>
+
+<p>为了保证至少 60 的 FPS，也就是说，浏览器得在 1000ms/60 = 16.67ms 内生成 1 帧</p>
+
+<p>而生成 1 帧（render），一般要经历下面 5 个步骤，</p>
+
+<figure><img src="DraggedImage.png" alt="https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline"/><figcaption>https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline</figcaption></figure>
+
+<p>也就是说上面这五个步骤要在 16.67ms 内都完成掉，但是实际上，因为浏览器自己也有一些家务事（housekeeping）要做，所以实际上的时间更短，你需要在 10 - 12ms 完成上面五个步骤。如果有一步时间花费的太长，导致总的时间超过了 16ms，那么就会影响到下一帧的生成了，因为我们到下一个 16ms 了，我们上一步的还没完成，画面就还是一样的，这就是所谓的<em>掉帧</em>。</p>
+
+<p>一般 JavaScript 的执行会改变样式，导致样式需要重新计算（Style calculations），样式计算完后如果发现 DOM 节点有几何上的变化（位置，尺寸等），那么就需要重新计算它的位置和大小（Layout/reflow），之后浏览器会开始绘制（Paint），通常会对 DOM 节点进行分层（layering），最后通过对图层（layer）进行合并（Compositing）来生成一帧呈现给用户。</p>
+
+<p>当然每次渲染（render）也不会每次都会走遍这 5 个步骤，根据 CSS 样式的不同，获取的 DOM 节点属性的不同，有的步骤会被跳过，比如，只改变 color 的话，Layout 这一步会被跳过，因为 color 不涉及到几何上的变化。</p>
+
+<p>具体哪些样式，属性会触发哪些步骤，可以查阅下 <a href="https://csstriggers.com/">该网站 CSSTriggers </a>。</p>
+
+<h2>发现瓶颈</h2>
+
+<p>知道哪里出了问题才能知道怎么优化，所以我们先来介绍下我们的控制台。</p>
+
+<p>我们可以通过浏览器的 Performance Tab 进行录制分析，看是哪一个阶段出现问题，我们还可以看到哪个动作触发了哪个，比如下面，在点击的时候，触发了下面一行的函数，下面的函数又触发了第三行的函数等。</p>
+
+<figure><img src="DraggedImage-1.png"/></figure>
+
+<p>具体怎么使用这个工具，大家可以自行搜索下，这里就不赘述了。</p>
+
+<h2>优化</h2>
+
+<p>我们知道渲染一帧需要经历 5 个步骤，每一个步骤都有可能是优化点，所以我们一步一步来讲。</p>
+
+<h3>JavaScript</h3>
+
+<blockquote>
+<p>Don’t do micro-optimizions, like comprare for loop and while loop which is faster</p>
+</blockquote>
+
+<p>这个感觉没什么好说的。</p>
+
+<h3>Style calculations</h3>
+
+<p>这一步就是将 DOM 和 CSSOM 合并生成一个 <a href="https://classroom.udacity.com/courses/ud860/lessons/4138328558/concepts/41677185820923">render tree</a>。</p>
+
+<figure><img src="DraggedImage-2.png"/></figure>
+
+<p>这一步优化的建议是，</p>
+
+<ol>
+	<li>尽量使用简单的 CSS selector，复杂的选择器在 match 一个 DOM 节点的时候花费的时间更多，因而性能更低。
+
+		<p>你可以通过类似下面的代码来测试下 <a href="http://jsbin.com/gozula/1/">CSS 选择器的性能</a>，</p>
+
+<pre><code class="code-highlighted code-html">// 来自 Udacity 的视频教程
+// 注意浏览器的不同，以及时代的不同，各个浏览器计算出来的结果不一样
+
+button.addEventListener(&#39;click&#39;, function() {
+
+  var selectors = [
+    &quot;div.box:not(:empty):last-of-type .title&quot;,
+    &quot;.box--last &gt; .title-container &gt; .title&quot;,
+    &quot;.box:nth-last-child(-n+1) .title&quot;
+  ];
+
+  selectors.forEach(function(s) {
+    console.time(s);
+    var d = document.querySelector(s);
+    console.timeEnd(s);
+    console.log(d);
+  });
+
+});</code></pre>
+
+		<p>或者使用 <a href="http://getbem.com/introduction/">BEM</a> 等的 CSS 命名规范来减少 CSS 选择器的复杂度。</p></li>
+	<li>减少需要更改样式的 DOM 节点数量。
+
+		<p>样式计算的性能和 DOM 节点的数量成<a href="https://classroom.udacity.com/courses/ud860/lessons/4147498575/concepts/41294187250923">正比</a>，可以看下这个 <a href="https://classroom.udacity.com/courses/ud860/lessons/4147498575/concepts/41727285740923">demo</a> 体会下。</p></li>
+</ol>
+
+<h3>Layout</h3>
+
+<p>当我们计算出了 render tree 后，我们就可以给每个节点添加几何属性，来画出整个布局了，还记得 CSS 的盒子模型吗？</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>优化建议：</p>
+
+<ol>
+	<li>减少 FSL（Forced Synchronous Layout）
+
+		<p>什么是 FSL？</p>
+
+		<p>正常我们的渲染是这样的，</p>
+
+		<p>JavaScript -&gt; Style calculation -&gt; Layout -&gt; Paint -&gt; Composite</p>
+
+		<p>而 FSL 就是， Layout -&gt; Style -&gt; Layout，重复执行了多次 Layout。</p>
+
+		<p>比如，</p>
+
+		<p>走正常渲染逻辑的话，当我们改变一个元素的宽度的时候，<code>ele.style.width = 20px;</code> 会走到第二步（Style calculations），但是因为我们改动是元素的几何属性，所以这一步结束也会走到第三步（Layout）。</p>
+
+		<p>当你的元素的几何属性依赖其他元素的几何属性的时候，会出现 FSL。比如 ，</p>
+
+<pre><code class="code-highlighted code-html">const otherEleWidth = otherEle.offsetWidth;
+ele.style.width = otherEleWidth;</code></pre>
+
+		<p>首先，<code>offsetWidth</code> 这个 DOM 元素属性，它会触发 Layout 这一步，所以首先在计算样式之前，我们先走到了 Layout，等拿到了其他元素的宽度的时候，我们再设置样式，就走到了 Style calculations 这一步，因为 <code>width</code> 属性会同时触发 Style calculations 和 Layout，所以等到宽度设置完毕，就又走到了 Layout，看到问题没，Layout 走了两遍，而 Layout 和 Paint 是十分消耗性能的，所以就有问题了。</p>
+
+		<p>再比如，在当在一个 loop 里反复进行 FSL 的话，性能下降的就会很厉害了，</p>
+
+		<figure><img src="DraggedImage-3.png" alt="https://classroom.udacity.com/courses/ud860/lessons/4147498575/concepts/41331086040923"/><figcaption>https://classroom.udacity.com/courses/ud860/lessons/4147498575/concepts/41331086040923</figcaption></figure>
+
+		<p>我们可以将 <code>greenBlock.offsetWidth</code> 这个会造成 FSL 的宽度变量缓存起来，放到 for loop 外面，这样 FSL 就只会发生一次，是不是很 nice。</p>
+
+		<p>哪些 CSS 属性会造成 Layout 呢？ 来<a href="http://gent.ilcore.com/2011/03/how-not-to-trigger-layout-in-webkit.html">这里看下</a>。</p></li>
+	<li>既然 Layout 消耗性能，那么我们跳过这一步不就行了？
+
+		<p>我们可以用不会触发 Layout 的<a href="https://csstriggers.com/">属性</a>来替代会触发 Layout 的属性，比如用<code>translate</code> 代替 <code>top</code>。</p></li>
+</ol>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://github.com/alex/what-happens-when#behind-the-scenes-of-the-browser">What happens when -浏览器渲染篇</a></li>
+	<li><a href="https://www.html5rocks.com/en/tutorials/speed/layers/">The Layer Model</a></li>
+	<li><a href="https://csstriggers.com/">Which CSS style will trigger Paint, Layout, Composite? - The reference</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Glossary/CSSOM">What is CSSOM？- MDN</a></li>
+	<li><a href="http://gent.ilcore.com/2011/03/how-not-to-trigger-layout-in-webkit.html">What will trigger Layout?</a></li>
+	<li><a href="https://www.smashingmagazine.com/2016/12/gpu-animation-doing-it-right/">CSS GPU Animation: Doing It Right</a></li>
+	<li><a href="https://superuser.com/questions/1436118/google-chrome-how-to-enable-fps-counter">Google chrome how to enable fps counter</a></li>
+	<li><a href="https://developers.google.com/web/fundamentals/performance/rendering/simplify-paint-complexity-and-reduce-paint-areas">Simplify paint complexity and reduce paint areas</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame">requestAnimationFrame</a></li>
+	<li><a href="https://developers.google.com/speed/docs/insights/browser-reflow">How to minimize the effect of reflow</a></li>
+	<li><a href="https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline">Rendering Pipeline</a></li>
+	<li><a href="https://web.dev/rail/">Rail</a></li>
+</ol>
+
+</body>
+</html>
+
+<script src="/js/index.js" defer></script>
