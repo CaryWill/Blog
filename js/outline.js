@@ -99,6 +99,12 @@ var outline = [
         href: "/src/2021/class-from-pre-es6/index.html",
       },
       {
+        title: "What is Same-origin policy And How to circumvent it",
+        desc: "什么是 SOP 以及如何绕过呢？",
+        date: "Sept 14, 2020",
+        href: "/src/2021/sop-cors/index.html",
+      },
+      {
         title: "手写 WeakMap",
         desc: "WeakMap 和 GC 的关系",
         date: "July 28, 2020",
