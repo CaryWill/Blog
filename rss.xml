@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>浏览器渲染优化</title>
+    <link>/src/2021/chrome-render-peft/index.html</link>
+    <description>你知道浏览器是如何完成一帧的渲染的吗？</description>
+    <pubDate>Fri Dec 03 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Fri Dec 03 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>Event delegation 设计模式</title>
     <link>/src/2021/event-delegation/index.html</link>
     <description>你知道有时候为什么 React 里的 `e.stopPropgation()` 不生效吗？</description>
@@ -94,6 +100,12 @@
     <description>都说 class 是语法糖，那么我们看下 ES5 中怎么实现 class 继承。</description>
     <pubDate>Sat Jul 10 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Sat Jul 10 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>What is Same-origin policy And How to circumvent it</title>
+    <link>/src/2021/sop-cors/index.html</link>
+    <description>什么是 SOP 以及如何绕过呢？</description>
+    <pubDate>Mon Sep 14 2020 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Mon Sep 14 2020 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>手写 WeakMap</title>
     <link>/src/2021/weakMap/index.html</link>
