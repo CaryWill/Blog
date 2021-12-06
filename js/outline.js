@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "浏览器渲染优化",
+        desc: "你知道浏览器是如何完成一帧的渲染的吗？",
+        date: "Dec 03, 2021",
+        href: "/src/2021/chrome-render-peft/index.html",
+      },
+      {
         title: "Event delegation 设计模式",
         desc: "你知道有时候为什么 React 里的 `e.stopPropgation()` 不生效吗？",
         date: "Nov 30, 2021",
@@ -91,6 +97,12 @@ var outline = [
         desc: "都说 class 是语法糖，那么我们看下 ES5 中怎么实现 class 继承。",
         date: "July 10, 2021",
         href: "/src/2021/class-from-pre-es6/index.html",
+      },
+      {
+        title: "What is Same-origin policy And How to circumvent it",
+        desc: "什么是 SOP 以及如何绕过呢？",
+        date: "Sept 14, 2020",
+        href: "/src/2021/sop-cors/index.html",
       },
       {
         title: "手写 WeakMap",

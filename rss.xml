@@ -5,6 +5,24 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>浏览器渲染优化</title>
+    <link>/src/2021/chrome-render-peft/index.html</link>
+    <description>你知道浏览器是如何完成一帧的渲染的吗？</description>
+    <pubDate>Fri Dec 03 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Fri Dec 03 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>Event delegation 设计模式</title>
+    <link>/src/2021/event-delegation/index.html</link>
+    <description>你知道有时候为什么 React 里的 `e.stopPropgation()` 不生效吗？</description>
+    <pubDate>Tue Nov 30 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Tue Nov 30 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>手写一个 AMD loader</title>
+    <link>/src/2021/amd-loader/index.html</link>
+    <description>web 前端是如何使用 amd loader 解决依赖管理的？</description>
+    <pubDate>Sun Nov 28 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Sun Nov 28 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>BFC</title>
     <link>/src/2021/BFC/index.html</link>
     <description>什么是 BFC？以及 BFC 解决了什么问题？</description>
@@ -71,11 +89,29 @@
     <pubDate>Wed Sep 01 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Wed Sep 01 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
+    <title>手写 React Hooks</title>
+    <link>/src/2021/react-hooks/index.html</link>
+    <description>你知道为什么 hooks 会有这些规则吗？</description>
+    <pubDate>Sat Jul 24 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Sat Jul 24 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>Class From Pre-ES6</title>
     <link>/src/2021/class-from-pre-es6/index.html</link>
     <description>都说 class 是语法糖，那么我们看下 ES5 中怎么实现 class 继承。</description>
     <pubDate>Sat Jul 10 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Sat Jul 10 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>What is Same-origin policy And How to circumvent it</title>
+    <link>/src/2021/sop-cors/index.html</link>
+    <description>什么是 SOP 以及如何绕过呢？</description>
+    <pubDate>Mon Sep 14 2020 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Mon Sep 14 2020 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>手写 WeakMap</title>
+    <link>/src/2021/weakMap/index.html</link>
+    <description>WeakMap 和 GC 的关系</description>
+    <pubDate>Tue Jul 28 2020 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Tue Jul 28 2020 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item> 
   </channel>
 </rss>

@@ -1,0 +1,111 @@
+<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		
+		<title>What is Same-origin policy And How to circumvent it</title>
+	</head>
+<body>
+<h1>What is Same-origin policy And How to circumvent it</h1>
+
+<p><strong> 2020.08.14</strong></p>
+
+<p>关键词：<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">Same-origin policy(SOP)</a>，<a href="https://en.wikipedia.org/wiki/Cross-origin_resource_sharing">CORS</a>，<a href="https://en.wikipedia.org/wiki/Cross-site_request_forgery">CSRF</a>，<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies">cookie</a>，<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#preflighted_requests">preflight </a></p>
+
+<p><em> Same-origin policy（简称 SOP）</em> 规定一个域名（origin）下的脚本（script）只能访问同一个域名下的数据，说白了就是禁止脚本跨域请求资源，当然还有一些行为可以绕过 SOP 的，比如，<code>&lt;img&gt;</code>，<code>&lt;script src=&quot;…&quot;&gt;&lt;/script&gt;</code>，具体可以看下<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">这里</a>。</p>
+
+<p>设想下没有 SOP 的情况下，会有什么问题。</p>
+
+<p>对，就是 cookie 被窃取，你在不知情的情况下，别人利用你的 cookie（身份）来进行一些不正当的行为。例如，当你在成功登录中国银行网页后，访问了钓鱼网站 B，B 构造了一条转账请求，准备往他自己那边转账，当请求发出去的时候，钓鱼网站什么都不用干，浏览器就默认帮他把 cookie 带上了，中国银行看到请求后，认为是你本人（看 cookie 认人）进行的操作，于是进行了转账。</p>
+
+<p>如果有 SOP 的话，你的请求都出不去，所以 cookie 也带不上，安全了。</p>
+
+<p>不过 SOP 禁止你跨域发送接口（cross-origin access），这不行啊，很多时候网页就是要调用三方接口啊，怎么办呢？ 所以浏览器又引入 CORS 方案来绕过 SOP，通过规定 HTTP <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">头部</a> 来决定是否要对请求或者响应进行拦截。CORS 方案需要浏览器和服务器双方进行配合，下面会具体讲一下如何配合。</p>
+
+<p>CORS 里规定，跨域请求分为两种，</p>
+
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests">简单请求</a>。
+
+		<p>GET 请求（在满足一些条件的情况下），因为 GET 请求（safe request）相对来说比较安全，一般不会对用户的数据进行修改（当然也有人用 GET 来替代 DELETE 用来删除的）。还有 form 表单的提交，因为它就算跨域了，我们还是没办法获取响应结果，所以从本质上来说还是遵守了 SOP。</p>
+
+		<p>其他的可以看下<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests">这里</a>。</p></li>
+	<li>非简单请求。
+
+		<p>发送请求前，浏览器会自行发送一条 OPTIONS 的请求，来向服务端确认该请求是否支持跨域，这样能防止一些例如 DELETE 的跨域请求被发送到对跨域请求不感知的服务器上，服务器因为没有感知可能就直接执行了这个 DELETE 的危险操作，而 preflight 能解决这个问题的<a href="https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request">原因</a>也就是，因为是跨域请求，浏览器会先确认服务器是否对跨域请求有感知（通过发送一条 OPTIONS 请求），确认响应头里是否有 <code>Access-Control-Allow-Origin</code> 这个响应头，没有的话，说明服务器无感知，那么浏览器就不会继续发送真实的请求了，或者虽然有，但是该响应头的值里没有包含我们当前的域名，这样浏览器就会认为我们没有权限请求服务器资源，所以也就不会继续向服务器发送真实请求。</p>
+
+		<p>有哪些非简单请求的，可以看<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#preflighted_requests">这里</a>，一句话来说，就是，“不是简单请求的请求都是非简单请求”，以上。</p></li>
+</ol>
+
+<p>但是即便我们可以绕过 SOP 通过 CORS 来发送跨域请求并带上了 cookie，但是我们还是阻止不了一些网络攻击，比如 <a href="https://en.wikipedia.org/wiki/Cross-site_request_forgery">Cross-site request forgery</a> （简称CSRF），这种攻击它主要利用的是 “接口的可构造性（攻击者可以构造出用户正常浏览网页时相同的接口）” 以及 “浏览器会在发送接口的时候带上该接口所在域名下的 <a href="https://en.wikipedia.org/wiki/HTTP_cookie">cookie</a>” 的特性来实现的。因为我们的接口对了，cookie 也有了，所以准备就绪，发送的请求服务器没办法鉴别到底是<strong>用户</strong>有意发的还是<strong>攻击者</strong>伪造的，所以目的就达成了，通过篡改请求参数来完成攻击。</p>
+
+<p>来举个具体的 CSRF 的例子，还是一开始聊 SOP 时候的例子，当你登陆银行网站后再浏览了钓鱼网站，钓鱼网站通过构建简单请求（比如通过表单提交）向你登陆的银行网站服务器发起转账请求，你的钱就没了。为什么？来来来一起看一下。</p>
+
+<p>因为请求里会带上了用来识别用户身份的 cookie，然后我们的请求虽然跨域，但是还是功发送到服务器了，那不就请求成功了吗？ YES。</p>
+
+<p>注意一点，为什么是简单请求？因为，如果不是的话，浏览器会先发送 preflight 的 OPTIONS 请求，向服务器询问我们是否都进行跨域请求，导致如果服务器对跨域请求不感知导致响应的时候没有发送 <code>Access-Control-Allow-Origin</code> 这个响应头到浏览器，那么，我们的 OPTIONS 请求就会被认定失败，导致真实请求被浏览器拦截不会被发送。又或者服务器对跨域请求有感知，但是限制的可以跨域请求的域名，导致响应的时候发送的 <code>Access-Control-Allow-Origin</code> 的值不包含我们当前的域名，导致 OPTIONS 请求被认定失败，真实请求不会被发送，而使用简单请求，虽然 <strong>响应</strong>被浏览器拦截了，但是服务器处理了我们的请求，我们就算成功了，因为我们对服务器返回的数据（<code>success: true</code>）也不感兴趣啊）</p>
+
+<p>到此，同学们对整个 CSRF 攻击大概也有了点认识了，总结起来就是两点，接口 URL 和 cookie。这样我们从这两个点入手即可对该攻击进行防范了，</p>
+
+<ol>
+	<li>Synchronizer token pattern
+
+		<p>在 URL 的 query string 里添加一个服务端会验证的 token，让接口的 URL 变得无法被攻击者构造出来。</p>
+
+		<p>还是之前的例子，比如钓鱼网站构造的接口长这样，<code>http://www.mybank.com/transfer?to=cary&amp;amount=10000</code>，这样我们随便改下接受人这个参数（to），不就完了吗。所以我们可以再再接口上加一个参数，<code>http://www.mybank.com/transfer?to=cary&amp;amount=10000&amp; csrfmiddlewaretoken=KbyUmhTLMpYj7CD2di7JKP1P3qmLlkPt</code>，这样攻击者不就没办法构造出来了吗，这个参数是在我们在请求页面的时候，服务端写到 html 页面里面去的，比如，<code>&lt;script&gt;window.config = { &quot;csrfmiddlewaretoken&quot;: &quot;KbyUmhTLMpYj7CD2di7JKP1P3qmLlkPt&quot;} &lt;/script&gt;</code>，这样因为钓鱼网站的页面是没办法获取到我们页面的数据的，所以请求就无法构造出来了。</p></li>
+	<li>Cookie-to-header token
+
+		<p>该方法和第一种差不多，只是传参的方式略有不同。服务端在前端登陆的时候，往 cookie 里面塞一个用来防止 CSRF 攻击的一个 token，但是这个 token 不会发送请求时被浏览器放在 cookie 里带上，前端在拿到这个值后通过自定义 Header 的形式带给服务端进行验。(那么我可以在拿到 cookie 里的 token 后往 html 里塞吗，然后再从 html 里读？感觉是可以的，但是感觉有点脱裤子放屁的感觉)</p>
+
+		<p>比如我们在登录成功后，服务端会给我们一个 <code>Set-Cookie: __Host-csrf_token=i8XNjC4b8KVok4uw5RftR38Wgp2BFwql; Expires=Thu, 23-Jul-2015 10:25:33 GMT; Max-Age=31449600; Path=/; SameSite=Lax; Secure</code> 这样的 cookie，当我们在提交表单的时候，通过 JS 获取 <code>document.cookie</code> 里的这个值（__Host-csrf_token)，并塞到自定义的请求头里去 <code>X-Csrf-Token: i8XNjC4b8KVok4uw5RftR38Wgp2BFwql</code>，并随着请求一块发送到服务器等待服务器鉴别我们在自定义请求头里带过去的 token 的有效性，以决定该请求是否有效。</p></li>
+</ol>
+
+<p>更多其他的解决方案可以参考<a href="https://en.wikipedia.org/wiki/Cross-site_request_forgery">这里</a>。</p>
+
+<p><strong>总结</strong>：SOP 不允许脚本的跨域请求，而 CORS 允许你进行跨域请求，是用来规避 SOP 的一种方法。</p>
+
+<h2>Q&amp;A</h2>
+
+<h3>带 preflight 的请求和简单请求的区别</h3>
+
+<p>个人感觉是对一些旧版的没有配置 CORS 的服务器做的兼容，就比如，DELETE 方法，如果这个请求是跨域的，因为 SOP 我们只能使用 CORS 来进行跨域请求，因为 DELETE 方法会改变用户数据，所以如果我们不对该请求进行校验的话， 一旦我们的服务器没有配置 CORS，那么请求就被执行了，用户的数据就可能被恶意的删除了。而简单请求一般是被认为是 safe 的，一般不会修改用户数据，所以一般直接发出来也没什么事。</p>
+
+<h3>Cookie 什么用</h3>
+
+<p>一般使用 cookie 来判断两个请求是否是来自同一个浏览器，来保持用户的登录状态，来帮助无状态（stateless）的 HTTP 协议记住一些有状态（stateful）的数据。</p>
+
+<p>具体有哪些属性可以参考下<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies">这篇文章</a>。</p>
+
+<h3>常用的跨域方案有哪些</h3>
+
+<ol>
+	<li>遵守浏览器的 CORS 方案，带上 CORS Header。</li>
+	<li>使用代理服务器。
+
+		<p>毕竟 SOP 是浏览器规定的，我们将请求转发给代理服务器，代理服务器处理 CORS Header 即可。</p></li>
+	<li>JSONP</li>
+</ol>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://aerotwist.com/blog/cors-for-concern/">CORS for concern - aerotwist </a></li>
+	<li><a href="https://annevankesteren.nl/2015/02/same-origin-policy">Same-origin policy - annevankesteren</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Cross-origin_resource_sharing">CORS - Wikipedia</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/HTTP_cookie">Cookie - Wikipedia</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Same-origin_policy">SOP - Wikipedia</a></li>
+	<li><a href="https://owasp.org/www-community/attacks/csrf">CSRF attack</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Cross-site_request_forgery">CSFR - Wikipedia</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request">Preflight CORS - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">Same-origin policy - MDN</a></li>
+	<li><a href="https://stackoverflow.com/a/41687744">What was the motivation behind introducing preflight requests?</a></li>
+	<li><a href="%E4%B8%BA%E4%BB%80%E4%B9%88form%E8%A1%A8%E5%8D%95%E6%8F%90%E4%BA%A4%E6%B2%A1%E6%9C%89%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%EF%BC%8C%E4%BD%86ajax%E6%8F%90%E4%BA%A4%E6%9C%89%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%EF%BC%9F"> 为什么form表单提交没有跨域问题，但ajax提交有跨域问题？</a></li>
+	<li><a href="https://www.ruanyifeng.com/blog/2016/04/cors.html">跨域资源共享 CORS 详解</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch">Using Fetch</a></li>
+</ol>
+
+</body>
+</html>
+
+<script src="/js/index.js" defer></script>
