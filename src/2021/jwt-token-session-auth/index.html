@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>JWT token Vs. Session Auth</title>
+	</head>
+<body>
+<h1>JWT token Vs. Session Auth</h1>
+
+<p><strong>2021.12.05</strong></p>
+
+<h2>JWT token Auth</h2>
+
+<p>JWT token 可以用来<a href="https://jwt.io/introduction">鉴权</a>。</p>
+
+<p>它由三部分组成，</p>
+
+<ol>
+	<li>Header（ALGORITHM &amp; TOKEN TYPE）
+
+		<p>里面指定了签名（SIGNATURE）算法和 token 类型。</p></li>
+	<li>Payload（DATA）
+
+		<p>数据。</p></li>
+	<li>SIGNATURE。
+
+		<p>用来校验 jwt token 的有效性</p></li>
+</ol>
+
+<p>一个加密的 JWT token 大概长这样，<code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</code>，这三部分由 <code>.</code> 分隔，第一部分和第二部分别是 Header 和 Payload，它们都是由 BASE64 编码的，第三部分 SIGNATURE 则是用 Header 里指定的加密算法，计算 Header， payload 以及存在服务器里的 JWT secret 三部分计算出来的一个签名。这样虽然 Header 和 Payload 是可以被解码的，就相当于是明文了（所以最好不好在里面放一些机密数据），但是也没什么关系，因为签名算法一般是非对称加密的（也可以对对称的，但是你需要三方的鉴权服务），所以你无法破解。</p>
+
+<p>那么服务器是怎么验证 token 的有效性的呢？服务器会用接收到的 token 里的 header 和 payload 以及在服务器上的 secret，然后用 header 里的算法重新计算一遍签名，然后比对接收到的和重新计算出来的，一致的话，说明数据没有被篡改，就是有效的。</p>
+
+<p>但是它也不是没有自己的问题，接下来我们通过 <a href="https://github.com/CaryWill/Frontend/blob/master/jwt-token/jwtApp.js">demo</a> 来演示下，看下有什么问题，</p>
+
+<p>我们在登陆成功的时候，会将签名后的 JWT token（也就是 access token） 返回给前端，但是这样会有一个问题，就是 “token” 被人偷了怎么办？这不就意味着拿着这个 token 的人就有权限了吗？</p>
+
+<p>是的，所以为了减小影响范围，所以我们在创建 token 的时候，给 token 设置了有效期，<code>{ expiresIn: &quot;1m&quot; }</code>（这里设置了 1分钟）</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">app</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">post</span>(<span class="syntax-all syntax-string">&quot;/login&quot;</span>, (<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-comment">// Read username and password from request body
+</span>  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">username</span>, <span class="syntax-all syntax-parameter">password</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span>;
+
+  <span class="syntax-all syntax-comment">// Filter user from the users array by username and password
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">user</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">users</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">find</span>((<span class="syntax-all syntax-parameter">u</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">u</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">username</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">username</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">u</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">password</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">password</span>;
+  });
+
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">user</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">accessToken</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">jwt</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">sign</span>(
+      { <span class="syntax-all syntax-string">username</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">user</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">username</span>, <span class="syntax-all syntax-string">role</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">user</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">role</span> },
+      <span class="syntax-all syntax-parameter">accessTokenSecret</span>,
+      { <span class="syntax-all syntax-string">expiresIn</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;1m&quot;</span> }
+    );
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">refreshToken</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">jwt</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">sign</span>(
+      { <span class="syntax-all syntax-string">username</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">user</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">username</span>, <span class="syntax-all syntax-string">role</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">user</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">role</span> },
+      <span class="syntax-all syntax-parameter">refreshTokenSecret</span>
+    );
+
+    <span class="syntax-all syntax-parameter">refreshTokens</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">refreshToken</span>);
+    <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">json</span>({
+      <span class="syntax-all syntax-parameter">accessToken</span>,
+      <span class="syntax-all syntax-parameter">refreshToken</span>,
+    });
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">send</span>(<span class="syntax-all syntax-string">&quot;Username or password incorrect&quot;</span>);
+  }
+});</code></pre>
+
+<p><strong>refreshToken</strong> 是什么，是不是想问？</p>
+
+<p>虽然我们解决了 token 被偷的问题，但是它又带来了另一个问题，就是有效期太短了的话，不就意味着我们需要重复登录来重新获取 token 吗？</p>
+
+<p>对，为了解决 token 失效的问题，所以就有了我们的 <strong>refreshToken</strong>，我们用这个 <strong>refreshToken</strong> 向服务器发起刷新 token 的请求 <code>/refreshToken</code>，来置换新的 token（access token）。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// use refresh token to refresh access token
+</span><span class="syntax-all syntax-parameter">app</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">post</span>(<span class="syntax-all syntax-string">&quot;/refreshToken&quot;</span>, (<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">token</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">token</span>) {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">sendStatus</span>(<span class="syntax-all syntax-constant">401</span>);
+  }
+  <span class="syntax-all syntax-comment">// 这一步的作用是吊销 refresh token 以防 refresh token 也被人偷走了
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">refreshTokens</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">includes</span>(<span class="syntax-all syntax-parameter">token</span>)) {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">sendStatus</span>(<span class="syntax-all syntax-constant">403</span>);
+  }
+  <span class="syntax-all syntax-comment">// 验证 token 是否有效，比如是否遭到篡改
+</span>  <span class="syntax-all syntax-parameter">jwt</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">verify</span>(<span class="syntax-all syntax-parameter">token</span>, <span class="syntax-all syntax-parameter">refreshTokenSecret</span>, (<span class="syntax-all syntax-parameter">err</span>, <span class="syntax-all syntax-parameter">user</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">err</span>) {
+      <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">sendStatus</span>(<span class="syntax-all syntax-constant">403</span>);
+    }
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">accessToken</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">jwt</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">sign</span>(
+      { <span class="syntax-all syntax-string">username</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">user</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">username</span>, <span class="syntax-all syntax-string">role</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">user</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">role</span> },
+      <span class="syntax-all syntax-parameter">accessTokenSecret</span>,
+      { <span class="syntax-all syntax-string">expiresIn</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;1m&quot;</span> }
+    );
+    <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">json</span>({
+      <span class="syntax-all syntax-parameter">accessToken</span>,
+    });
+  });
+});</code></pre>
+
+<p>但是 refresh token 也被偷了怎么办？所以我们需要一种方式来销毁它，在 access token 失效后，就没办法生成新的 access token 了，我们可以在登出的时候将 refresh token 销毁掉，这里的销毁不是利用 refresh token 的有效期，因为它没有有效期（虽然我们也可以给它设置），我们在服务器维护了一个 refresh token 的 map，当登出的时候我们会将其从 map 中移除，这样当 refresh token 也被偷的时候，坏蛋调用 <code>refreshToken</code> 接口想要置换 access token 的时候也不会成功，因为我们在接口调用的一开始会先确认这个 refresh token 是否还在我们的 map 里，没有的话就会被认为是无效的。</p>
+
+<p>这就是 JWT token 的鉴权原理。</p>
+
+<h2>Session Auth</h2>
+
+<p><a href="https://www.section.io/engineering-education/session-management-in-nodejs-using-expressjs-and-express-session/"><strong>原理</strong></a>：当客户端向服务器发起登录请求的时候，服务器会创建一个 session（会话），当服务器发送响应的时候，会将这个 session 的 id 存到 cookie 里发给客户端，之后客户端再次发送请求的时候，这个 session id 会随着 cookie 一起发给服务器，这样我们用 cookie 里的 session id 和服务器上的 session id 建立起了一对一的匹配，这样 stateless 的 HTTP 协议就变得 stateful 了。</p>
+
+<p><strong>需要注意的点</strong>：当然，因为这里鉴权用的是 cookie，所以这种鉴权方式也可能遭受 CSRF 攻击。最好不好在 cookie 存放敏感信息（因为 cookie 容易遭窃取），这也就是为什么我们只将 session id 存到 cookie 里，后面用 session id 在服务器（database/session store）查用户的数据。</p>
+
+<p>这里写了个 <a href="https://github.com/CaryWill/Frontend/blob/master/jwt-token/session.html">demo</a>，感兴趣的同学可以下过来跟着走一波，</p>
+
+<ol>
+	<li>用户成功登陆后服务器会为该用户创建一个 session（会话）
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">app</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">post</span>(<span class="syntax-all syntax-string">&quot;/login&quot;</span>, (<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">username</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-parameter">myusername</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">password</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-parameter">mypassword</span>) {
+	<span class="syntax-all syntax-comment">// 登陆成功后，服务器会为当前用户创建一个 session，并用一个字符串来（session id）来识别这个 session
+</span>	<span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">session</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">views</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>;
+	<span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">session</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">userid</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">username</span>;
+	<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">session</span>);
+	<span class="syntax-all syntax-comment">// 服务器会向客户端发送 cookie，里面包含着 session id
+</span>	<span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">send</span>(<span class="syntax-all syntax-string">&quot;logged in&quot;</span>);
+  } <span class="syntax-all syntax-keyword">else</span> {
+	<span class="syntax-all syntax-comment">// 登陆失败的话，session 不会被创建
+</span>	<span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">send</span>(<span class="syntax-all syntax-string">&quot;Invalid username or password&quot;</span>);
+  }
+});</code></pre>
+
+		<figure><img src="DraggedImage.tiff"/></figure></li>
+	<li>客户端在登陆成功后，后续的请求会带上 cookie，服务器会读取 cookie 里的 session id 获取到对应的 session
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">app</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">post</span>(<span class="syntax-all syntax-string">&quot;/getData&quot;</span>, (<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-comment">// 拿着 cookie 里的 session id 去服务器查看有没有，有的话返回该 session 的数据
+</span>  <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;getdata&quot;</span>, <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">session</span>);
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">session</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">userid</span>) {
+	<span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">send</span>(<span class="syntax-all syntax-string">`views: </span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">session</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">views</span><span class="syntax-all syntax-keyword">++}</span><span class="syntax-all syntax-string">`</span>);
+  } <span class="syntax-all syntax-keyword">else</span> {
+	<span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">send</span>(<span class="syntax-all syntax-string">&quot;false&quot;</span>);
+  }
+});</code></pre></li>
+	<li>当你在登出的时候，session 会被销毁，而 cookie 会在 maxAge 之后失效
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">app</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-string">&quot;/logout&quot;</span>, (<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-parameter">req</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">session</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">destroy</span>();
+  <span class="syntax-all syntax-parameter">res</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">redirect</span>(<span class="syntax-all syntax-string">&quot;/&quot;</span>);
+});</code></pre></li>
+</ol>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://www.youtube.com/watch?v=UBUNrFtufWo"> Session vs Token Authentication in 100 Seconds - Youtube</a></li>
+	<li><a href="https://jwt.io/introduction">JWT introduction</a></li>
+	<li><a href="https://stackoverflow.com/a/62095056">What is secret key for JWT based authentication and how to generate it?</a></li>
+	<li><a href="https://expressjs.com/en/starter/hello-world.html">How to create a node server for dev?</a></li>
+	<li><a href="https://www.digitalocean.com/community/tutorials/use-expressjs-to-deliver-html-files">How To Deliver HTML Files with Express</a></li>
+	<li><a href="https://stackabuse.com/authentication-and-authorization-with-jwts-in-express-js/">Authentication and Authorization with JWTs in Express.js - Tutorial</a></li>
+	<li><a href="https://github.com/auth0/node-jsonwebtoken#readme">JWTToken npm document - Github</a></li>
+	<li><a href="https://stackoverflow.com/a/47332317">How to get HMAC with Crypto Web API </a></li>
+	<li><a href="https://www.section.io/engineering-education/session-management-in-nodejs-using-expressjs-and-express-session/">Session Management in Node.js using ExpressJS and Express Session - Tutorial</a></li>
+	<li><a href="https://github.com/expressjs/session#readme">express session middleware document - GitHub</a></li>
+	<li><a href="https://www.javatpoint.com/session-vs-cookies">Session vs. Cookies| Difference between Session and Cookies</a></li>
+</ol>
+
+</body>
+</html>
+
