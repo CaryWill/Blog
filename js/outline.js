@@ -81,6 +81,12 @@ var outline = [
         href: "/src/2021/the-git-parable/the-git-parable.html",
       },
       {
+        title: "What is Same-origin policy And How to circumvent it",
+        desc: "什么是 SOP 以及如何绕过呢？",
+        date: "Sept 14, 2020",
+        href: "/src/2021/sop-cors/index.html",
+      },
+      {
         title: "Regex 101",
         desc: "Regular expression 101",
         date: "Sept 01, 2021",
@@ -97,12 +103,6 @@ var outline = [
         desc: "都说 class 是语法糖，那么我们看下 ES5 中怎么实现 class 继承。",
         date: "July 10, 2021",
         href: "/src/2021/class-from-pre-es6/index.html",
-      },
-      {
-        title: "What is Same-origin policy And How to circumvent it",
-        desc: "什么是 SOP 以及如何绕过呢？",
-        date: "Sept 14, 2020",
-        href: "/src/2021/sop-cors/index.html",
       },
       {
         title: "手写 WeakMap",
