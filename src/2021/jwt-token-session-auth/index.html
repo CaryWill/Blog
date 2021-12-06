@@ -29,7 +29,11 @@
 		<p>用来校验 jwt token 的有效性</p></li>
 </ol>
 
-<p>一个加密的 JWT token 大概长这样，<code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</code>，这三部分由 <code>.</code> 分隔，第一部分和第二部分别是 Header 和 Payload，它们都是由 BASE64 编码的，第三部分 SIGNATURE 则是用 Header 里指定的加密算法，计算 Header， payload 以及存在服务器里的 JWT secret 三部分计算出来的一个签名。这样虽然 Header 和 Payload 是可以被解码的，就相当于是明文了（所以最好不好在里面放一些机密数据），但是也没什么关系，因为签名算法一般是非对称加密的（也可以对对称的，但是你需要三方的鉴权服务），所以你无法破解。</p>
+<p>一个加密的 JWT token 大概长这样，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</span></code></pre>
+
+<p>这三部分由 <code>.</code> 分隔，第一部分和第二部分别是 Header 和 Payload，它们都是由 BASE64 编码的，第三部分 SIGNATURE 则是用 Header 里指定的加密算法，计算 Header， payload 以及存在服务器里的 JWT secret 三部分计算出来的一个签名。这样虽然 Header 和 Payload 是可以被解码的，就相当于是明文了（所以最好不好在里面放一些机密数据），但是也没什么关系，因为签名算法一般是非对称加密的（也可以对对称的，但是你需要三方的鉴权服务），所以你无法破解。</p>
 
 <p>那么服务器是怎么验证 token 的有效性的呢？服务器会用接收到的 token 里的 header 和 payload 以及在服务器上的 secret，然后用 header 里的算法重新计算一遍签名，然后比对接收到的和重新计算出来的，一致的话，说明数据没有被篡改，就是有效的。</p>
 
@@ -155,6 +159,7 @@
 <ol>
 	<li><a href="https://www.youtube.com/watch?v=UBUNrFtufWo"> Session vs Token Authentication in 100 Seconds - Youtube</a></li>
 	<li><a href="https://jwt.io/introduction">JWT introduction</a></li>
+	<li><a href="https://datatracker.ietf.org/doc/html/rfc7519#appendix-A">JWT RFC</a></li>
 	<li><a href="https://stackoverflow.com/a/62095056">What is secret key for JWT based authentication and how to generate it?</a></li>
 	<li><a href="https://expressjs.com/en/starter/hello-world.html">How to create a node server for dev?</a></li>
 	<li><a href="https://www.digitalocean.com/community/tutorials/use-expressjs-to-deliver-html-files">How To Deliver HTML Files with Express</a></li>
