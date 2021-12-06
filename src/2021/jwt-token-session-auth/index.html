@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<link href="/css/style.css" rel="stylesheet" /><!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		
 		<title>JWT token Vs. Session Auth</title>
 	</head>
 <body>
@@ -134,7 +134,7 @@
   }
 });</code></pre>
 
-		<figure><img src="DraggedImage.tiff"/></figure></li>
+		<figure><img src="DraggedImage.png"/></figure></li>
 	<li>客户端在登陆成功后，后续的请求会带上 cookie，服务器会读取 cookie 里的 session id 获取到对应的 session
 
 <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">app</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">post</span>(<span class="syntax-all syntax-string">&quot;/getData&quot;</span>, (<span class="syntax-all syntax-parameter">req</span>, <span class="syntax-all syntax-parameter">res</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
@@ -174,3 +174,4 @@
 </body>
 </html>
 
+<script src="/js/index.js" defer></script>
