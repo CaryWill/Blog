@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "JWT token Vs. Session Auth",
+        desc: "实操帮你理解 JWT token 和 session 的鉴权原理",
+        date: "Dec 05, 2021",
+        href: "/src/2021/jwt-token-session-auth/index.html",
+      },
+      {
         title: "浏览器渲染优化",
         desc: "你知道浏览器是如何完成一帧的渲染的吗？",
         date: "Dec 03, 2021",
