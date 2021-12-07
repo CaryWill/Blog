@@ -12,7 +12,7 @@
         <a href="/Blog/articles.html">Articles</a>
       </li>
       <li>
-        <a href="/Blog/about/">About</a>
+        <a href="/Blog/about.html">About</a>
       </li>
     </ol>
   </div>
