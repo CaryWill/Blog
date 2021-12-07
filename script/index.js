@@ -64,11 +64,12 @@ walk(path.join("./src"), function (err, results) {
     if (p.includes(".html")) {
       var data = fs.readFileSync(p, "utf-8");
       // post style
-      const css = `<link href="/css/style.css" rel="stylesheet" />`;
+      // /Blog for github page
+      const css = `<link href="/Blog/css/style.css" rel="stylesheet" />`;
       // comment+header
-      const js = `<script src="/js/index.js" defer></script>`;
+      const js = `<script src="/Blog/js/index.js" defer></script>`;
       // auto generated ulyssess css
-      const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="css/style.css" />`;
+      const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="/css/style.css" />`;
       // 移除之前有的 script
       data = data.replaceAll(css, "");
       data = data.replaceAll(js, "");
@@ -80,21 +81,21 @@ walk(path.join("./src"), function (err, results) {
       data += js;
       fs.writeFileSync(p, data, "utf-8");
     } else if (p.includes(".tiff")) {
-      var options = {
-        logLevel: 1,
-      };
-      var converter = new ConvertTiff(options);
-      converter.convertOne(p, path.dirname(p));
-      // 因为转换会创建文件夹 所以需要将里面的文件移出来
-      // https://stackoverflow.com/a/41562625
-      var oldPath = p.split(".tiff")[0] + "/" + "0.png";
-      var newPath = p.split(".tiff")[0] + ".png";
-      if (fs.existsSync(p.split(".tiff")[0])) {
-        fs.renameSync(oldPath, newPath, function (err) {
-          if (err) throw err;
-          console.log("Successfully renamed - AKA moved!");
-        });
-      }
+      // var options = {
+      //   logLevel: 1,
+      // };
+      // var converter = new ConvertTiff(options);
+      // converter.convertOne(p, path.dirname(p));
+      // // 因为转换会创建文件夹 所以需要将里面的文件移出来
+      // // https://stackoverflow.com/a/41562625
+      // var oldPath = p.split(".tiff")[0] + "/" + "0.png";
+      // var newPath = p.split(".tiff")[0] + ".png";
+      // if (fs.existsSync(p.split(".tiff")[0])) {
+      //   fs.renameSync(oldPath, newPath, function (err) {
+      //     if (err) throw err;
+      //     console.log("Successfully renamed - AKA moved!");
+      //   });
+      // }
       //  FIXME: 清理文件夹
       // fs.rmSync(p.split(".tiff")[0], { recursive: true, force: true });
     }
