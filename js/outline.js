@@ -6,7 +6,7 @@ var outline = [
         title: "JWT token Vs. Session Auth",
         desc: "实操帮你理解 JWT token 和 session 的鉴权原理",
         date: "Dec 05, 2021",
-        href: "/Blog/src/2021/jwt-token-session-auth/index.html",
+        href: "/src/2021/jwt-token-session-auth/index.html",
       },
       {
         title: "浏览器渲染优化",
