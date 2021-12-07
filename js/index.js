@@ -2,17 +2,17 @@
   const header = `
   <div class="header-bar">
     <div class="site-id">
-      <h1><a href="/">Cary</a></h1>
+      <h1><a href="/Blog">Cary</a></h1>
     </div>
     <ol class="links">
       <li>
-        <a href="/index.html">Home</a>
+        <a href="/Blog/index.html">Home</a>
       </li>
       <li>
-        <a href="/articles.html">Articles</a>
+        <a href="/Blog/articles.html">Articles</a>
       </li>
       <li>
-        <a href="/about/">About</a>
+        <a href="/Blog/about/">About</a>
       </li>
     </ol>
   </div>

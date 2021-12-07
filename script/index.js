@@ -96,8 +96,6 @@ walk(path.join("./src"), function (err, results) {
       //     console.log("Successfully renamed - AKA moved!");
       //   });
       // }
-      //  FIXME: 清理文件夹
-      // fs.rmSync(p.split(".tiff")[0], { recursive: true, force: true });
     }
   });
 });
