@@ -13,7 +13,7 @@ class List extends React.Component {
             {item[year].map((article) => (
               <li>
                 <article>
-                  <a href={article.href}>
+                  <a href={"/Blog" + article.href}>
                     <div class="title">
                       <h1>{article.title}</h1>
                     </div>
