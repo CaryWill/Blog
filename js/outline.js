@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "React VDOM diff 算法",
+        desc: "通过阅读 VDOM 源码来帮助理解 react diff 算法基于的两条假设",
+        date: "Dec 05, 2021",
+        href: "/src/2021/react-diff-algorithm/index.html",
+      },
+      {
         title: "JWT token Vs. Session Auth",
         desc: "实操帮你理解 JWT token 和 session 的鉴权原理",
         date: "Dec 05, 2021",

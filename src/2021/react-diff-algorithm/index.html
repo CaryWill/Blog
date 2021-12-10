@@ -1,0 +1,289 @@
+<link href="/Blog/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>React Virtual DOM reconciliation</title>
+	</head>
+<body>
+<h1>React Virtual DOM reconciliation</h1>
+
+<p><strong>2021.12.09</strong></p>
+
+<p>在介绍 React 的 virtual DOM diff 算法前，我们先来简单过一下 virtual DOM 的概念，</p>
+
+<p>什么是 virtual DOM？</p>
+
+<blockquote>
+<p>The virtual DOM (VDOM) is a programming concept where an ideal, or “virtual”, representation of a UI is kept in memory and synced with the “real” DOM by a library such as ReactDOM. This process is called <a href="https://reactjs.org/docs/reconciliation.html">reconciliation</a>. - <a href="https://reactjs.org/docs/faq-internals.html#what-is-the-virtual-dom">React Official doc</a></p>
+</blockquote>
+
+<blockquote>
+<p>It&#39;s important to understand that virtual DOM isn&#39;t a feature. It&#39;s a means to an end, the end being declarative, state-driven UI development. Virtual DOM is valuable because it allows you to build apps without thinking about state transitions, with performance that is generally good enough. That means less buggy code, and more time spent on creative tasks instead of tedious ones. - <a href="https://svelte.dev/blog/virtual-dom-is-pure-overhead">rich harris</a></p>
+</blockquote>
+
+<p><strong>思考下</strong>，如果我们自己要实现一个 virtual DOM 的话，我们需要考虑什么？</p>
+
+<ol>
+	<li>如何基于 DOM 创建一个 Virtual DOM（即如何创建一个 VNode）</li>
+	<li>当 Virtual DOM 更新的时候，如果高效的同步到 DOM 去（即，只将改动部分 patch 到 DOM 上，因为对 DOM 的操作很消耗性能，也就是 diff 算法）</li>
+</ol>
+
+<p>这里我们主要讲第二点，在 React 的官方 diff <a href="https://reactjs.org/docs/reconciliation.html#motivation">算法</a>（Reconciliation）文档里也有提到，因为 <a href="https://grfia.dlsi.ua.es/ml/algorithms/references/editsurvey_bille.pdf">Tree Edit Distance</a> 算法有着 O(n^3) 的复杂度，React 基于下面两点假设将其优化到了 O(n) 的复杂度，也就是所谓的启发式（heuristic）算法，该算法基于以下两点，</p>
+
+<ol>
+	<li>Two elements of different types will produce different trees.
+
+		<p>不同的元素类型（tag）会生成不同的 VDOM</p></li>
+	<li>The developer can hint at which child elements may be stable across different renders with a key prop.
+
+		<p>可以用 key 来标识 VNode</p></li>
+</ol>
+
+<p>第二点主要是为了解决 diff 两个 list 的时候可以高效的 diff 的问题，像下面这样，如果我们只是在 list 头部插入了个新值，常规操作我们肯定是，依次比较第一个 li，有改动则 patch，然后第二个 li，。。。，但是这样就会有一个问题，在头部插入会让 diff 算法 patch 每一个 DOM 节点。</p>
+
+<p>但是你可以看到，我们其实只改动了第一个 DOM 节点，所以更加高效的方式是直接在头部插入一个 DOM 节点就完事了。而 key 这个属性可以作为 DOM 节点的 id，我们在 diff 的时候，可以直接看旧的 list 里面有没有这个 key，没有的话，说明就是新增的，直接插入即可。</p>
+
+<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">ul</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">li</span>&gt;Duke&lt;/<span class="syntax-all syntax-tag">li</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">li</span>&gt;Villanova&lt;/<span class="syntax-all syntax-tag">li</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">ul</span>&gt;
+
+&lt;<span class="syntax-all syntax-tag">ul</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">li</span>&gt;Connecticut&lt;/<span class="syntax-all syntax-tag">li</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">li</span>&gt;Duke&lt;/<span class="syntax-all syntax-tag">li</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">li</span>&gt;Villanova&lt;/<span class="syntax-all syntax-tag">li</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">ul</span>&gt;</code></pre>
+
+<p>为了能帮助大家更好的理解，我们来看下 <a href="https://github.com/snabbdom/snabbdom">snabbdom</a> 这个库，它是一个虚拟 DOM 的库，它的 diff 算法 和 React 的 diff 算法是一致的，也是基于上面两点，话不多说，一起看下，</p>
+
+<p>首先是 React diff 的两条规则，在 <strong>snabbdom</strong> 里面就是这么个简单的函数，通过对比 tag 和 key，来决定要不要重新销毁重建一个 node，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">sameVnode</span>(<span class="syntax-all syntax-parameter">vnode1</span>, <span class="syntax-all syntax-parameter">vnode2</span>) {
+	<span class="syntax-all syntax-keyword">...</span>
+	<span class="syntax-all syntax-comment">// rule1:同类型的 我们会 patch vnode，否则，直接销毁重建一个 vnode
+</span>	<span class="syntax-all syntax-comment">// rule2:如果 vnode 有 key 的话，那么我们用 vnode 来标识 vnode，当 key 不一致的话，我们也销毁重建，不然就直接 patch
+</span>    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">isSameSel</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">isSameKey</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">isSameIs</span>;
+}</code></pre>
+
+<p>写了个 <a href="https://carywill.github.io/Frontend/vdom/index.html">demo</a>，源码在 <a href="https://github.com/CaryWill/Frontend/tree/master/vdom">这里</a>，在点击 ul 元素的时候会更新 vnode，再次进行 patch，我们可以打开控制台打断点进行 step by step 的查看，</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// init.js patch
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">patch</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">init</span>([
+  <span class="syntax-all syntax-comment">// patch node 的时候会利用到这些模块，来决定什么要 patch 什么不用
+</span>  <span class="syntax-all syntax-parameter">classModule</span>,
+  <span class="syntax-all syntax-parameter">propsModule</span>,
+  <span class="syntax-all syntax-parameter">styleModule</span>,
+  <span class="syntax-all syntax-parameter">eventListenersModule</span>,
+]);
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">container</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getElementById</span>(<span class="syntax-all syntax-string">&quot;container&quot;</span>);
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">newVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;ul#container&quot;</span>, {}, [
+  <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;li&quot;</span>, { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;a&quot;</span> }, <span class="syntax-all syntax-string">&quot;li a&quot;</span>),
+  <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;li&quot;</span>, { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;1&quot;</span> }, <span class="syntax-all syntax-string">&quot;li 1&quot;</span>),
+  <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;li&quot;</span>, { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;3&quot;</span> }, <span class="syntax-all syntax-string">&quot;li 3&quot;</span>),
+  <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;li&quot;</span>, { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;b&quot;</span> }, <span class="syntax-all syntax-string">&quot;li b&quot;</span>),
+]);
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">vnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">h</span>(
+  <span class="syntax-all syntax-string">&quot;ul#container&quot;</span>,
+  {
+    <span class="syntax-all syntax-string">on</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-entity">click</span>: () <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-variable">patch</span>(<span class="syntax-all syntax-parameter">vnode</span>, <span class="syntax-all syntax-parameter">newVnode</span>),
+    },
+  },
+  [
+    <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;li&quot;</span>, { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;1&quot;</span> }, <span class="syntax-all syntax-string">&quot;li 1&quot;</span>),
+    <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;li&quot;</span>, { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;2&quot;</span> }, <span class="syntax-all syntax-string">&quot;li 2&quot;</span>),
+    <span class="syntax-all syntax-variable">h</span>(<span class="syntax-all syntax-string">&quot;li&quot;</span>, { <span class="syntax-all syntax-string">key</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;3&quot;</span> }, <span class="syntax-all syntax-string">&quot;li 3&quot;</span>),
+  ]
+);
+<span class="syntax-all syntax-variable">patch</span>(<span class="syntax-all syntax-parameter">container</span>, <span class="syntax-all syntax-parameter">vnode</span>);</code></pre>
+
+<p>先来看下 <code>patch</code> 方法，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">patch</span>(<span class="syntax-all syntax-parameter">oldVnode</span>, <span class="syntax-all syntax-parameter">vnode</span>) {
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">i</span>, <span class="syntax-all syntax-parameter">elm</span>, <span class="syntax-all syntax-parameter">parent</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">insertedVnodeQueue</span> <span class="syntax-all syntax-keyword">=</span> [];
+
+  <span class="syntax-all syntax-comment">// 创建一个空的 vnode
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-variable">isVnode</span>(<span class="syntax-all syntax-parameter">oldVnode</span>)) {
+    <span class="syntax-all syntax-parameter">oldVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">emptyNodeAt</span>(<span class="syntax-all syntax-parameter">oldVnode</span>);
+  }
+
+  <span class="syntax-all syntax-comment">// 同一个 vnode 那么 patch 它同步到真实的 DOM 去
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">sameVnode</span>(<span class="syntax-all syntax-parameter">oldVnode</span>, <span class="syntax-all syntax-parameter">vnode</span>)) {
+    <span class="syntax-all syntax-variable">patchVnode</span>(<span class="syntax-all syntax-parameter">oldVnode</span>, <span class="syntax-all syntax-parameter">vnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>);
+  }
+  <span class="syntax-all syntax-comment">// 不然销毁重造
+</span>  <span class="syntax-all syntax-keyword">...</span>
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">vnode</span>;
+}</code></pre>
+
+<p>再来看下 <code>patchVnode</code> 的逻辑，这里的逻辑还是很简单的，所有的 patch 操作都放在了各个插件模块里面，妙啊(protocol/interface oriented) ，各个模块负责具体怎么 patch，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">patchVnode</span>(<span class="syntax-all syntax-parameter">oldVnode</span>, <span class="syntax-all syntax-parameter">vnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>) {
+        <span class="syntax-all syntax-keyword">...</span>
+        <span class="syntax-all syntax-comment">//// vnode 都是 h 函数创建出来的，那么 vnode 的引用必然不一样，不过也不妨碍你 patch 相同的节点
+</span>        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">oldVnode</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">vnode</span>)
+            <span class="syntax-all syntax-keyword">return</span>;
+        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">vnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">data</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-constant">undefined</span>) {
+        <span class="syntax-all syntax-comment">//// 调用各个模块实现的 update hooks 来 patch vnode 本身
+</span>            <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">i</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>; <span class="syntax-all syntax-parameter">i</span> <span class="syntax-all syntax-keyword">&lt;</span> <span class="syntax-all syntax-parameter">cbs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span>; <span class="syntax-all syntax-keyword">++</span><span class="syntax-all syntax-parameter">i</span>)
+                <span class="syntax-all syntax-parameter">cbs</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">update</span>[<span class="syntax-all syntax-parameter">i</span>](<span class="syntax-all syntax-parameter">oldVnode</span>, <span class="syntax-all syntax-parameter">vnode</span>);
+        }
+        <span class="syntax-all syntax-comment">//// 更新完 vnode 本身，再递归 patch vnode 的 children
+</span>        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">isUndef</span>(<span class="syntax-all syntax-parameter">vnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">text</span>)) {
+            <span class="syntax-all syntax-comment">//// 只是更新了 children 元素的话
+</span>            <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">isDef</span>(<span class="syntax-all syntax-parameter">oldCh</span>) <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-variable">isDef</span>(<span class="syntax-all syntax-parameter">ch</span>)) {
+                <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">oldCh</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-parameter">ch</span>)
+                <span class="syntax-all syntax-comment">//// patch chilren
+</span>                    <span class="syntax-all syntax-variable">updateChildren</span>(<span class="syntax-all syntax-parameter">elm</span>, <span class="syntax-all syntax-parameter">oldCh</span>, <span class="syntax-all syntax-parameter">ch</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>);
+            }
+			<span class="syntax-all syntax-keyword">...</span>
+       	<span class="syntax-all syntax-keyword">...</span>
+    }</code></pre>
+
+<p>patch 完 Vnode 之后，我们继续 patch Vnode 的 children 如果有的话，来看下 <code>updateChildren</code> 方法，内部还是调用了 <code>patchVnode</code>，其实就是递归 patch Vnode，对于 children 的 patch 内部通过双指针夹逼的方式，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">updateChildren</span>(<span class="syntax-all syntax-parameter">parentElm</span>, <span class="syntax-all syntax-parameter">oldCh</span>, <span class="syntax-all syntax-parameter">newCh</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>) {
+  <span class="syntax-all syntax-keyword">...</span>
+
+  <span class="syntax-all syntax-comment">// 其中一个数组 patch 完即可，loop 结束后再处理需要删除和添加的 vnode
+</span>  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">oldStartIdx</span> <span class="syntax-all syntax-keyword">&lt;=</span> <span class="syntax-all syntax-parameter">oldEndIdx</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">newStartIdx</span> <span class="syntax-all syntax-keyword">&lt;=</span> <span class="syntax-all syntax-parameter">newEndIdx</span>) {
+    <span class="syntax-all syntax-keyword">...</span>
+    <span class="syntax-all syntax-comment">//// NOTE: 不用硬看，如果看不懂，问下自己，&quot;如果在头部插了个 node, 如果直接对比的话,你会怎么处理？“
+</span>    <span class="syntax-all syntax-comment">//// 如果可以提前发现只是在头部插了个 node 的话，那么
+</span>    <span class="syntax-all syntax-comment">//// 你就可以只修改第一个 node，而保持其他 node 不变
+</span>    <span class="syntax-all syntax-comment">//// 没移动直接 patch 即可
+</span>    <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">sameVnode</span>(<span class="syntax-all syntax-parameter">oldStartVnode</span>, <span class="syntax-all syntax-parameter">newStartVnode</span>)) {
+      <span class="syntax-all syntax-variable">patchVnode</span>(<span class="syntax-all syntax-parameter">oldStartVnode</span>, <span class="syntax-all syntax-parameter">newStartVnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>);
+      <span class="syntax-all syntax-parameter">oldStartVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldCh</span>[<span class="syntax-all syntax-keyword">++</span><span class="syntax-all syntax-parameter">oldStartIdx</span>];
+      <span class="syntax-all syntax-parameter">newStartVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newCh</span>[<span class="syntax-all syntax-keyword">++</span><span class="syntax-all syntax-parameter">newStartIdx</span>];
+    } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">sameVnode</span>(<span class="syntax-all syntax-parameter">oldEndVnode</span>, <span class="syntax-all syntax-parameter">newEndVnode</span>)) {
+      <span class="syntax-all syntax-variable">patchVnode</span>(<span class="syntax-all syntax-parameter">oldEndVnode</span>, <span class="syntax-all syntax-parameter">newEndVnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>);
+      <span class="syntax-all syntax-parameter">oldEndVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldCh</span>[<span class="syntax-all syntax-keyword">--</span><span class="syntax-all syntax-parameter">oldEndIdx</span>];
+      <span class="syntax-all syntax-parameter">newEndVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newCh</span>[<span class="syntax-all syntax-keyword">--</span><span class="syntax-all syntax-parameter">newEndIdx</span>];
+    }
+    <span class="syntax-all syntax-comment">//// 位置移动了 需要 patch and insert
+</span>    <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">sameVnode</span>(<span class="syntax-all syntax-parameter">oldStartVnode</span>, <span class="syntax-all syntax-parameter">newEndVnode</span>)) {
+      <span class="syntax-all syntax-comment">// Vnode moved right
+</span>      <span class="syntax-all syntax-variable">patchVnode</span>(<span class="syntax-all syntax-parameter">oldStartVnode</span>, <span class="syntax-all syntax-parameter">newEndVnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>);
+      <span class="syntax-all syntax-parameter">api</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">insertBefore</span>(
+        <span class="syntax-all syntax-parameter">parentElm</span>,
+        <span class="syntax-all syntax-parameter">oldStartVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>,
+        <span class="syntax-all syntax-parameter">api</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">nextSibling</span>(<span class="syntax-all syntax-parameter">oldEndVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>)
+      );
+      <span class="syntax-all syntax-parameter">oldStartVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldCh</span>[<span class="syntax-all syntax-keyword">++</span><span class="syntax-all syntax-parameter">oldStartIdx</span>];
+      <span class="syntax-all syntax-parameter">newEndVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newCh</span>[<span class="syntax-all syntax-keyword">--</span><span class="syntax-all syntax-parameter">newEndIdx</span>];
+    } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">sameVnode</span>(<span class="syntax-all syntax-parameter">oldEndVnode</span>, <span class="syntax-all syntax-parameter">newStartVnode</span>)) {
+      <span class="syntax-all syntax-comment">// Vnode moved left
+</span>      <span class="syntax-all syntax-variable">patchVnode</span>(<span class="syntax-all syntax-parameter">oldEndVnode</span>, <span class="syntax-all syntax-parameter">newStartVnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>);
+      <span class="syntax-all syntax-parameter">api</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">insertBefore</span>(<span class="syntax-all syntax-parameter">parentElm</span>, <span class="syntax-all syntax-parameter">oldEndVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>, <span class="syntax-all syntax-parameter">oldStartVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>);
+      <span class="syntax-all syntax-parameter">oldEndVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldCh</span>[<span class="syntax-all syntax-keyword">--</span><span class="syntax-all syntax-parameter">oldEndIdx</span>];
+      <span class="syntax-all syntax-parameter">newStartVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newCh</span>[<span class="syntax-all syntax-keyword">++</span><span class="syntax-all syntax-parameter">newStartIdx</span>];
+    }
+    <span class="syntax-all syntax-comment">//// --- end
+</span>
+    <span class="syntax-all syntax-comment">//// 插入或者交换位置的我们可以利用 key 来进行高效对比
+</span>    <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">oldKeyToIdx</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">undefined</span>) {
+        <span class="syntax-all syntax-parameter">oldKeyToIdx</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">createKeyToOldIdx</span>(<span class="syntax-all syntax-parameter">oldCh</span>, <span class="syntax-all syntax-parameter">oldStartIdx</span>, <span class="syntax-all syntax-parameter">oldEndIdx</span>);
+      }
+      <span class="syntax-all syntax-parameter">idxInOld</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldKeyToIdx</span>[<span class="syntax-all syntax-parameter">newStartVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">key</span>];
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">isUndef</span>(<span class="syntax-all syntax-parameter">idxInOld</span>)) {
+        <span class="syntax-all syntax-comment">// New element
+</span>        <span class="syntax-all syntax-parameter">api</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">insertBefore</span>(
+          <span class="syntax-all syntax-parameter">parentElm</span>,
+          <span class="syntax-all syntax-variable">createElm</span>(<span class="syntax-all syntax-parameter">newStartVnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>),
+          <span class="syntax-all syntax-parameter">oldStartVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>
+        );
+      }
+      <span class="syntax-all syntax-comment">//// 调换了位置
+</span>      <span class="syntax-all syntax-comment">//// 好说 
+</span>	  <span class="syntax-all syntax-comment">//// 凡是涉嫌位置移动的 最后到需要 insert 因为 dom 没有移动的 api
+</span>      <span class="syntax-all syntax-keyword">else</span> {
+        <span class="syntax-all syntax-parameter">elmToMove</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldCh</span>[<span class="syntax-all syntax-parameter">idxInOld</span>];
+        <span class="syntax-all syntax-comment">//// 调换的这两个 node tag 不相同 // 那么没办法复用 销毁重建
+</span>        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">elmToMove</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">sel</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-parameter">newStartVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">sel</span>) {
+          <span class="syntax-all syntax-parameter">api</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">insertBefore</span>(
+            <span class="syntax-all syntax-parameter">parentElm</span>,
+            <span class="syntax-all syntax-variable">createElm</span>(<span class="syntax-all syntax-parameter">newStartVnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>),
+            <span class="syntax-all syntax-parameter">oldStartVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>
+          );
+        }
+        <span class="syntax-all syntax-comment">//// 如果这两个 node tag 相同，那么直接 patch 属性即可
+</span>        <span class="syntax-all syntax-keyword">else</span> {
+          <span class="syntax-all syntax-variable">patchVnode</span>(<span class="syntax-all syntax-parameter">elmToMove</span>, <span class="syntax-all syntax-parameter">newStartVnode</span>, <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>);
+          <span class="syntax-all syntax-parameter">oldCh</span>[<span class="syntax-all syntax-parameter">idxInOld</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">undefined</span>;
+          <span class="syntax-all syntax-parameter">api</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">insertBefore</span>(<span class="syntax-all syntax-parameter">parentElm</span>, <span class="syntax-all syntax-parameter">elmToMove</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>, <span class="syntax-all syntax-parameter">oldStartVnode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>);
+        }
+      }
+      <span class="syntax-all syntax-parameter">newStartVnode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newCh</span>[<span class="syntax-all syntax-keyword">++</span><span class="syntax-all syntax-parameter">newStartIdx</span>];
+    }
+  }
+  <span class="syntax-all syntax-comment">//// 两端夹逼的结果
+</span>  <span class="syntax-all syntax-comment">//// 旧的 有 有 无 无
+</span>  <span class="syntax-all syntax-comment">//// 新的 无 有 有 无
+</span>  <span class="syntax-all syntax-comment">//// oldStartIdx &lt;= oldEndIdx &amp;&amp; newStartIdx &lt;= newEndIdx 不成立 才到这里 所以 有有的情况需要排除 无无的情况不用做什么
+</span>  <span class="syntax-all syntax-comment">///// 夹逼完的说明都已经 patch 和 insert 了
+</span>  <span class="syntax-all syntax-comment">//// 所以这里可以改写下我觉得 不然不好理解
+</span>  <span class="syntax-all syntax-comment">// if(oldStartIdx &lt;= oldEndIdx) {
+</span>  <span class="syntax-all syntax-comment">//     removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
+</span>  <span class="syntax-all syntax-comment">// }
+</span>  <span class="syntax-all syntax-comment">// if(newStartIdx &lt;= newEndIdx) {
+</span>  <span class="syntax-all syntax-comment">//     before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
+</span>  <span class="syntax-all syntax-comment">//     addVnodes(parentElm, before, newCh, newStartIdx, newEndIdx, insertedVnodeQueue);
+</span>  <span class="syntax-all syntax-comment">// }
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">oldStartIdx</span> <span class="syntax-all syntax-keyword">&lt;=</span> <span class="syntax-all syntax-parameter">oldEndIdx</span> <span class="syntax-all syntax-keyword">||</span> <span class="syntax-all syntax-parameter">newStartIdx</span> <span class="syntax-all syntax-keyword">&lt;=</span> <span class="syntax-all syntax-parameter">newEndIdx</span>) {
+    <span class="syntax-all syntax-comment">//// 新数组还没夹逼完
+</span>    <span class="syntax-all syntax-comment">//// 说明新数组在 patch 完旧的之后还有多，需要继续 insert
+</span>    <span class="syntax-all syntax-comment">//// oldStartIdx &lt;= oldEndIdx || newStartIdx &lt;= newEndIdx &amp;&amp; oldStartIdx &gt; oldEndIdx
+</span>    <span class="syntax-all syntax-comment">//// 说明 newStartIdx &lt;= newEndIdx &amp;&amp; oldStartIdx &gt; oldEndIdx
+</span>    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">oldStartIdx</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-parameter">oldEndIdx</span>) {
+      <span class="syntax-all syntax-parameter">before</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newCh</span>[<span class="syntax-all syntax-parameter">newEndIdx</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">1</span>] <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-constant">null</span> <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-constant">null</span> : <span class="syntax-all syntax-parameter">newCh</span>[<span class="syntax-all syntax-parameter">newEndIdx</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">1</span>]<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">elm</span>;
+      <span class="syntax-all syntax-variable">addVnodes</span>(
+        <span class="syntax-all syntax-parameter">parentElm</span>,
+        <span class="syntax-all syntax-parameter">before</span>,
+        <span class="syntax-all syntax-parameter">newCh</span>,
+        <span class="syntax-all syntax-parameter">newStartIdx</span>,
+        <span class="syntax-all syntax-parameter">newEndIdx</span>,
+        <span class="syntax-all syntax-parameter">insertedVnodeQueue</span>
+      );
+    }
+
+    <span class="syntax-all syntax-comment">//// oldStartIdx &lt;= oldEndIdx || newStartIdx &lt;= newEndIdx &amp;&amp; oldStartIdx&lt;= oldEndIdx
+</span>    <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-comment">//// 旧数组没夹逼完的
+</span>      <span class="syntax-all syntax-comment">//// 新数组的元素就已经 patch 和 insert 了
+</span>      <span class="syntax-all syntax-comment">//// 旧数组剩下的都是没用的了 需要移除
+</span>      <span class="syntax-all syntax-variable">removeVnodes</span>(<span class="syntax-all syntax-parameter">parentElm</span>, <span class="syntax-all syntax-parameter">oldCh</span>, <span class="syntax-all syntax-parameter">oldStartIdx</span>, <span class="syntax-all syntax-parameter">oldEndIdx</span>);
+    }
+  }
+}</code></pre>
+
+<p>这样就 VDOM 的 patch 就完成了。</p>
+
+<p>备注：学习的时候最好有实践作支撑，不然只看理论很容易忘，所以研读源码的时候，我都会写一个小 demo，用来打断点调试，方便学习，很多函数在第一次看的时候可以不用细看，我们看函数名就行了，先把整个流程串起来。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://reactjs.org/docs/faq-internals.html">Virtual DOM and Internals</a></li>
+	<li><a href="https://www.reddit.com/r/javascript/comments/3d0fvy/citojs_fast_lowlevel_virtual_dom_library/">citojs</a> <a href="https://github.com/infernojs/inferno">inferno</a> <a href="https://github.com/snabbdom/snabbdom">snabbdom</a></li>
+	<li><a href="https://stackoverflow.com/questions/5716976/javascript-undefined-vs-void-0">JavaScript <code>undefined</code> vs <code>void 0</code></a></li>
+	<li><a href="https://dev.to/ameerthehacker/build-your-own-react-in-90-lines-of-javascript-1je2">Build your own React in 90 lines of JavaScript</a></li>
+	<li><a href="https://segmentfault.com/a/1190000018606639">React &amp;&amp; VUE Virtual Dom的Diff算法统一之路 snabbdom.js解读</a></li>
+	<li><a href="https://svelte.dev/blog/virtual-dom-is-pure-overhead">Virtual DOM is pure overhead</a></li>
+	<li><a href="https://pomb.us/build-your-own-react/">Build your own React（这里的动画也太酷了）</a></li>
+	<li><a href="https://stackoverflow.com/a/61272492">The purpose of the Virtual DOM </a></li>
+</ol>
+
+</body>
+</html>
+
+<script src="/Blog/js/index.js" defer></script>
