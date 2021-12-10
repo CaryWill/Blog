@@ -8,8 +8,8 @@
     <title>React VDOM diff 算法</title>
     <link>/src/2021/react-diff-algorithm/index.html</link>
     <description>通过阅读 VDOM 源码来帮助理解 react diff 算法基于的两条假设</description>
-    <pubDate>Sun Dec 05 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
-    <lastBuildDate>Sun Dec 05 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+    <pubDate>Thu Dec 09 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Thu Dec 09 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>JWT token Vs. Session Auth</title>
     <link>/src/2021/jwt-token-session-auth/index.html</link>
