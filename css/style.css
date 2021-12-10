@@ -34,25 +34,25 @@ body {
 a {
   outline: none !important;
   font-weight: bold;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 a:link {
-  color: rgb(116, 183, 244);
+  color: maroon;
 }
 
-a:visited {
+/* a:visited {
   color: rgb(116, 183, 244);
-}
+} */
 
 a:hover {
-  color: #008fff;
+  color: orangered;
 }
 
-a:active {
+/* a:active {
   color: rgb(116, 183, 244);
   outline: none;
-}
+} */
 
 h1 {
   font-size: 300%;
