@@ -5,7 +5,7 @@ var outline = [
       {
         title: "React VDOM diff 算法",
         desc: "通过阅读 VDOM 源码来帮助理解 react diff 算法基于的两条假设",
-        date: "Dec 05, 2021",
+        date: "Dec 09, 2021",
         href: "/src/2021/react-diff-algorithm/index.html",
       },
       {
