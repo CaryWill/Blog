@@ -3,7 +3,7 @@
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>浏览器渲染优化</title>
 	</head>
 <body>
@@ -131,6 +131,26 @@ ele.style.width = otherEleWidth;</code></pre>
 
 		<p>我们可以用不会触发 Layout 的<a href="https://csstriggers.com/">属性</a>来替代会触发 Layout 的属性，比如用<code>translate</code> 代替 <code>top</code>。</p></li>
 </ol>
+
+<h3>Paint</h3>
+
+<p>除了 style 和 layout 导致的 repaint 问题，如果样式没有触发 visiual change 的话，还可以考虑从 layer 入手，可以在这里了解下 <a href="https://classroom.udacity.com/courses/ud860/lessons/4129068601/concepts/41511086480923">分层的概念</a>，每次触发渲染，浏览器只会重新绘制当前需要绘制的元素所在的 layer 里需要绘制的元素。</p>
+
+<p>来看个 <a href="https://carywill.github.io/Frontend/brower-related/layer/layer.html">Demo</a>，</p>
+
+<figure><img src="DraggedImage-1.png"/><img src="DraggedImage-2.png"/></figure>
+
+<figure><img src="DraggedImage-3.png"/></figure>
+
+<p>我们可以看到现在一共就 1 个 layer（document），因为每次 hover 在黄色的 box 上会使用 <code>transform</code> 进行位移，但是不影响 repaint，因为该属性你可以在 <a href="https://csstriggers.com/">css-triggers</a> 上查到，该属性是不会触发 repaint 的 ，但是，因为我们就只要一个图层，所以最终还是会触发 repaint，因为一个 layer 合并个啥，没用啊。</p>
+
+<p>解决办法，通过将黄色的 box 放到自己的 layer 去，这样因为黄色移动了，也不会 repaint document layer（因为上面的元素没有视觉上的样式改动），它只会造成黄色 box 所在图层的 repaint，但是因为黄色元素本身也没有 visual change，所以也不会造成 repaint，后面只需要在下一个 compositing 阶段 compositing layer 即可。</p>
+
+<p>所以我们现在只要给 <code>.box</code> 加上一个 <code>will-change: transform;</code> 或者 <code>transform: translateZ(0)</code> 即可解决这个问题，<a href="https://carywill.github.io/Frontend/brower-related/layer/layer-fixed.html">demo</a></p>
+
+<figure><img src="DraggedImage-4.png"/></figure>
+
+<p>但是 compositing 也不是白给的，也是需要消耗性能的，所以你需要在 repaint 和 compositing 之间找到平衡。</p>
 
 <h2>参考</h2>
 
