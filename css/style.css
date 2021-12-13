@@ -517,6 +517,7 @@ body > header ol.links > li {
   margin: 0 0.8rem;
   padding: 0;
 }
+
 body > header ol.links > li > .active {
   font-weight: 900;
 }

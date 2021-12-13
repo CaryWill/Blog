@@ -1,4 +1,4 @@
-<link href="/Blog/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,7 +69,7 @@
 
 <p>写了个 <a href="https://carywill.github.io/Frontend/vdom/index.html">demo</a>，源码在 <a href="https://github.com/CaryWill/Frontend/tree/master/vdom">这里</a>，在点击 ul 元素的时候会更新 vnode，再次进行 patch，我们可以打开控制台打断点进行 step by step 的查看，</p>
 
-<figure><img src="DraggedImage.png"/></figure>
+<figure><img src="DraggedImage.tiff"/></figure>
 
 <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// init.js patch
 </span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">patch</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">init</span>([
@@ -231,7 +231,7 @@
 </span>  <span class="syntax-all syntax-comment">//// 新的 无 有 有 无
 </span>  <span class="syntax-all syntax-comment">//// oldStartIdx &lt;= oldEndIdx &amp;&amp; newStartIdx &lt;= newEndIdx 不成立 才到这里 所以 有有的情况需要排除 无无的情况不用做什么
 </span>  <span class="syntax-all syntax-comment">///// 夹逼完的说明都已经 patch 和 insert 了
-</span>  <span class="syntax-all syntax-comment">//// 所以这里可以改写下我觉得 不然不好理解
+</span>  <span class="syntax-all syntax-comment">//// 所以这里可以改写下我觉得 不然不好理解 顺手提了个 PR 到 github 被 merge 了
 </span>  <span class="syntax-all syntax-comment">// if(oldStartIdx &lt;= oldEndIdx) {
 </span>  <span class="syntax-all syntax-comment">//     removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
 </span>  <span class="syntax-all syntax-comment">// }
@@ -286,4 +286,3 @@
 </body>
 </html>
 
-<script src="/Blog/js/index.js" defer></script>
