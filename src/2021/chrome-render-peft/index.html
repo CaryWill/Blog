@@ -1,15 +1,19 @@
-<link href="/Blog/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
 		<link rel="stylesheet" type="text/css" href="css/style.css" />
-		<title>浏览器渲染优化</title>
+		<title>浏览器渲染优化(Critical rendering path)</title>
 	</head>
 <body>
-<h1>浏览器渲染优化</h1>
+<h1>浏览器渲染优化(Critical rendering path)</h1>
 
 <p><strong>2021.12.02</strong></p>
+
+<blockquote>
+<p>Measure first. Optimize as needed.</p>
+</blockquote>
 
 <h2>渲染</h2>
 
@@ -19,7 +23,7 @@
 
 <p>而生成 1 帧（render），一般要经历下面 5 个步骤，</p>
 
-<figure><img src="DraggedImage.png" alt="https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline"/><figcaption>https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline</figcaption></figure>
+<figure><img src="DraggedImage.tiff" alt="https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline"/><figcaption>https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline</figcaption></figure>
 
 <p>也就是说上面这五个步骤要在 16.67ms 内都完成掉，但是实际上，因为浏览器自己也有一些家务事（housekeeping）要做，所以实际上的时间更短，你需要在 10 - 12ms 完成上面五个步骤。如果有一步时间花费的太长，导致总的时间超过了 16ms，那么就会影响到下一帧的生成了，因为我们到下一个 16ms 了，我们上一步的还没完成，画面就还是一样的，这就是所谓的<em>掉帧</em>。</p>
 
@@ -35,7 +39,7 @@
 
 <p>我们可以通过浏览器的 Performance Tab 进行录制分析，看是哪一个阶段出现问题，我们还可以看到哪个动作触发了哪个，比如下面，在点击的时候，触发了下面一行的函数，下面的函数又触发了第三行的函数等。</p>
 
-<figure><img src="DraggedImage-1.png"/></figure>
+<figure><img src="DraggedImage-1.tiff"/></figure>
 
 <p>具体怎么使用这个工具，大家可以自行搜索下，这里就不赘述了。</p>
 
@@ -55,7 +59,7 @@
 
 <p>这一步就是将 DOM 和 CSSOM 合并生成一个 <a href="https://classroom.udacity.com/courses/ud860/lessons/4138328558/concepts/41677185820923">render tree</a>。</p>
 
-<figure><img src="DraggedImage-2.png"/></figure>
+<figure><img src="DraggedImage-2.tiff"/></figure>
 
 <p>这一步优化的建议是，</p>
 
@@ -96,43 +100,123 @@ button.addEventListener(&#39;click&#39;, function() {
 
 <figure><img src="DraggedImage.png"/></figure>
 
-<p>优化建议：</p>
+<h4>减少 FSL（Forced Synchronous Layout）</h4>
 
-<ol>
-	<li>减少 FSL（Forced Synchronous Layout）
+<p>浏览器也是很聪明的，它会 <a href="https://www.phpied.com/rendering-repaint-reflowrelayout-restyle/">batch</a> 的进行 style calculation 和 layout。</p>
 
-		<p>什么是 FSL？</p>
+<p>来看下下面的例子，</p>
 
-		<p>正常我们的渲染是这样的，</p>
+<pre><code class="code-highlighted code-html">&lt;<span class="syntax-all syntax-tag">html</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">head</span>&gt;&lt;/<span class="syntax-all syntax-tag">head</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">body</span>&gt;
+	dude
+  &lt;/<span class="syntax-all syntax-tag">body</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">script</span>&gt;
+		  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">bodystyle</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">style</span>;
+		  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">tmp</span>;
+		  <span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">fsl</span>() {
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">color</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;red&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">padding</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;1px&quot;</span>;
+    		<span class="syntax-all syntax-parameter">tmp</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">offsetWidth</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">color</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;white&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">padding</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;2px&quot;</span>;
+    		<span class="syntax-all syntax-parameter">tmp</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">offsetWidth</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">color</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;green&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">padding</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;3px&quot;</span>;
+    		<span class="syntax-all syntax-parameter">tmp</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">offsetWidth</span>;
+		  }
+	
+		  <span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">nonFsl</span>() {
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">color</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;yellow&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">padding</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;4px&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">color</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;pink&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">padding</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;5px&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">color</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;blue&quot;</span>;
+    		<span class="syntax-all syntax-parameter">bodystyle</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">padding</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;6px&quot;</span>;
+    		<span class="syntax-all syntax-parameter">tmp</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">offsetWidth</span>;
+    		<span class="syntax-all syntax-parameter">tmp</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">offsetWidth</span>;
+    		<span class="syntax-all syntax-parameter">tmp</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">offsetWidth</span>;
+		  }
+	
+		  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">a</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">false</span>;
+		  <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-entity">onclick</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">function</span> () {
+    		<span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">a</span>) {
+    		  <span class="syntax-all syntax-variable">fsl</span>();
+    		} <span class="syntax-all syntax-keyword">else</span> {
+    		  <span class="syntax-all syntax-variable">nonFsl</span>();
+    		}
+    		<span class="syntax-all syntax-parameter">a</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">a</span>;
+		  };
+ &lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">html</span>&gt;</code></pre>
 
-		<p>JavaScript -&gt; Style calculation -&gt; Layout -&gt; Paint -&gt; Composite</p>
+<p>正常情况下，当你修改 style 的时候，浏览器会 schedule 你的 style calculation 到一个队列里面去，等待时机一次性（batch）计算，然后进行 layout。</p>
 
-		<p>而 FSL 就是， Layout -&gt; Style -&gt; Layout，重复执行了多次 Layout。</p>
+<p>比如这个，</p>
 
-		<p>比如，</p>
+<pre><code class="code-highlighted code-html"> function nonFsl() {
+    			bodystyle.color = &quot;yellow&quot;;
+    			bodystyle.padding = &quot;4px&quot;;
+    			bodystyle.color = &quot;pink&quot;;
+    			bodystyle.padding = &quot;5px&quot;;
+    			bodystyle.color = &quot;blue&quot;;
+    			bodystyle.padding = &quot;6px&quot;;
+				// 到这里为止， style 的计算都会被加入到一个队列里去等待时机 flush 一次行计算
+				// 但是当你获取一些和 layout 相关的属性的时候，为了保持数据是最新的，浏览器会 flush 刚才的那个队列强制进行一次 layout，以便获取最新的 layout 信息，比如 offsetWidth 这些属性
+				// 因为队列里没有 style 的计算了，所以后面的 layout 的属性获取并不会强制 layout 一遍
+    			tmp = document.body.offsetWidth;
+    			tmp = document.body.offsetWidth;
+    			tmp = document.body.offsetWidth;
+}</code></pre>
 
-		<p>走正常渲染逻辑的话，当我们改变一个元素的宽度的时候，<code>ele.style.width = 20px;</code> 会走到第二步（Style calculations），但是因为我们改动是元素的几何属性，所以这一步结束也会走到第三步（Layout）。</p>
+<p>如下图，</p>
 
-		<p>当你的元素的几何属性依赖其他元素的几何属性的时候，会出现 FSL。比如 ，</p>
+<figure><img src="DraggedImage-3.tiff"/></figure>
 
-<pre><code class="code-highlighted code-html">const otherEleWidth = otherEle.offsetWidth;
-ele.style.width = otherEleWidth;</code></pre>
+<p>了解了吧，所以下面这种写法是不好的，</p>
 
-		<p>首先，<code>offsetWidth</code> 这个 DOM 元素属性，它会触发 Layout 这一步，所以首先在计算样式之前，我们先走到了 Layout，等拿到了其他元素的宽度的时候，我们再设置样式，就走到了 Style calculations 这一步，因为 <code>width</code> 属性会同时触发 Style calculations 和 Layout，所以等到宽度设置完毕，就又走到了 Layout，看到问题没，Layout 走了两遍，而 Layout 和 Paint 是十分消耗性能的，所以就有问题了。</p>
+<pre><code class="code-highlighted code-html">      function fsl() {
+        bodystyle.color = &quot;red&quot;;
+        bodystyle.padding = &quot;1px&quot;;
+        tmp = document.body.offsetWidth;
+        bodystyle.color = &quot;white&quot;;
+        bodystyle.padding = &quot;2px&quot;;
+        tmp = document.body.offsetWidth;
+        bodystyle.color = &quot;green&quot;;
+        bodystyle.padding = &quot;3px&quot;;
+        tmp = document.body.offsetWidth;
+      }</code></pre>
 
-		<p>再比如，在当在一个 loop 里反复进行 FSL 的话，性能下降的就会很厉害了，</p>
+<p>每次获取 layout 属性，都会强制计算 style (flush 我们的 style calculation 队列)然后 layout，频繁的 layout 会很损耗性能。</p>
 
-		<figure><img src="DraggedImage-3.png" alt="https://classroom.udacity.com/courses/ud860/lessons/4147498575/concepts/41331086040923"/><figcaption>https://classroom.udacity.com/courses/ud860/lessons/4147498575/concepts/41331086040923</figcaption></figure>
+<figure><img src="DraggedImage-4.tiff"/></figure>
 
-		<p>我们可以将 <code>greenBlock.offsetWidth</code> 这个会造成 FSL 的宽度变量缓存起来，放到 for loop 外面，这样 FSL 就只会发生一次，是不是很 nice。</p>
+<p>这里我们可以通过缓存 layout 的属性值，来减少强制计算 style，</p>
 
-		<p>哪些 CSS 属性会造成 Layout 呢？ 来<a href="http://gent.ilcore.com/2011/03/how-not-to-trigger-layout-in-webkit.html">这里看下</a>。</p></li>
-	<li>既然 Layout 消耗性能，那么我们跳过这一步不就行了？
+<pre><code class="code-highlighted code-html">function fsl() {
+		const bodyWidth = document.body.offsetWidth;
+        bodystyle.color = &quot;red&quot;;
+        bodystyle.padding = &quot;1px&quot;;
+        tmp = bodyWidth;
+        bodystyle.color = &quot;white&quot;;
+        bodystyle.padding = &quot;2px&quot;;
+        tmp = bodyWidth;
+        bodystyle.color = &quot;green&quot;;
+        bodystyle.padding = &quot;3px&quot;;
+        tmp = bodyWidth;
+      }</code></pre>
 
-		<p>我们可以用不会触发 Layout 的<a href="https://csstriggers.com/">属性</a>来替代会触发 Layout 的属性，比如用<code>translate</code> 代替 <code>top</code>。</p></li>
-</ol>
+<p>哪些 CSS 属性会造成 Layout 呢？ 来<a href="http://gent.ilcore.com/2011/03/how-not-to-trigger-layout-in-webkit.html">这里看下</a>。</p>
 
-<h3>Paint</h3>
+<h4>使用不会触发 layout 的属性替代会触发 layout 的属性</h4>
+
+<p>既然 Layout 消耗性能，那么我们跳过这一步不就行了？</p>
+
+<p>我们可以用不会触发 Layout 的<a href="https://csstriggers.com/">属性</a>来替代会触发 Layout 的属性，比如用<code>translate</code> 代替 <code>top</code>。</p>
+
+<h3>Paint </h3>
+
+<p></p>
 
 <p>除了 style 和 layout 导致的 repaint 问题，如果样式没有触发 visiual change 的话，还可以考虑从 layer 入手，可以在这里了解下 <a href="https://classroom.udacity.com/courses/ud860/lessons/4129068601/concepts/41511086480923">分层的概念</a>，每次触发渲染，浏览器只会重新绘制当前需要绘制的元素所在的 layer 里需要绘制的元素。</p>
 
@@ -150,7 +234,9 @@ ele.style.width = otherEleWidth;</code></pre>
 
 <figure><img src="DraggedImage-4.png"/></figure>
 
-<p>但是 compositing 也不是白给的，也是需要消耗性能的，所以你需要在 repaint 和 compositing 之间找到平衡。</p>
+<p>但是 compositing 也不是白给的，也是需要消耗性能的，所以你需要在 repaint 和 compositing 之间找到<a href="https://classroom.udacity.com/courses/ud860/lessons/4129068601/concepts/41565686830923">平衡</a>。</p>
+
+<p>NOTE：Don&#39;t promote elements without profiling.</p>
 
 <h2>参考</h2>
 
@@ -167,9 +253,11 @@ ele.style.width = otherEleWidth;</code></pre>
 	<li><a href="https://developers.google.com/speed/docs/insights/browser-reflow">How to minimize the effect of reflow</a></li>
 	<li><a href="https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline">Rendering Pipeline</a></li>
 	<li><a href="https://web.dev/rail/">Rail</a></li>
+	<li><a href="https://www.html5rocks.com/en/tutorials/internals/howbrowserswork/#The_layout_process">How Browsers Work: Behind the scenes of modern web browsers </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Critical_rendering_path">Critical rendering path - MDN</a></li>
+	<li><a href="https://www.phpied.com/rendering-repaint-reflowrelayout-restyle/">Rendering: repaint, reflow/relayout, restyle</a></li>
 </ol>
 
 </body>
 </html>
 
-<script src="/Blog/js/index.js" defer></script>
