@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<link href="/Blog/css/style.css" rel="stylesheet" /><!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,7 +23,7 @@
 
 <p>而生成 1 帧（render），一般要经历下面 5 个步骤，</p>
 
-<figure><img src="DraggedImage.tiff" alt="https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline"/><figcaption>https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline</figcaption></figure>
+<figure><img src="DraggedImage.png" alt="https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline"/><figcaption>https://developers.google.com/web/fundamentals/performance/rendering#the_pixel_pipeline</figcaption></figure>
 
 <p>也就是说上面这五个步骤要在 16.67ms 内都完成掉，但是实际上，因为浏览器自己也有一些家务事（housekeeping）要做，所以实际上的时间更短，你需要在 10 - 12ms 完成上面五个步骤。如果有一步时间花费的太长，导致总的时间超过了 16ms，那么就会影响到下一帧的生成了，因为我们到下一个 16ms 了，我们上一步的还没完成，画面就还是一样的，这就是所谓的<em>掉帧</em>。</p>
 
@@ -39,7 +39,7 @@
 
 <p>我们可以通过浏览器的 Performance Tab 进行录制分析，看是哪一个阶段出现问题，我们还可以看到哪个动作触发了哪个，比如下面，在点击的时候，触发了下面一行的函数，下面的函数又触发了第三行的函数等。</p>
 
-<figure><img src="DraggedImage-1.tiff"/></figure>
+<figure><img src="DraggedImage-1.png"/></figure>
 
 <p>具体怎么使用这个工具，大家可以自行搜索下，这里就不赘述了。</p>
 
@@ -59,7 +59,7 @@
 
 <p>这一步就是将 DOM 和 CSSOM 合并生成一个 <a href="https://classroom.udacity.com/courses/ud860/lessons/4138328558/concepts/41677185820923">render tree</a>。</p>
 
-<figure><img src="DraggedImage-2.tiff"/></figure>
+<figure><img src="DraggedImage-2.png"/></figure>
 
 <p>这一步优化的建议是，</p>
 
@@ -171,7 +171,7 @@ button.addEventListener(&#39;click&#39;, function() {
 
 <p>如下图，</p>
 
-<figure><img src="DraggedImage-3.tiff"/></figure>
+<figure><img src="DraggedImage-3.png"/></figure>
 
 <p>了解了吧，所以下面这种写法是不好的，</p>
 
@@ -189,7 +189,7 @@ button.addEventListener(&#39;click&#39;, function() {
 
 <p>每次获取 layout 属性，都会强制计算 style (flush 我们的 style calculation 队列)然后 layout，频繁的 layout 会很损耗性能。</p>
 
-<figure><img src="DraggedImage-4.tiff"/></figure>
+<figure><img src="DraggedImage-4.png"/></figure>
 
 <p>这里我们可以通过缓存 layout 的属性值，来减少强制计算 style，</p>
 
@@ -261,3 +261,4 @@ button.addEventListener(&#39;click&#39;, function() {
 </body>
 </html>
 
+<script src="/Blog/js/index.js" defer></script>
