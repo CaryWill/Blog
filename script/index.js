@@ -77,7 +77,7 @@ walk(path.join("./src"), function (err, results) {
       // 转换 tiff 到 png 以免浏览器不能显示
       data = data.replaceAll(".tiff", ".png");
       // 添加一个 script 来保证只有一个
-      data = css + data;
+      data = data + css;
       data += js;
       fs.writeFileSync(p, data, "utf-8");
     } else if (p.includes(".tiff")) {
