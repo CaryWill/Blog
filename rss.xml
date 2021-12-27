@@ -5,6 +5,18 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>DOM event model 101</title>
+    <link>/src/2021/dom-event-model/index.html</link>
+    <description>DOM event model 101</description>
+    <pubDate>Mon Dec 27 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Mon Dec 27 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>Drag N Drop 101</title>
+    <link>/src/2021/drag-n-drop/index.html</link>
+    <description>Drag N Drop 101</description>
+    <pubDate>Thu Dec 23 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Thu Dec 23 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>React VDOM diff 算法</title>
     <link>/src/2021/react-diff-algorithm/index.html</link>
     <description>通过阅读 VDOM 源码来帮助理解 react diff 算法基于的两条假设</description>

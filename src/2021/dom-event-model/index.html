@@ -17,7 +17,7 @@
 
 <p>事件身上有一个 <strong>path</strong> 的<a href="https://stackoverflow.com/questions/39245488/event-path-is-undefined-running-in-firefox">非标准的属性</a>(标准的话你可以通过 event 身上的 <code>composedPath()</code> 方法来获取 path)可以用来查看所有浏览器会派发事件的对象，</p>
 
-<figure><img src="DraggedImage.tiff"/></figure>
+<figure><img src="DraggedImage.png"/></figure>
 
 <p>最左边的是嵌套最深的被你点击的元素，最右边是被你点击的元素的最顶层的父级元素，整个 <strong>path</strong> 包含了所有的重叠元素。</p>
 
@@ -68,7 +68,7 @@
   })<span class="syntax-all syntax-keyword">;</span>
 <span class="syntax-all syntax-keyword">&lt;</span>/script<span class="syntax-all syntax-keyword">&gt;</span></code></pre>
 
-<figure><img src="DraggedImage-1.tiff"/></figure>
+<figure><img src="DraggedImage-1.png"/></figure>
 
 <p>你可以看到 body 身上的 listener 没有被调用，也就是 out 这个元素成功阻止了浏览器的事件派发。</p>
 
@@ -105,7 +105,7 @@
   })<span class="syntax-all syntax-keyword">;</span>
 <span class="syntax-all syntax-keyword">&lt;</span>/script<span class="syntax-all syntax-keyword">&gt;</span></code></pre>
 
-<figure><img src="DraggedImage-2.tiff"/></figure>
+<figure><img src="DraggedImage-2.png"/></figure>
 
 <p>所以当 <code>out click1</code> 被调用的时候，该元素身上的另一个 event-handler <code>out click2</code> 就不会被调用了，并且会阻止冒泡/捕获，所以 body 身上的 click event-handler 也不会被调用了。</p>
 
@@ -143,7 +143,7 @@
   })<span class="syntax-all syntax-keyword">;</span>
 <span class="syntax-all syntax-keyword">&lt;</span>/script<span class="syntax-all syntax-keyword">&gt;</span></code></pre>
 
-<figure><img src="DraggedImage-3.tiff"/></figure>
+<figure><img src="DraggedImage-3.png"/></figure>
 
 <p>再举个例子，浏览器默认的行为是，页面上的元素不是 drop 区域，如果你想取消这个行为，就可以利用 <code>preventDefault</code> 来取消这个行为来让某个元素变成可被 drop 的区域，详情请见<a href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations#specifying_drop_targets" title="Specifying Drop Targets">这里</a>。</p>
 
@@ -172,3 +172,4 @@
 </body>
 </html>
 
+<link href="/Blog/css/style.css" rel="stylesheet" /><script src="/Blog/js/index.js" defer></script>
