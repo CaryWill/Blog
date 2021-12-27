@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Drag N Drop</title>
+	</head>
+<body>
+<h1>Drag N Drop</h1>
+
+<p><strong>2021.12.23</strong></p>
+
+<p>最简单的 Drag And Drop 只需要满足下面三点即可，</p>
+
+<ol>
+	<li>Drag source</li>
+	<li>Drop target</li>
+	<li>Data（from Drag source）</li>
+</ol>
+
+<h2>Drag Source</h2>
+
+<p>你只需要给元素加上 <code>draggable=&quot;true&quot;</code> 属性，元素就可以被拖拽了。</p>
+
+<pre><code class="code-highlighted code-bash"><span class="syntax-all syntax-keyword">&lt;</span>p id=<span class="syntax-all syntax-string">&quot;p1&quot;</span> draggable=<span class="syntax-all syntax-string">&quot;true&quot;</span><span class="syntax-all syntax-keyword">&gt;</span>This element is draggable.<span class="syntax-all syntax-keyword">&lt;</span>/p<span class="syntax-all syntax-keyword">&gt;</span>
+<span class="syntax-all syntax-keyword">&lt;</span>p id=<span class="syntax-all syntax-string">&quot;target&quot;</span><span class="syntax-all syntax-keyword">&gt;</span>Drop Zone<span class="syntax-all syntax-keyword">&lt;</span>/p<span class="syntax-all syntax-keyword">&gt;</span></code></pre>
+
+<h2>Drop target</h2>
+
+<p>还记得 <code>e.preventDefault()</code> 的作用吗，阻止浏览器的默认行为。而在 drag and drop 里面，浏览器默认的行为是，大多数元素是 not-droppable 的，如果你需要将元素设置为 drop target 的话，你只需要在该元素身上的 <code>dragover</code> event handler 上使用 <code>e.preventDefault()</code> 即可取消浏览器的默认行为，来使得元素 droppable。</p>
+
+<pre><code class="code-highlighted code-bash">const target = document.getElementById(<span class="syntax-all syntax-string">&quot;target&quot;</span>)<span class="syntax-all syntax-keyword">;</span>
+  target.addEventListener(<span class="syntax-all syntax-string">&quot;dragover&quot;</span>, function dragover_handler(ev) {
+    <span class="syntax-all syntax-entity">ev.preventDefault</span>();
+  })<span class="syntax-all syntax-keyword">;</span></code></pre>
+
+<h2>Data</h2>
+
+<p>当然，拖拽只是提供了视觉交互，具体的移动/复制逻辑还是需要自己写的。我们需要 <strong>drag source</strong> 元素的 ref，怎么办，对就需要 event 身上的 <code>dataTransfer</code> 属性了，它可以将 <strong>drag source</strong> 身上的数据传给我们的 <strong>drop target</strong>。</p>
+
+<pre><code class="code-highlighted code-bash">const <span class="syntax-all syntax-constant">source</span> = document.getElementById(<span class="syntax-all syntax-string">&quot;p1&quot;</span>)<span class="syntax-all syntax-keyword">;</span>
+source.addEventListener(<span class="syntax-all syntax-string">&quot;dragstart&quot;</span>, function dragstart_handler(ev) {
+  // 数据存起来传输给 drop target
+  ev.dataTransfer.setData(<span class="syntax-all syntax-string">&quot;text/plain&quot;</span>, ev.target.id)<span class="syntax-all syntax-keyword">;</span>
+})<span class="syntax-all syntax-keyword">;</span>
+const target = document.getElementById(<span class="syntax-all syntax-string">&quot;target&quot;</span>)<span class="syntax-all syntax-keyword">;</span>
+target.addEventListener(<span class="syntax-all syntax-string">&quot;drop&quot;</span>, function drop_handler(ev) {
+  // 获取 <span class="syntax-all syntax-constant">source</span> 传输过来的数据
+  const data = ev.dataTransfer.getData(<span class="syntax-all syntax-string">&quot;text/plain&quot;</span>)<span class="syntax-all syntax-keyword">;</span>
+  ev.target.appendChild(document.getElementById(data))<span class="syntax-all syntax-keyword">;</span>
+})<span class="syntax-all syntax-keyword">;</span></code></pre>
+
+<p>这样一个简单的元素拖拽移动的 <a href="https://carywill.github.io/Frontend/brower-related/event/dragndrop.html">demo</a> 就完成了。</p>
+
+<h2>Cursor</h2>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>根据拖拽的意图，浏览器会改变鼠标的形状。我们可以根据 <strong>dataTransfer</strong> 身上的 <code>dropEffect</code> 属性来指定，你可以在 <code>dragover</code> 的 event handler 里面指定 <strong>copy</strong> 这个值，那么效果就和上面图中的一样了（注意，在 <code>drop</code> event handler 里改变这个值<a href="https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer/dropEffect">是没有用的</a>，只有 <code>dragover</code> 或者 <code>dragenter</code> 里设置的这个值才有用，但是实际上测下来，直接在 <code>dragenter</code> 里面设置，看上去没什么效果）</p>
+
+<pre><code class="code-highlighted code-bash">  const target = document.getElementById(<span class="syntax-all syntax-string">&quot;target&quot;</span>)<span class="syntax-all syntax-keyword">;</span>
+  target.addEventListener(<span class="syntax-all syntax-string">&quot;dragover&quot;</span>, function dragover_handler(ev) {
+    <span class="syntax-all syntax-entity">ev.preventDefault</span>();
+	ev.dataTransfer.dropEffect = <span class="syntax-all syntax-string">&quot;copy&quot;</span><span class="syntax-all syntax-keyword">;</span>
+  })<span class="syntax-all syntax-keyword">;</span></code></pre>
+
+<p>和 <strong> dropEffect</strong> 这个值配合使用的一个值是 <strong> effectAllowed</strong>，它指定了你可以设置 <strong>dropEffect</strong> 的<a href="https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer/effectAllowed">可选值</a>，如果你设置了 <strong>dropEffect</strong> 的值不在 <strong>effectAllowed</strong> 里面，那么 <strong>dropEffect</strong> 的值会设置为 <strong> effectAllowed</strong> 里允许的其他值。</p>
+
+<p>备注：如果你在 <code>dragover</code> 里将 <strong>dropEffect</strong> 的值设置为 <em>none</em>，表示这个元素可能不会被 drop，测了下在 chrome 和 safari（目前测试版本Version 15.1 (17612.3.2.1.1)）的表现行为不一样，safari 依旧可以拖拽 drop，但是 chrome 允许你拖拽，但是 drop 的时候，元素不会移动。</p>
+
+<p>以上。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer">DataTransfer - MDN </a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations#droptargets">Drag Operations - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer/effectAllowed">DataTransfer.effectAllowed - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer/dropEffect">DataTransfer.dropEffect</a></li>
+</ol>
+
+</body>
+</html>
+

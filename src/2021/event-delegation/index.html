@@ -3,8 +3,7 @@
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-    <base href="{{site.baseurl}}" />
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>Event delegation</title>
 	</head>
 <body>
@@ -21,6 +20,8 @@
 <p>第一种：遍历 list 的时候，给每个 item 设置一个 <code>onClick</code> event listener ，这样就会设置 100 个 event listener，当你移除 item 的时候还需要手动移除该 item 的 event listener，添加 item 的时候，需要手动添加 event listener，😡</p>
 
 <p>第二种：直接在 ul 上直接加 <strong>一个</strong> <code>onClick</code> 事件就完了，当你点击 li，li 的 <code>onClick</code> 事件 bubble 到 ul 上，ul 直接从 event 里的 target 里获取 li 的引用再获取对应的属性即可（使用 <code>data-*</code> 属性也不错），这样就不用担心添加/移除 item 了，因为你的 listener 是挂在 ul 上的），🥳</p>
+
+<p>当然事件委托也有两种实现方式，一种是冒泡，一种是捕获，从兼容性考虑一般使用冒泡模型。</p>
 
 <h2>谁在用</h2>
 
@@ -121,19 +122,19 @@
   );
 &lt;/<span class="syntax-all syntax-tag">script</span>&gt;</code></pre>
 
-<figure><img src="DraggedImage.png"/></figure>
+<figure><img src="DraggedImage.tiff"/></figure>
 
 <p>两个框框都加了点击事件，点击事件都调用了 <code>e.stopPropagation()</code> 想要阻止冒泡，你觉得会发生什么？</p>
 
 <p>是不是觉得只会打印 “innerOnClick” ？可是两个打印都出来了，没想到吧，是不是很奇怪 ？？？</p>
 
-<figure><img src="DraggedImage-1.png"/></figure>
+<figure><img src="DraggedImage-1.tiff"/></figure>
 
 <p>为什么呢？这就和 React 的 <a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">event delegation</a> 实现有关了。</p>
 
 <p>React DOM 会在 <strong>document</strong> 上设置一个总的对应 event type 的单个 event listener，比如，<code>click</code> 事件的话，<code>document.addEventListener(&#39;click&#39;, eventHandler)</code>，这样来进行事件委托（event delegation），</p>
 
-<figure><img src="DraggedImage-2.png"/></figure>
+<figure><img src="DraggedImage-2.tiff"/></figure>
 
 <p>你可以看到，两个版本的 React DOM 分别往 <strong>document</strong> 上添加了一个 <code>click</code> 的 event handler（初始化 fiber tree 的时候，根据 fiber node 上的属性来创建对应 event type 的单个 event listener），两个框框也被加了一个（<code>noop</code> 函数，就是啥也不做的意思，这个其实是用来解决的 iOS Safari 的一个 <a href="https://github.com/facebook/react/issues/13635">bug</a> 用的，你就理解为 <strong>框框</strong> 本身并没有添加 <code>click</code> 的 event listener），</p>
 
@@ -190,7 +191,7 @@
 
 <p>我们将里面的蓝色框框所用的 React 16 的库替换为 React 17 的，外面的还是 React 16 的，逻辑不变，来看下 <a href="https://react-17-nested-tree-demo.netlify.app/">demo</a>，</p>
 
-<figure><img src="DraggedImage-3.png"/></figure>
+<figure><img src="DraggedImage-3.tiff"/></figure>
 
 <p><strong>现在只会打印最里面的了</strong>。WOW～</p>
 
@@ -199,8 +200,6 @@
 <p>在内部的蓝色框框里，在点击后，首先蓝色框框的点击事件 bubble 到了蓝色框框的 React DOM root 节点，然后 React DOM root 节点的 <code>click</code> event handler 就被调用了，调用的时候开始模拟合成事件队列，然后执行，队列里的现在就一个 event handler，就是蓝色框框的，然后执行就触发了 <code>e.stopPropagation();</code>，这时，React DOM 先是调用了 <em>native event</em> 的 <code>e.stopPropagation();</code>，保证了 蓝色框框的 React DOM root 的 <em>native event </em>不会继续 bubble 上去了（所以就到不了红色框框了），然后将再在包了 <em>native event</em> 一层的 Synthetic Event（合成事件）上的 <em> isDefaultPrevented</em> 设为 <em>true</em>，这样内部的事件队列在这个 event handler 调用后，后面的也不会调用了（虽然现在就只有一个</p>
 
 <p>以上。</p>
-
-<hr />
 
 <p><strong>题外话</strong>：跑 demo 打断点看逻辑的时候，发现 Chrome 在打断点的时候和不打断点的时候跑的 <a href="https://react-16-nest-react-16.netlify.app/">React V16 nested demo</a> demo 竟然结果是不一样的。。。 Safari 到没事。。。</p>
 
@@ -211,17 +210,18 @@
 	<li><a href="https://www.w3.org/TR/DOM-Level-3-Events/#current-event-target">current event target</a></li>
 	<li><a href="https://www.w3.org/TR/DOM-Level-3-Events/#event-target">event target</a></li>
 	<li><a href="https://www.w3.org/TR/DOM-Level-3-Events/#dom-event-architecture">Event dispatch and DOM event flow</a></li>
-	<li><a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">React 17 changes-to-event-delegation - React official doc </a></li>
+	<li><a href="https://reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation">React 17 changes-to-event-delegation - React official doc</a></li>
 	<li><a href="https://reactjs.org/docs/handling-events.html">Handling Events - React official doc</a></li>
 	<li><a href="https://maddevs.io/insights/blog/a-bit-about-event-delegation-in-react/">A Bit about Event Delegation in React ★ ★ ★ ★ ★</a></li>
-	<li><a href="https://davidwalsh.name/event-delegate">How JavaScript Event Delegation Works ★ ★ ★ ★ ★ </a></li>
+	<li><a href="https://davidwalsh.name/event-delegate">How JavaScript Event Delegation Works ★ ★ ★ ★ ★</a></li>
 	<li><a href="https://reactjs.org/docs/events.html">SyntheticEvent - React official doc</a></li>
 	<li><a href="https://github.com/facebook/react/pull/8117">Nested React Dom Tree Issue(atom editor) - GitHub issue</a></li>
-	<li><a href="https://github.com/facebook/react/issues/7094#issuecomment-228931737">Event delegation issue - Global event handlers on document.body (or other containing element) run BEFORE react event handlers #7094 - gaearon </a></li>
+	<li><a href="https://github.com/facebook/react/issues/7094#issuecomment-228931737">Event delegation issue - Global event handlers on document.body (or other containing element) run BEFORE react event handlers #7094 - gaearon</a></li>
 	<li><a href="https://reactjs.org/docs/testing-recipes.html#events">Testing in React event part - React official doc</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener">EventTarget.addEventListener()</a></li>
+	<li><a href="https://tumiblog.top/blogs/JavaScript/JS%20%E4%BA%8B%E4%BB%B6%E5%86%92%E6%B3%A1%E3%80%81%E6%8D%95%E8%8E%B7%E4%B8%8E%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98.html"> 为什么使用冒泡来实现事件委托居多?</a></li>
 </ol>
 
 </body>
 </html>
 
-<link href="/Blog/css/style.css" rel="stylesheet" /><script src="/Blog/js/index.js" defer></script>
