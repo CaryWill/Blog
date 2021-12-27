@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Async await = Generator + Promise</title>
+	</head>
+<body>
+<h1>Async await = Generator + Promise</h1>
+
+<p><strong>2021.12.05</strong></p>
+
+<p>Async await 只是 generator 和 promise 的语法糖而已。</p>
+
+<p>Generator 可以让我们以 sync 的方式处理 async 的逻辑，比如下面，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function*</span> <span class="syntax-all syntax-entity">gen</span>() {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">v</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">yield</span> <span class="syntax-all syntax-constant">Promise</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-constant">1</span>);
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">v2</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">yield</span> <span class="syntax-all syntax-constant">Promise</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">reject</span>(<span class="syntax-all syntax-parameter">v</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">2</span>);
+  <span class="syntax-all syntax-keyword">yield</span> <span class="syntax-all syntax-constant">Promise</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-parameter">v2</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">2</span>);
+}
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">it</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">gen</span>();
+<span class="syntax-all syntax-parameter">it</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">next</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>((<span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-parameter">it</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">next</span>(<span class="syntax-all syntax-parameter">value</span>)<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>((<span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-parameter">it</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">next</span>(<span class="syntax-all syntax-parameter">value</span>)<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>((<span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;v3&quot;</span>, <span class="syntax-all syntax-parameter">value</span>);
+    });
+  });
+});</code></pre>
+
+<p>但是你会发现我们真正执行 generator 的迭代器的时候，又变成了 callback hell，而且每次都要手写，太麻烦了。于是有了那么一个<a href="https://github.com/tj/co/blob/master/index.js">库</a>，来帮我们自动执行 generator，<code>co(gen)</code> 即可完成 generator 的迭代器的执行。</p>
+
+<p>我们可以简单写个 generator 的迭代器的 runner，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">runner</span>(<span class="syntax-all syntax-parameter">gen</span>, <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">args</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">it</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">gen</span>(<span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">args</span>);
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">handleNext</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">v</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">value</span>, <span class="syntax-all syntax-parameter">done</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">it</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">next</span>(<span class="syntax-all syntax-parameter">v</span>);
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">done</span>) {
+      <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">value</span>;
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">Promise</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-parameter">value</span>)<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">handleNext</span>, (<span class="syntax-all syntax-parameter">err</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+        <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">Promise</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-parameter">it</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">throw</span>(<span class="syntax-all syntax-parameter">err</span>))<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">handleNext</span>);
+      });
+    }
+  };
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-variable">handleNext</span>();
+}
+
+<span class="syntax-all syntax-variable">runner</span>(<span class="syntax-all syntax-parameter">gen</span>);</code></pre>
+
+<p>以上。</p>
+
+<hr />
+
+<p>备注：迭代器的第一个 next 的入参是<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/next#sending_values_to_the_generator">无效的</a>，来看下<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield">表达式</a>，</p>
+
+[rv] = yield [expression]
+<blockquote>
+<p>Retrieves the optional value passed to the generator&#39;s next() method to resume its execution.</p>
+</blockquote>
+
+<p>rv 的值都是下一个 next 调用的入参，当 next 调用 resume execution 的时候。</p>
+
+<p>所以，当你遇到第一个 yield 的时候，只有 expression 被 evaluated 了然后停住，交出执行权，而没有赋值的操作，当下一个 next 方法被调用的时候，入参才会被赋值给左侧的变量，所以第一个 next 的入参是无效的。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://en.wikipedia.org/wiki/Thunk">Thunk - Wikipedia</a></li>
+	<li><a href="https://github.com/tj/co/blob/master/index.js">CO implementation - GitHub</a></li>
+	<li><a href="https://www.ruanyifeng.com/blog/2015/05/thunk.html">Thunk 函数的含义和用法 - 阮一峰 </a></li>
+	<li><a href="https://www.ruanyifeng.com/blog/2015/05/co.html">co 函数库的含义和用法 - 阮一峰</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/GeneratorFunction">GeneratorFunction - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*">function* - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield">yield - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/throw">Generator.prototype.throw() - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/return">Generator.prototype.return() - MDN</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/next">Generator.prototype.next() - MDN</a></li>
+</ol>
+
+</body>
+</html>
+

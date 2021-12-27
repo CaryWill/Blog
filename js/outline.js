@@ -15,6 +15,12 @@ var outline = [
         href: "/src/2021/drag-n-drop/index.html",
       },
       {
+        title: "Async await = Generator + Promise",
+        desc: "Async await = Generator + Promise",
+        date: "Dec 15, 2021",
+        href: "/src/2021/async-await-gen-promise/index.html",
+      },
+      {
         title: "React VDOM diff 算法",
         desc: "通过阅读 VDOM 源码来帮助理解 react diff 算法基于的两条假设",
         date: "Dec 09, 2021",
