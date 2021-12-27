@@ -17,6 +17,12 @@
     <pubDate>Thu Dec 23 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Thu Dec 23 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
+    <title>Async await = Generator + Promise</title>
+    <link>/src/2021/async-await-gen-promise/index.html</link>
+    <description>Async await = Generator + Promise</description>
+    <pubDate>Wed Dec 15 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Wed Dec 15 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>React VDOM diff 算法</title>
     <link>/src/2021/react-diff-algorithm/index.html</link>
     <description>通过阅读 VDOM 源码来帮助理解 react diff 算法基于的两条假设</description>
