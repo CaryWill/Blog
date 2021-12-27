@@ -147,6 +147,15 @@
 
 <p>再举个例子，浏览器默认的行为是，页面上的元素不是 drop 区域，如果你想取消这个行为，就可以利用 <code>preventDefault</code> 来取消这个行为来让某个元素变成可被 drop 的区域，详情请见<a href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations#specifying_drop_targets" title="Specifying Drop Targets">这里</a>。</p>
 
+<h2>其他</h2>
+
+<ol>
+	<li>对了，absolute positioned 元素，如果叠在了一个 relative positioned 的元素的上面，会发生什么呢？
+
+		<p>点击这个 absolute positioned 的元素的话，在它下面的 relative positioned 元素是不会被派发事件的，path 也就是由 absolute positioned 元素的 parents 构成的 path，为了解决这种覆盖的问题，所以也就有了 <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/pointer-events">pointer-event</a> 那么一个 CSS 属性。</p></li>
+	<li><code>addEventListener</code> 往元素身上添加的 listeners 是一个 Set，不是 Array，可以看下<a href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener">这里</a>。</li>
+</ol>
+
 <h2>参考</h2>
 
 <ol>
