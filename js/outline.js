@@ -3,14 +3,14 @@ var outline = [
   {
     2021: [
       {
-        title: "DOM event model 101",
-        desc: "DOM event model 101",
+        title: "DOM event model",
+        desc: "DOM event model",
         date: "Dec 27, 2021",
         href: "/src/2021/dom-event-model/index.html",
       },
       {
-        title: "Drag N Drop 101",
-        desc: "Drag N Drop 101",
+        title: "Drag N Drop",
+        desc: "Drag N Drop",
         date: "Dec 23, 2021",
         href: "/src/2021/drag-n-drop/index.html",
       },
