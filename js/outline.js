@@ -3,6 +3,12 @@ var outline = [
   {
     2021: [
       {
+        title: "控制反转设计模式 - TypeScript",
+        desc: "什么是依赖注入, 什么是控制反转？",
+        date: "Dec 31, 2021",
+        href: "/src/2021/ioc/index.html",
+      },
+      {
         title: "DOM event model",
         desc: "DOM event model",
         date: "Dec 27, 2021",
