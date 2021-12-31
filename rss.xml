@@ -5,15 +5,21 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
-    <title>DOM event model 101</title>
+    <title>控制反转设计模式 - TypeScript</title>
+    <link>/src/2021/ioc/index.html</link>
+    <description>什么是依赖注入, 什么是控制反转？</description>
+    <pubDate>Fri Dec 31 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Fri Dec 31 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>DOM event model</title>
     <link>/src/2021/dom-event-model/index.html</link>
-    <description>DOM event model 101</description>
+    <description>DOM event model</description>
     <pubDate>Mon Dec 27 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Mon Dec 27 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
-    <title>Drag N Drop 101</title>
+    <title>Drag N Drop</title>
     <link>/src/2021/drag-n-drop/index.html</link>
-    <description>Drag N Drop 101</description>
+    <description>Drag N Drop</description>
     <pubDate>Thu Dec 23 2021 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Thu Dec 23 2021 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
