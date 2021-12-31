@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>控制反转设计模式 - TypeScript</title>
+	</head>
+<body>
+<h1>控制反转设计模式 - TypeScript</h1>
+
+<p><strong>2021.12.31</strong> </p>
+
+<p>原文：<a href="https://martinfowler.com/articles/injection.html#UsingAServiceLocator">在此</a>，用 TS 重写了下原文的例子，一起来看下。</p>
+
+<hr />
+
+<p>控制反转（依赖注入）和 service locator 模式都提供了组件和服务之间的解耦合能力。</p>
+
+<p><strong>非控制反转</strong>：主动控制依赖的引入，比如 ESM，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">moduleB</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&#39;moduleB&#39;</span>;
+
+<span class="syntax-all syntax-keyword">export</span> <span class="syntax-all syntax-keyword">default</span> {
+  <span class="syntax-all syntax-entity">init</span>: <span class="syntax-all syntax-keyword">function</span>() {
+    <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">moduleB</span>);
+  }
+}</code></pre>
+
+<p><strong>控制反转</strong>：被动接受依赖的引入，比如 AMD，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-variable">define</span>(<span class="syntax-all syntax-string">&#39;moduleA&#39;</span>, [<span class="syntax-all syntax-string">&#39;moduleB&#39;</span>], <span class="syntax-all syntax-keyword">function</span>(<span class="syntax-all syntax-parameter">moduleB</span>) {
+    <span class="syntax-all syntax-keyword">return</span> {
+        <span class="syntax-all syntax-entity">init</span>: <span class="syntax-all syntax-keyword">function</span>() {
+            <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">moduleB</span>);
+        }
+    };
+});</code></pre>
+
+<p>对概念有了大致的印象后，我们再举个例子详细讲下<strong>控制反转（IoC）</strong>和<strong>服务定位器（service locator）</strong>。</p>
+
+<h2>非控制反转</h2>
+
+<p>先来看下不使用控制反转的情况，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// No DI
+</span><span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">Movie</span> {
+  <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">string</span>;
+}
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">MovieFinder</span> {
+  <span class="syntax-all syntax-variable">findAll</span>(): <span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">Movie</span><span class="syntax-all syntax-keyword">&gt;</span>;
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">ColonDelimitedMovieFinder</span> {
+  <span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">String</span>;
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">name</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">String</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">fileName</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">name</span>;
+  }
+
+  <span class="syntax-all syntax-entity">findAll</span>() {
+    <span class="syntax-all syntax-comment">// read file data by fileName
+</span>    <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">`from: </span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">} file`</span>);
+    <span class="syntax-all syntax-keyword">return</span> [{ <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span> }];
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">MovieLister</span> {
+  private finder?: MovieFinder;
+  public <span class="syntax-all syntax-entity">moviesDirectedBy</span>(<span class="syntax-all syntax-parameter">director</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">String</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">ColonDelimitedMovieFinder</span>(<span class="syntax-all syntax-string">&quot;movies1.txt&quot;</span>);
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">allMovies</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">findAll</span>();
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">allMovies</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>((<span class="syntax-all syntax-parameter">m</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">m</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">director</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">director</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// main
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">lister</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">MovieLister</span>();
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movies</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">lister</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">moviesDirectedBy</span>(<span class="syntax-all syntax-string">&quot;cary&quot;</span>);
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">movies</span>);
+<span class="syntax-all syntax-comment">// from: movies1.txt} file
+</span><span class="syntax-all syntax-comment">// [ { director: &#39;cary&#39; } ]
+</span></code></pre>
+
+<p>你可以发现，<code>MovieLister</code> 和 <code>ColonDelimitedMovieFinder</code> 这个类耦合在一起了，如果我的朋友想使用我的文件，如果它的 <code>ColonDelimitedMovieFinder</code> 文件名不是 <em> movies1.txt</em>，那就得改我们的组件 <code>MovieLister</code> 了，更糟的情况是它的文件名即便和我们相同，内容格式和我们的 <code>ColonDelimitedMovieFinder</code> 组件不兼容的话，<code>findAll</code> 方法就会报错返回不了对应的数据了。</p>
+
+<p>为了解决这个问题，我们可以考虑使用<strong>依赖注入</strong>来将控制反转给组件的宿主，来将服务从组件从分离出去，让宿主将服务通过某种方式注入进来组件。</p>
+
+<h2>控制反转/依赖注入</h2>
+
+<p>注入的方式分为 3 种，</p>
+
+<ul>
+	<li>Constructor Injection</li>
+	<li>Setter Injection</li>
+	<li>Interface Injection</li>
+</ul>
+
+<h3>Constructor Injection</h3>
+
+<p>这种方式是在组件初始化的时候，将服务作为入参传给组件的 <code>contructor</code> 函数来注入。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// IoC
+</span><span class="syntax-all syntax-comment">// Constructor Injection(IoC type3)
+</span>
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">Movie</span> {
+  <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">string</span>;
+}
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">MovieFinder</span> {
+  <span class="syntax-all syntax-variable">findAll</span>(): <span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">Movie</span><span class="syntax-all syntax-keyword">&gt;</span>;
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">MovieLister3</span> {
+  <span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span>;
+
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">finder</span>;
+  }
+  <span class="syntax-all syntax-entity">moviesDirectedBy</span>(<span class="syntax-all syntax-parameter">director</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">allMovies</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">findAll</span>();
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">allMovies</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>((<span class="syntax-all syntax-parameter">m</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">m</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">director</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">director</span>);
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">ColonMovieFinder3</span> implements MovieFinder {
+  <span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>;
+
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">fileName</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fileName</span>;
+  }
+
+  <span class="syntax-all syntax-entity">findAll</span>() {
+    <span class="syntax-all syntax-comment">// read file data by fileName
+</span>    <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">`from: </span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">} file`</span>);
+    <span class="syntax-all syntax-keyword">return</span> [{ <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span> }];
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Container3</span> {
+  <span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>;
+
+  <span class="syntax-all syntax-entity">registerComponentImplementation</span>(
+    <span class="syntax-all syntax-parameter">ComponentImplementationClass</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>,
+    <span class="syntax-all syntax-parameter">args</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">undefined</span>
+  ) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">ComponentImplementationClass</span>(<span class="syntax-all syntax-parameter">args</span> <span class="syntax-all syntax-keyword">||</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">instance</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// main
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">container</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Container3</span>();
+<span class="syntax-all syntax-comment">// 我们可以将这个 finder 实现类替换成任意一个自定义实现来实现解耦
+</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerComponentImplementation</span>(<span class="syntax-all syntax-parameter">ColonMovieFinder3</span>, <span class="syntax-all syntax-string">&quot;movies1.txt&quot;</span>);
+<span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerComponentImplementation</span>(<span class="syntax-all syntax-parameter">MovieLister3</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movieLister3</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">instance</span>;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movies3</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">movieLister3</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">moviesDirectedBy</span>(<span class="syntax-all syntax-string">&quot;cary&quot;</span>);
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">movies3</span>);</code></pre>
+
+<h3>Setter Injection</h3>
+
+<p>框架通过调用组件实例身上的 setter 方法来实现依赖注入。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// IoC
+</span><span class="syntax-all syntax-comment">// Setter Injection(IoC type2)
+</span><span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">Movie</span> {
+  <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">string</span>;
+}
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">MovieFinder</span> {
+  <span class="syntax-all syntax-variable">findAll</span>(): <span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">Movie</span><span class="syntax-all syntax-keyword">&gt;</span>;
+}
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">MovieLister2</span> {
+  <span class="syntax-all syntax-parameter">_finder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>;
+
+  public <span class="syntax-all syntax-keyword">get </span><span class="syntax-all syntax-entity">finder</span>() {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">_finder</span>;
+  }
+
+  public <span class="syntax-all syntax-keyword">set </span><span class="syntax-all syntax-entity">finder</span>(<span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">_finder</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">finder</span>;
+  }
+
+  <span class="syntax-all syntax-entity">moviesDirectedBy</span>(<span class="syntax-all syntax-parameter">director</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">allMovies</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">findAll</span>();
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">allMovies</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>((<span class="syntax-all syntax-parameter">m</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">m</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">director</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">director</span>);
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">ColonMovieFinder2</span> implements MovieFinder {
+  <span class="syntax-all syntax-parameter">_fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>;
+
+  <span class="syntax-all syntax-keyword">get </span><span class="syntax-all syntax-entity">fileName</span>() {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">_fileName</span>;
+  }
+
+  <span class="syntax-all syntax-keyword">set </span><span class="syntax-all syntax-entity">fileName</span>(<span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">_fileName</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fileName</span>;
+  }
+
+  <span class="syntax-all syntax-entity">findAll</span>() {
+    <span class="syntax-all syntax-keyword">return</span> [{ <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span> }];
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">FileSystemXmlApplicationContext</span> {
+  <span class="syntax-all syntax-parameter">config</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">Object</span>;
+
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">config</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">Object</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">config</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">config</span>;
+  }
+
+  <span class="syntax-all syntax-entity">getBean</span>(<span class="syntax-all syntax-parameter">id</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-string">class</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">Class</span>, <span class="syntax-all syntax-parameter">property</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">config</span>[<span class="syntax-all syntax-parameter">id</span>];
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">eval</span>(<span class="syntax-all syntax-string">`new </span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">Class</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">()`</span>);
+
+    <span class="syntax-all syntax-comment">// calling setter on instance (setter injection)
+</span>    <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">p</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-parameter">property</span>) {
+      <span class="syntax-all syntax-keyword">const</span> [<span class="syntax-all syntax-parameter">type</span>, <span class="syntax-all syntax-parameter">value</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">property</span>[<span class="syntax-all syntax-parameter">p</span>];
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;value&quot;</span>) {
+        <span class="syntax-all syntax-parameter">instance</span>[<span class="syntax-all syntax-parameter">p</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">value</span>;
+      }
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;ref&quot;</span>) {
+        <span class="syntax-all syntax-parameter">instance</span>[<span class="syntax-all syntax-parameter">p</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getBean</span>(<span class="syntax-all syntax-parameter">value</span>);
+      }
+    }
+
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">instance</span>;
+  }
+}
+
+<span class="syntax-all syntax-comment">// can be replaced by XML file or other things
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">config</span> <span class="syntax-all syntax-keyword">=</span> {
+  <span class="syntax-all syntax-string">MovieLister2</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">class</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;MovieLister2&quot;</span>,
+    <span class="syntax-all syntax-string">property</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-string">finder</span><span class="syntax-all syntax-constant">:</span> [<span class="syntax-all syntax-string">&quot;ref&quot;</span>, <span class="syntax-all syntax-string">&quot;MovieFinder2&quot;</span>],
+    },
+  },
+  <span class="syntax-all syntax-string">MovieFinder2</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">class</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;ColonMovieFinder2&quot;</span>,
+    <span class="syntax-all syntax-string">property</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-string">fileName</span><span class="syntax-all syntax-constant">:</span> [<span class="syntax-all syntax-string">&quot;value&quot;</span>, <span class="syntax-all syntax-string">&quot;movies1.txt&quot;</span>],
+    },
+  },
+};
+
+<span class="syntax-all syntax-comment">// main
+</span><span class="syntax-all syntax-keyword">try</span> {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">applicationContext</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">FileSystemXmlApplicationContext</span>(<span class="syntax-all syntax-parameter">config</span>);
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movieLister2</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">applicationContext</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getBean</span>(<span class="syntax-all syntax-string">&quot;MovieLister2&quot;</span>);
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movies2</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">movieLister2</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">moviesDirectedBy</span>(<span class="syntax-all syntax-string">&quot;cary&quot;</span>);
+  <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">movies2</span>);
+} <span class="syntax-all syntax-keyword">catch</span> (<span class="syntax-all syntax-parameter">error</span>) {}
+
+<span class="syntax-all syntax-comment">// https://martinfowler.com/articles/injection.html
+</span></code></pre>
+
+<h3>Interface Injection</h3>
+
+<p>对于实现了某个接口的组件，会有该接口对应的注射器（injector）以组件作为入参，将实现注入到组件里面去。</p>
+
+<p>下面这个例子，</p>
+
+<p>我们的 <code>MovieLister1</code> 组件需要一个 <strong>finder</strong> 依赖，所以我们定义了一个接口 <code>InjectFinder</code> 让 <code>MovieLister1</code> 组件实现，以便注射器注入实现（finder 对象）。</p>
+
+<p>我们 <code>ColonMovieFinder1</code> 组件的实例就是一个有效的 <strong>finder</strong>，所以我们可以定一个注射器的接口(<code>Injector</code>)让它实现，以便我们可以往 <code>MovieLister1</code> 实例身上注入。</p>
+
+<p>对于实现了我们指定了接口的组件，我们会调用对应的注射器身上的 <code>inject</code> 方法，<code>this.container.registerInjector(&quot;InjectFinder&quot;,this.container.lookup(&quot;MovieFinder&quot;));</code>。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// Interface Injection(IoC type1)
+</span><span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">Movie</span> {
+  <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">string</span>;
+}
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">MovieFinder</span> {
+  <span class="syntax-all syntax-variable">findAll</span>(): <span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">Movie</span><span class="syntax-all syntax-keyword">&gt;</span>;
+}
+
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">InjectFinder</span> {
+  <span class="syntax-all syntax-variable">injectFinder</span>(<span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span>): <span class="syntax-all syntax-keyword">void</span>;
+}
+
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">Injector</span> {
+  <span class="syntax-all syntax-comment">// 具体往 target 里注入什么，需要注册器自己实现，毕竟一个类 conforms to 一个 interface 的话，一个 interface 也有很多的的方法，你是需要对这个类里所有的方法都注入呢还是怎么样，是吧
+</span>  <span class="syntax-all syntax-variable">inject</span>(<span class="syntax-all syntax-parameter">target</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">Object</span>): <span class="syntax-all syntax-keyword">void</span>;
+}
+
+<span class="syntax-all syntax-comment">// FIXME: 如何将一个 interface 作为入参传给别人做 instanceof 的校验，java 里可以用 someInterface.class 来将 interface pass around
+</span><span class="syntax-all syntax-comment">// 暂时一个 interface 只能有一个 method 好了，然后保持同名，首字母大小写区分，这样判断一个类是否 conform to 这个 interface 看有没有同名的 method 即可
+</span><span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">InjectFinderFileName</span> {
+  <span class="syntax-all syntax-variable">injectFinderFileName</span>(<span class="syntax-all syntax-parameter">filename</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">string</span>): <span class="syntax-all syntax-keyword">void</span>;
+}
+
+<span class="syntax-all syntax-comment">// 我希望使用 finder 这个对象，所以我需要实现这个 InjectFinder 接口 等待被注入 finder 对象
+</span><span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">MovieLister1</span> implements InjectFinder {
+  finder?: MovieFinder;
+
+  public <span class="syntax-all syntax-entity">injectFinder</span>(<span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">finder</span>;
+  }
+
+  public <span class="syntax-all syntax-entity">moviesDirectedBy</span>(<span class="syntax-all syntax-parameter">director</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span>) <span class="syntax-all syntax-keyword">return</span> [];
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">allMovies</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">findAll</span>();
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">allMovies</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>((<span class="syntax-all syntax-parameter">m</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">m</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">director</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">director</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// 既是要实现 InjectFinderFileName 的组件，同时又是实现了 inject 的注射器
+</span><span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">ColonMovieFinder1</span> implements MovieFinder, InjectFinderFileName {
+  <span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;&quot;</span>;
+
+  public <span class="syntax-all syntax-entity">injectFinderFileName</span>(<span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">fileName</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fileName</span>;
+  }
+
+  public <span class="syntax-all syntax-entity">inject</span>(<span class="syntax-all syntax-parameter">target</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">Object</span>) {
+    (<span class="syntax-all syntax-parameter">target</span> <span class="syntax-all syntax-keyword">as</span> <span class="syntax-all syntax-parameter">InjectFinder</span>)<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">injectFinder</span>(<span class="syntax-all syntax-constant">this</span>);
+  }
+
+  <span class="syntax-all syntax-entity">findAll</span>() {
+    <span class="syntax-all syntax-keyword">return</span> [{ <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span> }];
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">FinderFilenameInjector</span> implements Injector {
+  <span class="syntax-all syntax-entity">inject</span>(<span class="syntax-all syntax-parameter">target</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">Object</span>) {
+    (<span class="syntax-all syntax-parameter">target</span> <span class="syntax-all syntax-keyword">as</span> <span class="syntax-all syntax-parameter">InjectFinderFileName</span>)<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">injectFinderFileName</span>(<span class="syntax-all syntax-string">&quot;movies1.txt&quot;</span>);
+  }
+}
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">conformsTo</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">interfaceName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>, <span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">method</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">interfaceName</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">charAt</span>(<span class="syntax-all syntax-constant">0</span>)<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toLowerCase</span>() <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-parameter">interfaceName</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">slice</span>(<span class="syntax-all syntax-constant">1</span>);
+  <span class="syntax-all syntax-comment">// 如果有和 interface 同名的 method，那么就表示这个 instance conforms to 这个 interface
+</span>  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">instance</span>[<span class="syntax-all syntax-parameter">method</span>];
+};
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Container</span> {
+  <span class="syntax-all syntax-parameter">components</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span> <span class="syntax-all syntax-keyword">=</span> {};
+  <span class="syntax-all syntax-parameter">injectors</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span> <span class="syntax-all syntax-keyword">=</span> {};
+
+  public <span class="syntax-all syntax-entity">registerComponent</span>(
+    <span class="syntax-all syntax-parameter">componentName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>,
+    <span class="syntax-all syntax-parameter">Component</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>,
+    <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span> <span class="syntax-all syntax-comment">// 这里修改了下
+</span>  ) {
+    <span class="syntax-all syntax-comment">// 这里模式是 组件名 - 组件
+</span>    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">components</span>[<span class="syntax-all syntax-parameter">componentName</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Component</span>(<span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">props</span>);
+  }
+
+  <span class="syntax-all syntax-comment">/**
+</span><span class="syntax-all syntax-comment">   * interfaceName: 组件 conforms to 的 interface
+</span><span class="syntax-all syntax-comment">   * injector: 注射器 顾名思义 就是负责往组件里面注入依赖的东西，所以它需要有一个 inject 方法，该方法接受一个组件,具体怎么注入得在 inject 方法里面实现
+</span><span class="syntax-all syntax-comment">   */</span>
+  public <span class="syntax-all syntax-entity">registerInjector</span>(<span class="syntax-all syntax-parameter">interfaceName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>, <span class="syntax-all syntax-parameter">injector</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>) {
+    <span class="syntax-all syntax-comment">// 这里的模式是 注入接口 - 注入器
+</span>    <span class="syntax-all syntax-comment">// 容器会遍历所有的组件，如果组件实现了注入接口，将调用对应的注入器，将这个组件作为参数，传递给注入器(就比如 ColonMovieFinder1 组件实例是一个注入器，因为它可以将它的 finder 实例注入给 MovieLister1 实例，这样我们就能调用它身上的 finder.findAll 方法获取所有电影了)
+</span>    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">injectors</span>[<span class="syntax-all syntax-parameter">interfaceName</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">injector</span>;
+  }
+
+  <span class="syntax-all syntax-comment">// 开始依赖注入
+</span>  public <span class="syntax-all syntax-entity">start</span>() {
+    <span class="syntax-all syntax-comment">// no hasOwnProperty check for simplicyty
+</span>    <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">component</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">components</span>) {
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">components</span>[<span class="syntax-all syntax-parameter">component</span>];
+      <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">interfaceName</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">injectors</span>) {
+        <span class="syntax-all syntax-comment">// 如果实例实现了这个接口(interface)的话 那么开始注入
+</span>        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-variable">conformsTo</span>(<span class="syntax-all syntax-parameter">interfaceName</span>, <span class="syntax-all syntax-parameter">instance</span>)) {
+          <span class="syntax-all syntax-comment">// 实现了接口的组件 必须实现 inject 接口 以便做具体的注入
+</span>          <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">injectors</span>[<span class="syntax-all syntax-parameter">interfaceName</span>]<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">inject</span>(<span class="syntax-all syntax-parameter">instance</span>);
+        }
+      }
+    }
+  }
+
+  public <span class="syntax-all syntax-entity">lookup</span>(<span class="syntax-all syntax-parameter">name</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">components</span>[<span class="syntax-all syntax-parameter">name</span>];
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Tester</span> {
+  public <span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">any</span>;
+
+  public <span class="syntax-all syntax-entity">registerComponents</span>() {
+    <span class="syntax-all syntax-comment">// 这两个组件都需要根据 interface 来注入实现
+</span>    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerComponent</span>(<span class="syntax-all syntax-string">&quot;MovieLister&quot;</span>, <span class="syntax-all syntax-parameter">MovieLister4</span>);
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerComponent</span>(<span class="syntax-all syntax-string">&quot;MovieFinder&quot;</span>, <span class="syntax-all syntax-parameter">ColonMovieFinder4</span>);
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">start</span>();
+  }
+
+  public <span class="syntax-all syntax-entity">registerInjectors</span>() {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerInjector</span>(
+      <span class="syntax-all syntax-string">&quot;InjectFinder&quot;</span>,
+      <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">lookup</span>(<span class="syntax-all syntax-string">&quot;MovieFinder&quot;</span>)
+    );
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerInjector</span>(
+      <span class="syntax-all syntax-string">&quot;InjectFinderFileName&quot;</span>,
+      <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">FinderFilenameInjector</span>()
+    );
+  }
+
+  public <span class="syntax-all syntax-entity">configureContainer</span>() {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Container</span>();
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerComponents</span>();
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerInjectors</span>();
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">start</span>();
+  }
+}
+
+<span class="syntax-all syntax-comment">// main
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">tester</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Tester</span>();
+<span class="syntax-all syntax-parameter">tester</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">configureContainer</span>();
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movieLister1</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">tester</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">container</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">lookup</span>(<span class="syntax-all syntax-string">&quot;MovieLister&quot;</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movies1</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">movieLister1</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">moviesDirectedBy</span>(<span class="syntax-all syntax-string">&quot;cary&quot;</span>);
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">movies1</span>);</code></pre>
+
+<h2>服务定位器(service locator)</h2>
+
+<p>我们替换了没有控制反转时候，组件直接初始化 Finder 类实例的部分，将它替换成了一个 service locator 对象， <code>this.finder = new ColonDelimitedMovieFinder(&quot;movies1.txt&quot;);</code> =&gt; <code>finder: MovieFinder = ServiceLocator.movieFinder();</code>，这样我们如果要改实现的话，直接改这个 service locator 对象就可以了，实现了组件和服务的解耦。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// Service Locator
+</span><span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">Movie</span> {
+  <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">string</span>;
+}
+<span class="syntax-all syntax-keyword">interface</span> <span class="syntax-all syntax-parameter">MovieFinder</span> {
+  <span class="syntax-all syntax-variable">findAll</span>(): <span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">Movie</span><span class="syntax-all syntax-keyword">&gt;</span>;
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">ServiceLocator</span> {
+  private <span class="syntax-all syntax-keyword">static</span> <span class="syntax-all syntax-parameter">soleInstance</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">ServiceLocator</span>;
+  private <span class="syntax-all syntax-parameter">movieFinder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span>;
+
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">movieFinder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">movieFinder</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">movieFinder</span>;
+  }
+
+  public <span class="syntax-all syntax-keyword">static</span> <span class="syntax-all syntax-entity">movieFinder</span>() {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">ServiceLocator</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">soleInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">movieFinder</span>;
+  }
+
+  public <span class="syntax-all syntax-keyword">static</span> <span class="syntax-all syntax-entity">load</span>(<span class="syntax-all syntax-parameter">arg</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">ServiceLocator</span>) {
+    <span class="syntax-all syntax-parameter">ServiceLocator</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">soleInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">arg</span>;
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">MovieLister0</span> {
+  <span class="syntax-all syntax-comment">// use service locator then it&#39;s not a IoC
+</span>  <span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">MovieFinder</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">ServiceLocator</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">movieFinder</span>();
+
+  public <span class="syntax-all syntax-entity">moviesDirectedBy</span>(<span class="syntax-all syntax-parameter">director</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span>) <span class="syntax-all syntax-keyword">return</span> [];
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">allMovies</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">finder</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">findAll</span>();
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">allMovies</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>((<span class="syntax-all syntax-parameter">m</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">m</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">director</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">director</span>);
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">ColonMovieFinder0</span> implements MovieFinder {
+  <span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;&quot;</span>;
+
+  public <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">fileName</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">string</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">fileName</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fileName</span>;
+  }
+
+  <span class="syntax-all syntax-entity">findAll</span>() {
+    <span class="syntax-all syntax-keyword">return</span> [{ <span class="syntax-all syntax-string">director</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;cary&quot;</span> }];
+  }
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Tester0</span> {
+  private <span class="syntax-all syntax-entity">configure</span>() {
+    <span class="syntax-all syntax-parameter">ServiceLocator</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">load</span>(
+      <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">ServiceLocator</span>(<span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">ColonMovieFinder0</span>(<span class="syntax-all syntax-string">&quot;movies1.txt&quot;</span>))
+    );
+  }
+
+  public <span class="syntax-all syntax-entity">testSimple</span>() {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">configure</span>();
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">lister</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">MovieLister0</span>();
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">movies</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">lister</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">moviesDirectedBy</span>(<span class="syntax-all syntax-string">&quot;cary&quot;</span>);
+    <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">movies</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// main
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">tester0</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Tester0</span>();
+<span class="syntax-all syntax-parameter">tester0</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">testSimple</span>();</code></pre>
+
+<h2>DI 还是 Service Locator</h2>
+
+<p>当你的应用里有很多类使用了一个服务，那么我们可以使用 service locator，这样我们只需要改下配置就可以对服务进行修改了。</p>
+
+<p>如果你是将你的程序作为一个组件（插件）提供给别人用，那么使用 DI 会比较好，你只需要关注你的组件会被注入什么依赖即可。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://martinfowler.com/bliki/InversionOfControl.html">What is InversionOfControl? - Martin Fowler</a></li>
+	<li><a href="https://martinfowler.com/articles/injection.html">Inversion of Control Containers and the Dependency Injection pattern - Martin Fowler</a></li>
+	<li><a href="https://insights.thoughtworks.cn/injection/">IoC容器和Dependency Injection模式(中文）- Martin Fowler</a></li>
+	<li><a href="https://github.com/picocontainer/NanoContainer/blob/master/container/src/java/org/nanocontainer/DefaultNanoContainer.java">nanocontainer/DefaultNanoContainer.java</a></li>
+	<li><a href="https://blogs.perficient.com/2021/09/22/an-abstract-take-on-the-dependency-injection-pattern/">registerComponentImplementation</a></li>
+	<li><a href="https://www.cnblogs.com/afarmer/p/4259133.html">IoC控制反转与DI依赖注入</a></li>
+</ol>
+
+</body>
+</html>
+
