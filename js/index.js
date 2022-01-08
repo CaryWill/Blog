@@ -1,18 +1,19 @@
 (function () {
+  const prefix = !location.href.includes("netlify") ? "/Blog" : "";
   const header = `
   <div class="header-bar">
     <div class="site-id">
-      <h1><a href="/Blog">Cary</a></h1>
+      <h1><a href="${prefix}">Cary</a></h1>
     </div>
     <ol class="links">
       <li>
-        <a href="/Blog/index.html">Home</a>
+        <a href="${prefix}/index.html">Home</a>
       </li>
       <li>
-        <a href="/Blog/articles.html">Articles</a>
+        <a href="${prefix}/articles.html">Articles</a>
       </li>
       <li>
-        <a href="/Blog/about.html">About</a>
+        <a href="${prefix}/about.html">About</a>
       </li>
     </ol>
   </div>

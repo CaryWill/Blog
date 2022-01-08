@@ -10,9 +10,6 @@
       window.noComment = true;
     </script>
     <title>Cary</title>
-    <link href="/Blog/css/main.css" rel="stylesheet" />
-    <script src="/Blog/js/index.js" defer></script>
-    <script src="/Blog/js/outline.js"></script>
     <script
       src="https://unpkg.com/react@17/umd/react.production.min.js"
       crossorigin
@@ -22,7 +19,17 @@
       crossorigin
     ></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <link href="/Blog/css/main.css" rel="stylesheet" />
+    <script src="/Blog/js/index.js" defer></script>
+    <script src="/Blog/js/outline.js"></script>
     <script type="text/babel" src="/Blog/js/main.js"></script>
+    
+    <!-- netlify support -->
+    <link href="/css/main.css" rel="stylesheet" />
+    <script src="/js/index.js" defer></script>
+    <script src="/js/outline.js"></script>
+    <script type="text/babel" src="/js/main.js"></script>
   </head>
   <body class="home" id="dummybodyid">
     <main class="content-container">
@@ -37,10 +44,22 @@
           <ol class="home-section-content-article-list" id="outline-list"></ol>
         </div>
         <div class="home-section-nav">
-          <a href="/Blog/articles.html" class="button" title="Blog Archive"
+          <a
+            id="older"
+            href="#"
+            class="button"
+            title="Blog Archive"
             >Older Articles</a
           >
         </div>
+        <script>
+          document.getElementById("older").addEventListener("click", (e) => {
+            e.preventDefault();
+            location.href = location.href.includes("netlify")
+              ? "/articles.html"
+              : "/Blog/articles.html";
+          });
+        </script>
       </section>
     </main>
   </body>

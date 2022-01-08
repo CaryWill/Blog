@@ -1,6 +1,7 @@
 "use strict";
 
 const e = React.createElement;
+const prefix = !location.href.includes("netlify") ? "/Blog" : "";
 
 class List extends React.Component {
   render() {
@@ -13,7 +14,7 @@ class List extends React.Component {
             {item[year].map((article) => (
               <li>
                 <article>
-                  <a href={"/Blog" + article.href}>
+                  <a href={prefix + article.href}>
                     <div class="title">
                       <h1>{article.title}</h1>
                     </div>
