@@ -63,6 +63,7 @@ walk(path.join("./src"), function (err, results) {
   results.forEach((p) => {
     if (p.includes(".html")) {
       var data = fs.readFileSync(p, "utf-8");
+      console.log(data);
       // post style
       // /Blog for github page
       const css = `<link href="/Blog/css/style.css" rel="stylesheet" />`;
@@ -73,14 +74,14 @@ walk(path.join("./src"), function (err, results) {
       // auto generated ulyssess css
       const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="/css/style.css" />`;
       // 移除之前有的 script
-      [css, css2, js, js2, ulyssessPostCss].forEach((item) =>
-        data.replaceAll(item, "")
-      );
+      [css, css2, js, js2, ulyssessPostCss].forEach((item) => {
+        data = data.replaceAll(item, "");
+      });
       // 转换 tiff 到 png 以免浏览器不能显示
       data = data.replaceAll(".tiff", ".png");
       // 添加一个 script 来保证只有一个
       [css, css2, js, js2, ulyssessPostCss].forEach((item) => {
-        data = data + item;
+        data = item + data;
       });
       fs.writeFileSync(p, data, "utf-8");
     } else if (p.includes(".tiff")) {
