@@ -72,7 +72,7 @@ walk(path.join("./src"), function (err, results) {
       const js = `<script src="/Blog/js/index.js" defer></script>`;
       const js2 = `<script src="/js/index.js" defer></script>`; // netlify support
       // auto generated ulyssess css
-      const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="/css/style.css" />`;
+      const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="css/style.css" />`;
       // 移除之前有的 script
       [css, css2, js, js2, ulyssessPostCss].forEach((item) => {
         data = data.replaceAll(item, "");

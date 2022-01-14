@@ -1,4 +1,4 @@
-<script src="/js/index.js" defer></script><script src="/Blog/js/index.js" defer></script><link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,7 +32,7 @@
 
 <p>我们先来看下使用 icon font 的场景吧，写了个 demo，可以在<a href="https://carywill.github.io/Frontend/icon-font/index.html">这里</a>看下，</p>
 
-<figure><img src="DraggedImage.png" alt="https://carywill.github.io/Frontend/icon-font/index.html"/><figcaption>https://carywill.github.io/Frontend/icon-font/index.html</figcaption></figure>
+<figure><img src="DraggedImage.tiff" alt="https://carywill.github.io/Frontend/icon-font/index.html"/><figcaption>https://carywill.github.io/Frontend/icon-font/index.html</figcaption></figure>
 
 <p>来看下具体是怎么实现的，首先这个 安卓 的图标，它是通过给 &lt;i&gt; 标签添加一个 class，在 CSS 里给添加的 class 加一个 <code>::before</code> 的伪类，在伪类里面，将 content 属性设置为在字体里面 安卓图标 对应的 unicode <a href="https://developer.mozilla.org/en-US/docs/Glossary/Code_point">code point</a> 的值就可以渲染出安卓图标了。</p>
 
@@ -61,11 +61,11 @@
 
 <p>拿大写的字母 A 来说，它在 unicode 里的 code point 是 <em>0041</em>，表示的是 <em> LATIN CHARACTER CAPITAL A</em>，可在 <a href="https://unicode.org/charts/PDF/U0000.pdf">这里</a> 查看。</p>
 
-<figure><img src="DraggedImage-1.png"/></figure>
+<figure><img src="DraggedImage-1.tiff"/></figure>
 
 <p>而各种字体对这个 code point <em>0041</em> 制作的 glyph 是不一样的，比如下图，我测试下下面 2 种字体里面的字母 A，</p>
 
-<figure><img src="DraggedImage-2.png"/></figure>
+<figure><img src="DraggedImage-2.tiff"/></figure>
 
 <p>对了，像 icon font 这种通过字体自定义 icon 的，一般是使用 unicode 里面的 Private Use Area（PUA）区域，这一块区域没有规定 code point 的语义，所以你自定义 icon 可以利用这一块的 code point，关于 PUA 的知识可以看下<a href="http://www.unicode.org/faq/private_use.html">这里</a>。</p>
 
@@ -73,7 +73,7 @@
 
 <p>所以这里，我们使用了 unicode 的 <code>\f17b</code> 这个 code point，所以肯定字体里面这个 code point 对应的符号（glyph）肯定就是安卓图标了，我们可以在 CSS 文件里看到这个 &lt;i&gt; 标签的字体是 <code>fa-brands-400</code>，我们可以将该<a href="https://github.com/CaryWill/Frontend/blob/master/icon-font/webfonts/fa-brands-400.woff">字体文件</a> <code>fa-brands-400.woff</code> 拖到<a href="https://fontdrop.info">这个网站</a> 上去，你可以看到这个字体里面的每一个 glyphs 对应的 unicode code point，就比如我们的<strong>安卓</strong>图标，</p>
 
-<figure><img src="DraggedImage-3.png"/></figure>
+<figure><img src="DraggedImage-3.tiff"/></figure>
 
 <h2>SVG</h2>
 
@@ -90,13 +90,13 @@
     &lt;/<span class="syntax-all syntax-tag">path</span>&gt;
   &lt;/<span class="syntax-all syntax-tag">svg</span>&gt;</code></pre>
 
-<figure><img src="DraggedImage-4.png"/></figure>
+<figure><img src="DraggedImage-4.tiff"/></figure>
 
 <p>具体想要了解 SVG 的使用的话可以看下 <a href="https://developer.mozilla.org/en-US/docs/Web/SVG">这里</a>。</p>
 
 <p>SVG 还可以实现一些 icon font 做不到的事情，比如描边。</p>
 
-<figure><img src="DraggedImage-5.png"/></figure>
+<figure><img src="DraggedImage-5.tiff"/></figure>
 
 <p><strong>结论</strong>：在两者中做选择的话，选 SVG，yyds。</p>
 
