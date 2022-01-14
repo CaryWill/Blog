@@ -80,7 +80,7 @@ walk(path.join("./src"), function (err, results) {
       // 转换 tiff 到 png 以免浏览器不能显示
       data = data.replaceAll(".tiff", ".png");
       // 添加一个 script 来保证只有一个
-      [css, css2, js, js2, ulyssessPostCss].forEach((item) => {
+      [css, css2, js, js2].forEach((item) => {
         data = item + data;
       });
       fs.writeFileSync(p, data, "utf-8");
