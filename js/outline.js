@@ -1,6 +1,16 @@
 // alse for rss use
 var outline = [
   {
+    2022: [
+      {
+        title: "使用 SVG 代替 icon font",
+        desc: "你知道 SVG 相对于 icon font 的优点吗？",
+        date: "Jan 13, 2022",
+        href: "/src/2022/svg-icon-font/index.html",
+      },
+    ],
+  },
+  {
     2021: [
       {
         title: "控制反转设计模式 - TypeScript",
