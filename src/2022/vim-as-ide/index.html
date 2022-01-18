@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>VIM setup as an IDE</title>
+	</head>
+<body>
+<h1>VIM setup as an IDE</h1>
+
+<p><strong> 2022.01.16</strong></p>
+
+<p>本文使用 Mac 自带的 terminal app，</p>
+
+<ul>
+	<li>字体。 DejaVu Sans Mono for Powerline 14</li>
+	<li>主题。可以<a href="https://github.com/lysyi3m/macos-terminal-themes">在这</a>里挑，我用的是 <a href="https://github.com/lysyi3m/macos-terminal-themes#mariana-download">Mariana</a></li>
+</ul>
+
+<h2>Vim8</h2>
+
+<p>接下来就是我们的主角 VIM 了，当然你也可以试下 nvim，VIM 的安装如下，</p>
+
+<pre><code class="code-highlighted code-bash">brew install vim</code></pre>
+
+<p>一般会将 &lt;Caps lock&gt; 键 map 到 &lt;ctrl&gt;，常用的和 pane/window/tab/buffer 相关的命令如下，一些自定义配置参考了<a href="https://github.com/PLDaily/pldaily-vim/blob/master/.vimrc">瑾源</a>和<a href="https://gist.github.com/benawad/b768f5a5bbd92c8baabd363b7e79786f">ben</a>的，我的配置在<a href="https://github.com/CaryWill/dotfiles/blob/master/.vimrc">这里</a>，</p>
+
+<p>| 命令 | 描述 | 是否自定义 |</p>
+
+<p>| ----------- | ----------- |</p>
+
+<p>| <code>&lt;ctrl&gt; h</code> | 这里的 h 可以替换成 <em>hljk</em>，用来切换 vim 的 pane | 是|</p>
+
+<p>| <code>&lt;ctrl&gt; [</code> | 或者 <code>&lt;ctrl&gt; ]</code> 来切换 tab | 是|</p>
+
+<p>| <code>t e</code> | 切换 tab | 是|</p>
+
+<p>| <code>t [</code> | 上一个 tab | 是|</p>
+
+<p>| <code>t ]</code> | 下一个 tab | 是|</p>
+
+<p>| <code>&lt;ctrl&gt; w  _</code> | pane 的高度最大化 | 否|</p>
+
+<p>| <code>&lt;ctrl&gt; w  |</code> | pane 的宽度最大化 | 否 |</p>
+
+<p>| <code>&lt;ctrl&gt; w  =</code> | pane 的尺寸变回原样 | 否 |</p>
+
+<p>| <code>&lt;ctrl&gt; w  q</code> | 关闭 pane | 否 |</p>
+
+<p>配置 VIM 的插件系统，你可以将你的 VIM 打造成一个 IDE，我们这里使用了 <a href="https://github.com/junegunn/vim-plug">vim-plug</a> 插件系统，你可以在官网看到如何安装，</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>在 VIM 配置文件里配置好插件后可以使用 <code>: PlugInstall</code> 来安装插件，这里只列举一些必装的插件和快捷键（这里 &lt;leader&gt; 设置为了空格键，<em>ripgrep</em> 库 可通过<code>brew install ripgrep</code> 安装）。</p>
+
+<p>|插件| 命令 | 描述 | 是否自定义 |</p>
+
+<p>| ----------- | ----------- |</p>
+
+<p>| preservim/nerdtree | <code>m</code> | 创建文件 | 否 |</p>
+
+<p>| 同上 | <code>&lt;ctrl&gt; n</code> | 或者 <code>&lt;ctrl&gt; ]</code> 来切换 tab | 是|</p>
+
+<p>| 同上 | <code>&lt;shift&gt; c</code> | 切换根目录 | 否|</p>
+
+<p>| 同上 | <code>&lt;shift&gt; i</code> | 显示隐藏文件 | 否|</p>
+
+<p>| tpope/vim-commentary | <code>&lt;leader&gt; /</code> | 注释代码 | 否|</p>
+
+<p>| ctrlpvim/ctrlp.vim | <code>&lt;ctrl&gt; p</code> | 唤起搜索栏 | 否|</p>
+
+<p>| 同上 | <code>&lt;ctrl&gt; f</code> | 切换搜索模式 | 是|</p>
+
+<p>| neoclide/coc.nvim | <code>&lt;leader&gt;rn</code> | <a href="https://stackoverflow.com/a/45348970/10190407">refactor</a> 重命名 | 是|</p>
+
+<p>| fzf | <code>:Rg 输入关键词</code> | 搜索文本(依赖 <em>ripgrep</em> 库) | 否|</p>
+
+<h3> 其他插件</h3>
+
+<ul>
+	<li>nerdtree-git-plugin</li>
+	<li>copilot.vim（如果你使用的是 nvim）</li>
+	<li>airblade/vim-gitgutter</li>
+</ul>
+
+<h2>Tmux</h2>
+
+<p>在将 terminal 和 VIM 作为你的主要开发工具的时候，这个东西绝对不能少，<strong>tmux（terminal multiplexer）</strong>，它可以将你的 terminal 窗口分割成多个 terminal 的小窗口。</p>
+
+<pre><code class="code-highlighted code-bash"><span class="syntax-all syntax-keyword">&gt;</span> brew install tmux</code></pre>
+
+<p>它的时候方式是这样的，在使用其他快捷键前，需要按下一个特定的组合键，默认是 <code>&lt;ctrl&gt; b</code>，被称为 <em>prefix</em>，然后在按完这个组合键后，比如你想新建一个窗口，那么再按下 <code>c</code> 即可，这里我将 <em>prefix</em> 配置成了 <code>&lt;ctrl&gt; &lt;space&gt;</code>，因为我发现默认的 <em>prefix</em> 会和 VIM 的回滚的功能冲突，也是 <code>&lt;ctrl&gt; b</code>。</p>
+
+<p>这里整理了一些常用的和 pane/window/session 相关快捷键，更多可参考<a href="http://www.ruanyifeng.com/blog/2019/10/tmux.html">这里</a>，或者使用 <code>man tmux</code> 命令查看，</p>
+
+<p>| 命令 | 描述 | 是否自定义 |</p>
+
+<p>| ----------- | ----------- |</p>
+
+<p>| <code>prefix s</code> | 查看所有的 tmux session with previews | 否|</p>
+
+<p>| <code>prefix &lt;tab&gt;</code> | 遍历该 window 下所有的 pane | 是|</p>
+
+<p>| <code>prefix h</code> | 这里的 h 可以替换成 hljk，类 VIM 的方向键来切换 pane | 是|</p>
+
+<p>| <code>prefix prefix</code> | 切换到上一个 window | 是|</p>
+
+<p>| <code>prefix z</code> | 全屏一个 pane，再使用一次会复原 | 否|</p>
+
+<p>| <code>prefix s</code> | 显示 tmux sessions | 否|</p>
+
+<p>| <code>prefix w</code> | 显示 tmux sessions with pane preview | 否|</p>
+
+<p>| <code>prefix %</code> | 在右边创建一个 pane | 否|</p>
+
+<p>| <code>prefix &quot;</code> | 在下面创建一个 pane | 否|</p>
+
+<p>| <code>prefix x</code> | 关闭当前 pane | 否|</p>
+
+<p>| <code>tmux kill-session -a</code> | 关闭所有其他 session 除了当前的 | 否|</p>
+
+<p>| <code>tmux new -s &lt;session-name&gt; </code> | 创建一个 session | 否|</p>
+
+<p>这里有一个比较好的使用 VIM，tmux 作为多项目开发的实践的一个<a href="https://nickjanetakis.com/blog/using-tmux-sessions-windows-panes-and-vim-buffers-together">视频</a>，可以看下。</p>
+
+<p>Tmux 也有插件管理器，没想到，这里主要是为了保存重启电脑后的车祸现场，想找回 tmux session，才发现的东西，配置如下，</p>
+
+<pre><code class="code-highlighted code-.tmux.conf"># Tmux plugins
+set -g @plugin &#39;tmux-plugins/tmux-resurrect&#39;
+# Save every 15mins
+set -g @plugin &#39;tmux-plugins/tmux-continuum&#39;
+# 自动恢复 sessions
+set -g @continuum-restore &#39;on&#39;
+
+# Initialize TMUX plugin manager (keep this line at the very bottom of tmux.conf
+run &#39;~/.tmux/plugins/tpm/tpm&#39;</code></pre>
+
+<p>上面会自动隔 15 分钟帮你保存一下 sessions，当然你也可以使用 <code>prefix-Ctrl-s </code> 自动保存，然后使用 <code>prefix-Ctrl-r</code> 来手动恢复 sessions。</p>
+
+<p>现在想想对于一个经常使用 vim 和 terminal 的人来说，tmux 真香。还记得很早的时候，第一家公司的同事就用这个（朱老板），那时候我没觉得很香，因为用不到。</p>
+
+<h2>其他</h2>
+
+<ol>
+	<li>如果你需要命令行自动补全的话，可以试下 zsh 或者 fish，或者 <a href="https://github.com/ohmybash/oh-my-bash">oh my bash</a>。</li>
+	<li>如果 … 你可以使用 iTerm2，但是对于我日常使用来说两者看上去没什么区别。</li>
+	<li>如果你想要在 Safari 或者 Chrome 里面也适用 VIM 的话，可以试下 <a href="https://github.com/televator-apps/vimari">Vimari</a><a href="https://chrome.google.com/webstore/detail/vimium/dbepggeogbaibhgnhhndojpepiihcmeb?hl=en">Vimium</a>。</li>
+	<li>如果你想自定义macos 的全局快捷键的话，可以试下 <a href="http://karabiner-elements.pqrs.org">karabiner</a> 这款。</li>
+	<li>如果你想多台电脑同步 vim 配置的话， 可以考虑使用 <a href="https://github.com/jukben/gbck">gbck</a> 这个库来同步 dotfiles 等配置文件（其实也就是同步到 github 上）。 </li>
+</ol>
+
+<h2>探索中</h2>
+
+<ol>
+	<li>如何更好的集成 git 
+
+		<ul>
+			<li><a href="https://github.com/tpope/vim-fugitive">Git conflict resolve</a></li>
+		</ul></li>
+</ol>
+
+<h2>Q&amp;A</h2>
+
+<h3>为什么 CoC 不生效？自动补全都没有….</h3>
+
+<p>因为我在 <strong>.vimrc</strong> 里面配置了 <code>set paste</code> 这个选项。</p>
+
+<h3>如何设置 python3 为默认的 python 版本</h3>
+
+<p>在 .zshrc 或者 .bashrc 里写上，<code>alias python=&#39;python3.2&#39;</code>，这里的 3.2 是自己电脑上的 python3 的版本。</p>
+
+<h3>如何使用 tmux 同时开发多个项目</h3>
+
+<p>可以参考下 <a href="https://nickjanetakis.com/blog/using-tmux-sessions-windows-panes-and-vim-buffers-together">Using tmux Sessions, Windows, Panes and Vim Buffers Together</a> 这个视频，多个项目可以使用 tmux 里 session 的概念。</p>
+
+<h3>tmux 有时修改配置 reload 不生效</h3>
+
+<p>可能是配置有误，试着 <code>prefix :source-file ~/.tmux.conf</code> 看下报错原因。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://superuser.com/a/132030">How do you reload your .vimrc file without restarting vim?</a></li>
+	<li><a href="https://stackoverflow.com/questions/962064/unable-to-understand-a-line-in-vimrc">&lt;silent&gt; in .vimrc</a></li>
+	<li><a href="https://superuser.com/a/1438657">tmux 2.0 on OSX: /.tmux.conf doesn't work</a></li>
+	<li><a href="http://www.ruanyifeng.com/blog/2019/10/tmux.html">Tmux 使用教程 - 阮一峰</a></li>
+	<li><a href="https://vi.stackexchange.com/a/18543">Why doesn&#39;t the backspace key work in insert mode?</a></li>
+	<li><a href="https://thoughtbot.com/blog/vim-splits-move-faster-and-more-naturally">Vim Splits - Move Faster and More Naturally</a></li>
+	<li><a href="https://stackoverflow.com/a/69847435">neovim [coc.nvim] build/inderx.js not found, please install dependencies and compile coc.nvim : yarn install</a></li>
+	<li><a href="https://www.reddit.com/r/neovim/comments/hm58yi/set_paste_no_cocnvim_completion_menu_with_it/">set paste : no coc.nvim completion menu with it </a></li>
+	<li><a href="https://nickjanetakis.com/blog/using-tmux-sessions-windows-panes-and-vim-buffers-together">Using tmux Sessions, Windows, Panes and Vim Buffers Together - Youtube</a></li>
+	<li><a href="https://superuser.com/a/582069">On tmux, what is the difference between &quot;bind&quot; and &quot;bind-key&quot;?</a></li>
+	<li><a href="https://vim.rtorr.com">vim cheetsheet</a></li>
+	<li><a href="https://www.youtube.com/watch?v=sSOfr2MtRU8&amp;t=585s"> My dev workflow using tmux+vim (video)</a> </li>
+	<li><a href="https://www.reddit.com/r/vim/comments/4kncnl/vim_tmux_what_tmux_prefix_do_you_use/">Best Tmux prefix key(ctrl+space) - reddit</a></li>
+	<li><a href="https://koenwoortman.com/tmux-prefix-ctrl-space/">Change the tmux prefix to ctrl+space</a></li>
+	<li><a href="https://github.com/tmux-plugins/tpm">tmux manager</a></li>
+	<li><a href="https://github.com/tmux-plugins/tmux-resurrect">tmux-resurrect（tmux 插件，防止重启 session 丢失）</a></li>
+	<li><a href="https://andrewjamesjohnson.com/restoring-tmux-sessions/">Restoring tmux Sessions（自动保存 session 配合 tmux-resurrect 插件一起使用）</a></li>
+	<li><a href="https://stackoverflow.com/a/45348970/10190407">Refactoring in Vim with CoC lsp</a></li>
+</ol>
+
+</body>
+</html>
+
