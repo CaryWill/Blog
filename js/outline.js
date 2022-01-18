@@ -3,6 +3,12 @@ var outline = [
   {
     2022: [
       {
+        title: "VIM as IDE",
+        desc: "如何将 VIM 配置成一个 IDE",
+        date: "Jan 16, 2022",
+        href: "/src/2022/vim-as-ide/index.html",
+      },
+      {
         title: "使用 SVG 代替 icon font",
         desc: "你知道 SVG 相对于 icon font 的优点吗？",
         date: "Jan 13, 2022",
