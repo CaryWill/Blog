@@ -1,9 +1,9 @@
-<script src="/js/index.js" defer></script><script src="/Blog/js/index.js" defer></script><link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>VIM setup as an IDE</title>
 	</head>
 <body>
@@ -52,11 +52,11 @@
 
 <figure><img src="DraggedImage.png"/></figure>
 
-<p>在 VIM 配置文件里配置好插件后可以使用 <code>: PlugInstall</code> 来安装插件，这里只列举一些必装的插件和快捷键（这里 &lt;leader&gt; 设置为了空格键，<em>ripgrep</em> 库 可通过<code>brew install ripgrep</code> 安装）。</p>
+<p>在 VIM 配置文件里配置好插件后可以使用 <code>:PlugInstall</code> 来安装插件，这里只列举一些必装的插件和快捷键（这里 &lt;leader&gt; 设置为了空格键，<em>ripgrep</em> 库 可通过<code>brew install ripgrep</code> 安装）。</p>
 
 <p>|插件| 命令 | 描述 | 是否自定义 |</p>
 
-<p>| ----------- | ----------- |</p>
+<p>| ------ | ------- | ------- | -------- |</p>
 
 <p>| preservim/nerdtree | <code>m</code> | 创建文件 | 否 |</p>
 
@@ -138,8 +138,6 @@ run &#39;~/.tmux/plugins/tpm/tpm&#39;</code></pre>
 
 <p>上面会自动隔 15 分钟帮你保存一下 sessions，当然你也可以使用 <code>prefix-Ctrl-s </code> 自动保存，然后使用 <code>prefix-Ctrl-r</code> 来手动恢复 sessions。</p>
 
-<p>现在想想对于一个经常使用 vim 和 terminal 的人来说，tmux 真香。还记得很早的时候，第一家公司的同事就用这个（朱老板），那时候我没觉得很香，因为用不到。</p>
-
 <h2>其他</h2>
 
 <ol>
@@ -152,12 +150,15 @@ run &#39;~/.tmux/plugins/tpm/tpm&#39;</code></pre>
 
 <h2>探索中</h2>
 
+<p>VIM 作为一个文本编辑器来说的话，很好用，但是 VSCode 对于开发来说更容易上手，两者结合起来会很舒服。</p>
+
 <ol>
 	<li>如何更好的集成 git 
 
 		<ul>
 			<li><a href="https://github.com/tpope/vim-fugitive">Git conflict resolve</a></li>
 		</ul></li>
+	<li>路径自动补全</li>
 </ol>
 
 <h2>Q&amp;A</h2>
@@ -199,6 +200,7 @@ run &#39;~/.tmux/plugins/tpm/tpm&#39;</code></pre>
 	<li><a href="https://github.com/tmux-plugins/tmux-resurrect">tmux-resurrect（tmux 插件，防止重启 session 丢失）</a></li>
 	<li><a href="https://andrewjamesjohnson.com/restoring-tmux-sessions/">Restoring tmux Sessions（自动保存 session 配合 tmux-resurrect 插件一起使用）</a></li>
 	<li><a href="https://stackoverflow.com/a/45348970/10190407">Refactoring in Vim with CoC lsp</a></li>
+	<li><a href="https://stackoverflow.blog/2020/11/09/modern-ide-vs-vim-emacs/">Modern IDEs are magic. Why are so many coders still using Vim and Emacs?</a></li>
 </ol>
 
 </body>
