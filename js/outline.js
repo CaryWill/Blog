@@ -3,6 +3,12 @@ var outline = [
   {
     2022: [
       {
+        title: "Invalid tag name >=^16.0.0 问题",
+        desc: "npm, nvm, node, versioning",
+        date: "Jan 22, 2022",
+        href: "/src/2022/npm-versioning/index.html",
+      },
+      {
         title: "VIM as an IDE",
         desc: "如何将 VIM 配置成一个 IDE",
         date: "Jan 16, 2022",

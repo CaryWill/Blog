@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Invalid tag name &gt;=^16.0.0&quot; 问题</title>
+	</head>
+<body>
+<h1>Invalid tag name &gt;=^16.0.0&quot; 问题</h1>
+
+<p><strong>2022.01.20</strong></p>
+
+<p>工作中遇到这么个问题，我在项目里直接 <code>npm install</code> 报错了，报了这么个错，</p>
+
+<blockquote>
+<p>”Invalid tag name &quot;&gt;=^16.0.0&quot;: Tags may not have any characters that encodeURIComponent encodes.”</p>
+</blockquote>
+
+<p>网上搜了下，<a href="https://github.com/wwayne/react-tooltip/issues/661#issuecomment-790222247">解决方案</a>是 <code>npm install --legacy-peer-deps</code>，整理了下为什么 <code>--legacy-peer-deps</code> 能解决这个问题，它做了什么。</p>
+
+<p>这里会帮你理解，</p>
+
+<ul>
+	<li>什么是 node，nvm，npm</li>
+	<li>什么是 peer-dependency，以及出现的背景</li>
+	<li>package.json 里依赖版本的命名规则</li>
+</ul>
+
+<hr />
+
+<p>首先来介绍几个概念，</p>
+
+<h2>nodejs</h2>
+
+<blockquote>
+<p>Node.js is an open-source, cross-platform, back-end JavaScript runtime environment that runs on the V8 engine and executes JavaScript code outside a web browser.</p>
+</blockquote>
+
+<p>一个 js 的运行时。</p>
+
+<h2>npm</h2>
+
+<blockquote>
+<p>npm is two things: first and foremost, it is an online repository for the publishing of open-source Node.js projects; second, it is a command-line utility for interacting with said repository that aids in package installation, version management, and dependency management. </p>
+</blockquote>
+
+<p>Node package manager 简称 npm。它既是一个在线的用来存放开源的 js 库的仓库，又是一个包管理工具用来安装依赖。</p>
+
+<h2>nvm</h2>
+
+<blockquote>
+<p>nvm is a version manager for node.js, designed to be installed per-user, and invoked per-shell.</p>
+</blockquote>
+
+<p>Node version manager 简称 nvm。用来管理多版本的 node。</p>
+
+<p>假设你电脑上的 node 版本是 12 的，但是你想使用 16 版本的，那么你可以使用 <code>nvm install 16</code> 命令来安装 node 16，并且可以使用 <code>nvm use 16</code> 来切换到 node 16 版本，后面不想用了可以使用 <code>nvm use 12</code> 切回到你的 node 12 版本，十分的方便，切换 node 的时候，npm 也会自动的切换。</p>
+
+<h2>peer-dependency</h2>
+
+<p>在介绍这个概念之前，我们先来了解下你在你的项目的根目录下执行 <code>npm install</code> 的时候，会发生什么，这里我建了个项目，叫 <strong>npm-node</strong>，它有两个依赖，所有的依赖都放在了 package.json 里的 dependencies 字段里，当你执行 <code>npm install</code> 的时候，npm 会构建一个依赖树，帮你安装你的项目里 package.json 里的 dependencies 字段里的依赖，并且 dependencies 字段里的每一个依赖包自己的 package.json 里的依赖，比如下面这个，</p>
+
+<pre><code class="code-highlighted code-json">// 测试包
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;npm-node&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;1.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;dependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>: <span class="syntax-all syntax-string">&quot;^1.0.0&quot;</span>,
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;17.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// 依赖包
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;1.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;dependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;16.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}</code></pre>
+
+<figure><img src="DraggedImage.png"/><img src="DraggedImage-1.png"/></figure>
+
+<p>这里需要注意的一点是，这里有两个版本的 react 被安装了，一个是 &quot;npm-node&quot; 这个库下面的，另一个是 &quot;npm-node&quot; 的依赖 &quot;cary-peer-deps&quot; 这个库下面的。</p>
+
+<p>这种情况比较多的时候是你开发的库它不依赖外部的库，也就是安装就可以用了，但是遇到 “容器-插件” 这种模式的话， 我们不会希望插件和容器用两个版本的 react，因为多余啊，所以 <code>peerDependencies</code> 这个字段的一个作用就是我们不用再重复安装 react 依赖了，用容器的 react 库就行了，还有一个作用就是帮我们约束了 “容器”和“插件” 两者使用的 react 的版本，比如当前插件只能在特定几个版本的 react 下才能工作。</p>
+
+<p>Peer dependency 其实也很好理解，peer 的意思是“具有同等地位的人”，就有是说，你想安装我，那么你得先安装我的 peer dependency。</p>
+
+<p>举个例子，</p>
+
+<pre><code class="code-highlighted code-json">// 测试包
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;npm-node&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;1.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;dependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>: <span class="syntax-all syntax-string">&quot;^2.0.0&quot;</span>,
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;17.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// 依赖包
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;2.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;peerDependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;16.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// npm install 的时候的报错
+// 因为我们的依赖包 cary-peer-deps@<span class="syntax-all syntax-constant">2.0</span>.<span class="syntax-all syntax-constant">0</span> 需要宿主的依赖包是 react <span class="syntax-all syntax-constant">16.0</span>.<span class="syntax-all syntax-constant">0</span> 版本的，而宿主的版本是 react <span class="syntax-all syntax-constant">17.0</span>.<span class="syntax-all syntax-constant">0</span> 这样就报错了
+# cary @ MacBook-Pro in ~/workspace/github/frontend/npm-node on git:master x [<span class="syntax-all syntax-constant">15</span><span class="syntax-all syntax-error">:</span><span class="syntax-all syntax-constant">02</span><span class="syntax-all syntax-error">:</span><span class="syntax-all syntax-constant">51</span>] 
+$ npm install 
+npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! 
+npm ERR! While resolving: npm-node@<span class="syntax-all syntax-constant">1.0</span>.<span class="syntax-all syntax-constant">0</span>
+npm ERR! Found: react@<span class="syntax-all syntax-constant">17.0</span>.<span class="syntax-all syntax-constant">0</span>
+npm ERR! node_modules/react
+npm ERR!   react@<span class="syntax-all syntax-string">&quot;17.0.0&quot;</span> from the root project
+npm ERR! 
+npm ERR! Could not resolve dependency:
+npm ERR! peer react@<span class="syntax-all syntax-string">&quot;16.0.0&quot;</span> from cary-peer-deps@<span class="syntax-all syntax-constant">2.0</span>.<span class="syntax-all syntax-constant">0</span>
+npm ERR! node_modules/cary-peer-deps
+npm ERR!   cary-peer-deps@<span class="syntax-all syntax-string">&quot;^2.0.0&quot;</span> from the root project
+npm ERR! 
+npm ERR! Fix the upstream dependency conflict, or retry
+npm ERR! this command with --force, or --legacy-peer-deps
+npm ERR! to accept an incorrect (and potentially broken) dependency resolution.</code></pre>
+
+<p>可以看到，虽然我们的容器安装了 react 17 版本，但是他依赖的 “cary-peer-deps@&quot;^2.0.0&quot;” 库依赖的一个 peerDependencies 是 react 16 版本的，两者冲突所以安装我们的 “cary-peer-deps@&quot;^2.0.0&quot;” 依赖就失败了。</p>
+
+<p>但是你可以看到上面的报错里写了可以使用 <code>--force</code> 或者 <code>--legacy-peer-deps</code> flag 来跳过部分不兼容的 peer-dependency 的安装，这样你安装的时候不会报错，但是不能保证 “cary-peer-deps@&quot;^2.0.0&quot;” 的依赖在使用 react 17 的时候不会出现不兼容的现象。</p>
+
+<p>那我再来测试下，如果插件所依赖的 react 版本两者冲突怎么办，一个给 react 16 用(cary-peer-deps/react&gt;=16.0.0 &lt; 17.0.0)，一个给 react 17 用的插件(cary-peer-deps-2/react&gt;=17.0.0)，</p>
+
+<pre><code class="code-highlighted code-json">// 测试包
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;npm-node&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;1.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;dependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>: <span class="syntax-all syntax-string">&quot;^3.0.0&quot;</span>,
+    <span class="syntax-all syntax-string">&quot;cary-peer-deps-2&quot;</span>: <span class="syntax-all syntax-string">&quot;^1.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// 依赖包
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;3.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;peerDependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;&gt;=16.0.0 &lt; 17.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// 报错
+npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+npm ERR! 
+npm ERR! Found: react@<span class="syntax-all syntax-constant">16.14</span>.<span class="syntax-all syntax-constant">0</span>
+npm ERR! node_modules/react
+npm ERR!   peer react@<span class="syntax-all syntax-string">&quot;&gt;=16.0.0 &lt; 17.0.0&quot;</span> from cary-peer-deps@<span class="syntax-all syntax-constant">3.0</span>.<span class="syntax-all syntax-constant">0</span>
+npm ERR!   node_modules/cary-peer-deps
+npm ERR!     cary-peer-deps@<span class="syntax-all syntax-string">&quot;^3.0.0&quot;</span> from the root project
+npm ERR! 
+npm ERR! Could not resolve dependency:
+npm ERR! cary-peer-deps<span class="syntax-all syntax-constant">-2</span>@<span class="syntax-all syntax-string">&quot;^1.0.0&quot;</span> from the root project
+npm ERR! 
+npm ERR! Conflicting peer dependency: react@<span class="syntax-all syntax-constant">17.0</span>.<span class="syntax-all syntax-constant">2</span>
+npm ERR! node_modules/react
+npm ERR!   peer react@<span class="syntax-all syntax-string">&quot;&gt;=17.0.0&quot;</span> from cary-peer-deps<span class="syntax-all syntax-constant">-2</span>@<span class="syntax-all syntax-constant">1.0</span>.<span class="syntax-all syntax-constant">0</span>
+npm ERR!   node_modules/cary-peer-deps<span class="syntax-all syntax-constant">-2</span>
+npm ERR!     cary-peer-deps<span class="syntax-all syntax-constant">-2</span>@<span class="syntax-all syntax-string">&quot;^1.0.0&quot;</span> from the root project
+npm ERR! 
+npm ERR! Fix the upstream dependency conflict, or retry
+npm ERR! this command with --force, or --legacy-peer-deps
+npm ERR! to accept an incorrect (and potentially broken) dependency resolution.</code></pre>
+
+<p>你会发现冲突报错了。 </p>
+
+<p>这样 peer dependencies 我们也就了解了。</p>
+
+<hr />
+
+<p>现在再让我们回过头来看下一开始的问题，</p>
+
+<blockquote>
+<p>npm ERR! Invalid tag name &quot;&gt;=^16.0.0&quot;: Tags may not have any characters that encodeURIComponent encodes.</p>
+</blockquote>
+
+<p>它的话就是我们再安装一些依赖的时候，有一个依赖里指定的 peerDependencies 里的某一个包的版本命名规则有问题导致的，但是不是插件的版本和容器的版本不兼容，而是纯粹的命名规则有问题，问题出在 <code>&quot;&gt;=^16.0.0&quot;</code> 里的 <code>&quot;&gt;=^</code> 部分，没有这种命名方式，</p>
+
+<pre><code class="code-highlighted code-json">{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;npm-node&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;1.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;dependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>: <span class="syntax-all syntax-string">&quot;&gt;=5.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// 依赖
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;5.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;peerDependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;&gt;=^16.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}</code></pre>
+
+<p>因为 5.0 的 &quot;cary-peer-deps&quot; 里 &quot;react&quot;: &quot;&gt;=^16.0.0&quot; 命名方式不对，所以就报错了。</p>
+
+<p>具体的可以参考<a href="https://github.com/npm/node-semver#versions">这里</a>，总结来说，除了 <code>&gt;</code>, <code>&lt;</code>, <code>=</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>=</code> 是没有 major, minor, patch 限制的，如果你使用，<code>~</code> 或者 <code>^</code> 是有的，</p>
+
+<p><code>~</code>: 约束了你可以改 major.minor.patch 里 patch 里的值，major 和 minor 是不能动的。</p>
+
+<p><code>^</code>: 约束了你可以改 major.minor.patch 里 minor 和 patch 里的值，major 是不能动的。</p>
+
+<p>所以 <code>&gt;=^16.0.0</code> 的写法可以是 <code>^16.0.0</code> 或者 <code>&gt;=16.0.0</code>，但绝对不能是 <code>&gt;=^16.0.0</code>。</p>
+
+<hr />
+
+<p>题外话，这里再顺便提下 package.json 里的 <code>devDependencies</code> 这个字段，它的作用是，在你安装一个依赖的时候，那个依赖里的 devDependencies 不会被安装，毕竟你又不开发那个依赖，但是你在那个依赖的根目录下直接 <code>npm install</code> 的话，会安装，毕竟这就假设你在开发这个库了。</p>
+
+<p><a href="https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies" title="dependencies">官网</a> 里这样说，</p>
+
+<blockquote>
+<p>These things will be installed when doing npm link or npm install from the root of a package, and can be managed like any other npm configuration param. See config for more on the topic.</p>
+</blockquote>
+
+<p>以上。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://github.com/nvm-sh/nvm#installing-and-updating">How to install nvm</a></li>
+	<li><a href="https://nodejs.org/en/knowledge/getting-started/npm/what-is-npm/">What is npm</a></li>
+	<li><a href="https://nodejs.org/en/about/">What is Nodejs</a></li>
+	<li><a href="https://github.com/npm/node-semver#versions">How to write deps version in package.json</a></li>
+	<li><a href="https://github.com/npm/cli/issues/1734#issuecomment-696985167">[BUG] Some packages can no longer be installed with npm v7</a></li>
+	<li><a href="https://nodejs.org/en/blog/npm/peer-dependencies/">What is peer deps</a></li>
+	<li><a href="https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages"> How to publish your first npm package? </a></li>
+	<li><a href="https://semver.org/">Semantic Versioning Specification（major.minor.patch)</a></li>
+</ol>
+
+</body>
+</html>
+
