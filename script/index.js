@@ -60,52 +60,58 @@ var walk = function (dir, done) {
 
 walk(path.join("./src"), function (err, results) {
   if (err) throw err;
-  results.forEach((p) => {
-    if (p.includes(".html")) {
-      var data = fs.readFileSync(p, "utf-8");
-      console.log(data);
-      // post style
-      // /Blog for github page
-      const css = `<link href="/Blog/css/style.css" rel="stylesheet" />`;
-      const css2 = `<link href="/css/style.css" rel="stylesheet" />`; // netlify support
-      // comment+header
-      const js = `<script src="/Blog/js/index.js" defer></script>`;
-      const js2 = `<script src="/js/index.js" defer></script>`; // netlify support
-      // auto generated ulyssess css
-      const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="css/style.css" />`;
-      // 移除之前有的 script
-      [css, css2, js, js2, ulyssessPostCss].forEach((item) => {
-        data = data.replaceAll(item, "");
-      });
-      // 转换 tiff 到 png 以免浏览器不能显示
-      data = data.replaceAll(".tiff", ".png");
-      // 添加一个 script 来保证只有一个
-      [css, css2, js, js2].forEach((item) => {
-        data = item + data;
-      });
-      fs.writeFileSync(p, data, "utf-8");
-    } else if (p.includes(".tiff")) {
-      try {
-        var options = {
-          logLevel: 1,
-        };
-        var converter = new ConvertTiff(options);
-        converter.convertOne(p, path.dirname(p));
-        // 因为转换会创建文件夹 所以需要将里面的文件移出来
-        // https://stackoverflow.com/a/41562625
-        var oldPath = p.split(".tiff")[0] + "/" + "0.png";
-        var newPath = p.split(".tiff")[0] + ".png";
-        if (fs.existsSync(p.split(".tiff")[0])) {
-          fs.renameSync(oldPath, newPath, function (err) {
-            if (err) throw err;
-            console.log("Successfully renamed - AKA moved!");
-          });
+  try {
+    results.forEach((p) => {
+      if (p.includes(".html")) {
+        var data = fs.readFileSync(p, "utf-8");
+        // post style
+        // /Blog for github page
+        const css = `<link href="/Blog/css/style.css" rel="stylesheet" />`;
+        const css2 = `<link href="/css/style.css" rel="stylesheet" />`; // netlify support
+        // comment+header
+        const js = `<script src="/Blog/js/index.js" defer></script>`;
+        const js2 = `<script src="/js/index.js" defer></script>`; // netlify support
+        // auto generated ulyssess css
+        const ulyssessPostCss = `<link rel="stylesheet" type="text/css" href="css/style.css" />`;
+        // 移除之前有的 script
+        [css, css2, js, js2, ulyssessPostCss].forEach((item) => {
+          // NOTE: 使用高版本的 npm
+          if (data.replaceAll) {
+            data = data.replaceAll(item, "");
+          }
+        });
+        // 转换 tiff 到 png 以免浏览器不能显示
+        data = data.replaceAll(".tiff", ".png");
+        // 添加一个 script 来保证只有一个
+        [css, css2, js, js2].forEach((item) => {
+          data = item + data;
+        });
+        fs.writeFileSync(p, data, "utf-8");
+      } else if (p.includes(".tiff")) {
+        try {
+          var options = {
+            logLevel: 1,
+          };
+          var converter = new ConvertTiff(options);
+          converter.convertOne(p, path.dirname(p));
+          // 因为转换会创建文件夹 所以需要将里面的文件移出来
+          // https://stackoverflow.com/a/41562625
+          var oldPath = p.split(".tiff")[0] + "/" + "0.png";
+          var newPath = p.split(".tiff")[0] + ".png";
+          if (fs.existsSync(p.split(".tiff")[0])) {
+            fs.renameSync(oldPath, newPath, function (err) {
+              if (err) throw err;
+              console.log("Successfully renamed - AKA moved!");
+            });
+          }
+        } catch (error) {
+          console.log(error);
         }
-      } catch (error) {
-        console.log(error);
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 // 参考

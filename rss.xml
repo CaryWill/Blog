@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>Invalid tag name >=^16.0.0 问题</title>
+    <link>/src/2022/npm-versioning/index.html</link>
+    <description>npm, nvm, node, versioning</description>
+    <pubDate>Sat Jan 22 2022 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Sat Jan 22 2022 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>VIM as an IDE</title>
     <link>/src/2022/vim-as-ide/index.html</link>
     <description>如何将 VIM 配置成一个 IDE</description>
