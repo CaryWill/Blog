@@ -1,9 +1,9 @@
 var fs = require("fs");
 var path = require("path");
 var ConvertTiff = require("tiff-to-png");
+var outline = require("../build/outline.js");
 
 // 添加 RSS
-var outline = require("../js/outline.js");
 const articles = outline.reduce((all, item) => {
   const key = Object.keys(item)[0];
   all = all.concat(item[key]);

@@ -1,5 +1,5 @@
 // alse for rss use
-var outline = [
+export const outline = [
   {
     2022: [
       {
@@ -171,7 +171,3 @@ var outline = [
     ],
   },
 ];
-
-if (module) {
-  module.exports = outline;
-}

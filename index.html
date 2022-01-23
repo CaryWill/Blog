@@ -1,68 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=yes"
-    />
-    <link href="/Blog/css/main.css" rel="stylesheet" />
-    <!-- netlify support -->
-    <link href="/css/main.css" rel="stylesheet" />
 
-    <script>
-      window.noComment = true;
-    </script>
-    <title>Cary</title>
-    <script
-      src="https://unpkg.com/react@17/umd/react.production.min.js"
-      crossorigin
-    ></script>
-    <script
-      src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"
-      crossorigin
-    ></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <script>
+    window.noComment = true;
+  </script>
+  <title>Cary</title>
+  <script src="/Blog/build/main.js"></script>
+  <!-- netlify support -->
+  <script src="/build/main.js" defer></script>
+</head>
 
-    <script src="/Blog/js/index.js" defer></script>
-    <script src="/Blog/js/outline.js"></script>
-    <script type="text/babel" src="/Blog/js/main.js"></script>
+<body class="home" id="home">
+</body>
 
-    <!-- netlify support -->
-    <script src="/js/index.js" defer></script>
-    <script src="/js/outline.js"></script>
-    <script type="text/babel" src="/js/main.js"></script>
-  </head>
-  <body class="home" id="dummybodyid">
-    <main class="content-container">
-      <section class="home-section">
-        <div class="home-section-content">
-          <p>你好，我是张生，一名前端工程师。</p>
-        </div>
-      </section>
-      <section class="home-section">
-        <h1 class="home-section-title">Recent Articles</h1>
-        <div class="home-section-content">
-          <ol class="home-section-content-article-list" id="outline-list"></ol>
-        </div>
-        <div class="home-section-nav">
-          <a
-            id="older"
-            href="#"
-            class="button"
-            title="Blog Archive"
-            >Older Articles</a
-          >
-        </div>
-        <script>
-          document.getElementById("older").addEventListener("click", (e) => {
-            e.preventDefault();
-            location.href = location.href.includes("netlify")
-              ? "/articles.html"
-              : "/Blog/articles.html";
-          });
-        </script>
-      </section>
-    </main>
-  </body>
 </html>
