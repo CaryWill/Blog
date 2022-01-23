@@ -1,15 +1,15 @@
-<script src="/js/index.js" defer></script><script src="/Blog/js/index.js" defer></script><link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>Invalid tag name &gt;=^16.0.0&quot; 问题</title>
 	</head>
 <body>
 <h1>Invalid tag name &gt;=^16.0.0&quot; 问题</h1>
 
-<p><strong>2022.01.20</strong></p>
+<p><strong>2022.01.22</strong></p>
 
 <p>工作中遇到这么个问题，我在项目里直接 <code>npm install</code> 报错了，报了这么个错，</p>
 
@@ -278,6 +278,86 @@ npm ERR! to accept an incorrect (and potentially broken) dependency resolution.<
 <blockquote>
 <p>These things will be installed when doing npm link or npm install from the root of a package, and can be managed like any other npm configuration param. See config for more on the topic.</p>
 </blockquote>
+
+<p>顺便再提下 package-lock.json 文件的作用，保证不会出现 “我本地可以跑啊” 这种问题。当你 <code>npm install</code> 的时候，npm 回去检查有没有 package-lock.json 文件，有的话，会直接使用这个文件替代 package.json 进行依赖的安装。</p>
+
+<p>比如，</p>
+
+<pre><code class="code-highlighted code-json">// 测试库
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;npm-node&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;1.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;dependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>: <span class="syntax-all syntax-string">&quot;&gt;=6.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// 依赖库
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;6.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;peerDependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;&gt;=16.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}</code></pre>
+
+<p>当我们在项目根目录下 <code>npm install</code> 的时候，<code>cary-peer-deps</code> 依赖被安装的时候会是 6.0.0 的版本，然后会生成一个 package-lock.json 的文件，并且可以看到里面版本指定的时候是 “6.0.0” 直接锁定了版本，而不是 “&gt;=6.0.0”。</p>
+
+<figure><img src="DraggedImage-2.png"/></figure>
+
+<p>接下来我们测试下，当我们将测试库复制一份，然后发布一个 <code>cary-peer-deps</code> 的新版本，看测试库会不会装新版本的 <code>cary-peer-deps</code> 库，</p>
+
+<pre><code class="code-highlighted code-json">// 测试库
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;npm-node&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;1.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;dependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>: <span class="syntax-all syntax-string">&quot;&gt;=6.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}
+// 升级后的依赖库
+{
+  <span class="syntax-all syntax-string">&quot;name&quot;</span>: <span class="syntax-all syntax-string">&quot;cary-peer-deps&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;version&quot;</span>: <span class="syntax-all syntax-string">&quot;7.0.0&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;description&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;main&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;scripts&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;test&quot;</span>: <span class="syntax-all syntax-string">&quot;echo </span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">Error: no test specified</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string"> &amp;&amp; exit 1&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;peerDependencies&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;react&quot;</span>: <span class="syntax-all syntax-string">&quot;&gt;=17.0.0&quot;</span>
+  },
+  <span class="syntax-all syntax-string">&quot;author&quot;</span>: <span class="syntax-all syntax-string">&quot;&quot;</span>,
+  <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
+}</code></pre>
+
+<figure><img src="DraggedImage-3.png" alt="复制的测试库"/><img src="DraggedImage-4.png" alt="重新安装依赖"/><figcaption>重新安装依赖</figcaption></figure>
+
+<p>你会发现在有 package-lock.json 存在的情况下，直接 <code>npm install</code> 是不会安装最新的版本的 &quot;cary-peer-deps&quot; 库的，这里也就是 7.0.0，对比下，我们将复制的测试库里的 package-lock.json 删除后，然后 <code>npm install</code> 的话，会出现什么情况，</p>
+
+<figure><img src="DraggedImage-5.png" alt="复制的测试库"/><img src="DraggedImage-6.png" alt="重新安装依赖"/><img src="DraggedImage-7.png" alt="锁死的版本"/><figcaption>锁死的版本</figcaption></figure>
+
+<p>你会发现，直接安装了最新版本的 &quot;cary-peer-deps&quot; 库，也就是 7.0.0 版本的。</p>
 
 <p>以上。</p>
 
