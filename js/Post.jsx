@@ -4,7 +4,6 @@ import { Header } from "./Header";
 import { renderToString } from "react-dom/server";
 
 import "./comment.js";
-import "../css/style.css";
 
 const App = () => {
   useEffect(() => {

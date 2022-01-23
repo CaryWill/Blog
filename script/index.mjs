@@ -69,8 +69,13 @@ walk(path.join("./src"), function (err, results) {
         const js = `<script src="/Blog/build/post.js" defer></script>`;
         const js2 = `<script src="/build/post.js" defer></script>`;
         const assetsjs = `<script src="/assets/post.js" defer></script>`;
+        // 但是最好不要打包到 js 里去， 不然加载文件的时候会很难看
+        // /Blog for github page
+        const css = `<link href="/Blog/css/style.css" rel="stylesheet" />`;
+        // netlify support
+        const css2 = `<link href="/css/style.css" rel="stylesheet" />`;
         // 移除之前有的 script
-        [js, js2, assetsjs].forEach((item) => {
+        [js, js2, assetsjs, css, css2].forEach((item) => {
           // NOTE: 使用高版本的 npm > 16
           // nvm use 16
           if (data.replaceAll) {
@@ -80,8 +85,8 @@ walk(path.join("./src"), function (err, results) {
         // 转换 tiff 到 png 以免浏览器不能显示
         data = data.replaceAll(".tiff", ".png");
         // 添加一个 script 来保证只有一个
-        [js, js2, assetsjs].forEach((item) => {
-          data = data + item;
+        [js, js2, assetsjs, css, css2].forEach((item) => {
+          data = item + data;
         });
         fs.writeFileSync(p, data, "utf-8");
       } else if (p.includes(".tiff")) {
