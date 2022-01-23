@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Header } from "./Header";
-import { Footer } from "./Footer";
 import { renderToString } from "react-dom/server";
 
+import "./comment.js";
 import "../css/style.css";
 
 const App = () => {
@@ -11,9 +11,6 @@ const App = () => {
     document.body.innerHTML = `${renderToString(<Header />)}${
       document.body.innerHTML
     }`;
-    //     {
-    //       renderToString(<Footer />);
-    //     }
   }, []);
   return null;
 };
