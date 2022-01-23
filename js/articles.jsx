@@ -2,7 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { outline } from "./outline.mjs";
 import { Header as MyHeader } from "./Header";
-import { Footer } from "./Footer";
 
 import "../css/main.css";
 
