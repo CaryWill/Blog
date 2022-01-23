@@ -6,8 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "NODE_ENV=development webpack-dev-server --hot --open localhost:8080",
-    "build": "NODE_ENV=production webpack --progress ",
-    "post": "node --experimental-modules script/index.mjs"
+    "build": "NODE_ENV=production webpack --progress && node --experimental-modules script/index.mjs"
   },
   "repository": {
     "type": "git",
@@ -22,7 +21,6 @@
   "dependencies": {
     "react": "16.8.6",
     "react-dom": "16.8.6",
-    "react-html-parser": "^2.0.2",
     "tiff-to-png": "^2.0.2"
   },
   "devDependencies": {
