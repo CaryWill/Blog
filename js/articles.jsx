@@ -16,6 +16,7 @@ const App = () => {
         <div className="metadata">
           <p className="feed" id="feed">
             <img
+              style={{ marginRight: 5 }}
               className="feed-icon"
               src={`${
                 location.href.includes("netlify")
