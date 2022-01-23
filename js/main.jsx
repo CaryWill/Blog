@@ -72,7 +72,6 @@ const App = () => {
         </div>
       </section>
     </main>,
-    <Footer key="footer" />,
   ];
 };
 

@@ -64,7 +64,6 @@ const App = () => {
         );
       })}
     </main>,
-    <Footer key="footer" />,
   ];
 };
 
