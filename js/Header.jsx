@@ -14,10 +14,10 @@ export const Header = () => {
           <a href={`${prefix}/index.html`}>Home</a>
         </li>
         <li>
-          <a href={`${prefix}//articles.html`}>Articles</a>
+          <a href={`${prefix}/articles.html`}>Articles</a>
         </li>
         <li>
-          <a href={`${prefix}//about.html`}>About</a>
+          <a href={`${prefix}/about.html`}>About</a>
         </li>
       </ol>
     </header>
