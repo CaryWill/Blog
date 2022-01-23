@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { outline } from "./outline.js";
+import { outline } from "./outline";
 import { Header as MyHeader } from "./Header";
 import { Footer } from "./Footer";
 

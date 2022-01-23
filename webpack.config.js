@@ -9,6 +9,7 @@ module.exports = {
     main: ["./js/Main.jsx"],
     articles: ["./js/Articles.jsx"],
     about: ["./js/About.jsx"],
+    outline: ["./js/outline.js"],
   },
   output: {
     path: `${__dirname}/build`,
@@ -57,7 +58,6 @@ module.exports = {
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx"],
   },
-  devtool: "source-map",
   devServer: {
     contentBase: __dirname,
     disableHostCheck: true,

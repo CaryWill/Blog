@@ -1,7 +1,7 @@
-var fs = require("fs");
-var path = require("path");
-var ConvertTiff = require("tiff-to-png");
-var outline = require("../build/outline.js");
+import fs from 'fs';
+import path from 'path';
+import ConvertTiff from 'tiff-to-png';
+import { outline } from '../js/outline.js'
 
 // 添加 RSS
 const articles = outline.reduce((all, item) => {
@@ -62,6 +62,7 @@ walk(path.join("./src"), function (err, results) {
   if (err) throw err;
   try {
     results.forEach((p) => {
+      console.log(p);
       if (p.includes(".html")) {
         var data = fs.readFileSync(p, "utf-8");
         // post style
@@ -83,9 +84,9 @@ walk(path.join("./src"), function (err, results) {
         // 转换 tiff 到 png 以免浏览器不能显示
         data = data.replaceAll(".tiff", ".png");
         // 添加一个 script 来保证只有一个
-        [css, css2, js, js2].forEach((item) => {
-          data = item + data;
-        });
+        // [css, css2, js, js2].forEach((item) => {
+        //   data = item + data;
+        // });
         fs.writeFileSync(p, data, "utf-8");
       } else if (p.includes(".tiff")) {
         try {
