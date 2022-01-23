@@ -12,7 +12,7 @@
     };
     var d = document,
       s = d.createElement("script");
-    s.src = "https://https-carytalk-netlify-app.disqus.com/embed.js";
+    s.src = "https://caryx.disqus.com/embed.js";
     s.setAttribute("data-timestamp", +new Date());
     (d.head || d.body).appendChild(s);
   }
