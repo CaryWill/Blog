@@ -6,9 +6,7 @@ const publicPath = `https://localhost:${DEV_PORT}/assets/`; // also for HMR
 module.exports = {
   mode: NODE_ENV,
   entry: {
-    main: ["./js/main.js"],
-    outline: ["./js/outline.js"],
-    index: ["./js/index.js"],
+    main: ["./js/main.jsx"],
   },
   output: {
     path: `${__dirname}/build`,

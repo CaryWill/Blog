@@ -1,6 +1,6 @@
 @font-face {
   font-family: "mycode";
-  src: url(./fonts/codefont.ttf) format("truetype");
+  src: url("./fonts/codefont.ttf") format("truetype");
 }
 
 * {

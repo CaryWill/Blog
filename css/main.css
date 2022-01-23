@@ -976,8 +976,9 @@ body > header {
   display: flex;
   flex-flow: row wrap;
   justify-content: space-between;
-  margin: 0;
-  padding: 0;
+  align-items: center;
+  padding: 0 15px;
+  margin: 0.5rem 0rem;
 }
 body > header .header-bar {
   align-items: baseline;
