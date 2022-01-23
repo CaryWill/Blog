@@ -7,6 +7,7 @@ module.exports = {
   mode: NODE_ENV,
   entry: {
     main: ["./js/main.jsx"],
+    articles: ["./js/articles.jsx"],
   },
   output: {
     path: `${__dirname}/build`,

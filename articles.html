@@ -7,57 +7,20 @@
     content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>Articles – Cary</title>
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <link href="/Blog/css/main.css" rel="stylesheet" />
-  <!-- netlify support -->
-  <link href="/css/main.css" rel="stylesheet" />
-  
+
   <script>
     window.noComment = true;
     window.isGithub = true;
   </script>
-  <script src="https://unpkg.com/react@17/umd/react.production.min.js"
-    crossorigin></script>
-  <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"
-    crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <script src="/Blog/js/index.js" defer></script>
-  <script src="/Blog/js/outline.js"></script>
-  <script type="text/babel" src="/Blog/js/articles.js"></script>
-
+  <script src="/Blog/build/articles.js"></script>
   <!-- netlify support -->
-  <script src="/js/index.js" defer></script>
-  <script src="/js/outline.js"></script>
-  <script type="text/babel" src="/js/articles.js"></script>
+  <script src="/build/articles.js"></script>
+  <!-- <script src="/assets/articles.js" defer></script> -->
 
 </head>
 
-<body class="archive">
-  <main class="content-container">
-    <section>
-      <header>
-        <h1 class="page-title">Articles</h1>
-        <div class="metadata">
-          <p class="feed" id='feed'>
-            <img class="feed-icon" src="/Blog/css/feed-icon.svg">
-            <a href="/Blog/rss.xml">RSS Feed</a>
-          </p>
-          <script>
-            // image and rss
-            document.getElementById('feed').innerHTML = `<img class="feed-icon" src="${location.href.includes('netlify') ? '/css/feed-icon.svg' : '/Blog/css/feed-icon.svg'}">
-            <a href="${location.href.includes('netlify') ? '/rss.xml' : '/Blog/rss.xml'}">RSS Feed</a>`
-          </script>
-        </div>
-      </header>
-      <ol class="years" id='years'>
-        <li>
-          <h1>2021</h1>
-          <ol class="articles">
-          </ol>
-        </li>
-        </ul>
-    </section>
-  </main>
+<body class="archive" id='archive'>
+
 </body>
 
 </html>
