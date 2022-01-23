@@ -9,6 +9,7 @@ module.exports = {
     main: ["./js/Main.jsx"],
     articles: ["./js/Articles.jsx"],
     about: ["./js/About.jsx"],
+    post: ["./js/Post.jsx"],
   },
   output: {
     path: `${__dirname}/build`,
