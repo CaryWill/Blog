@@ -1,6 +1,6 @@
+const packageJson = require("./package.json");
 const NODE_ENV = process.env.NODE_ENV || "development";
 const DEV_PORT = 8080;
-const packageJson = require("./package.json");
 const publicPath = `https://localhost:${DEV_PORT}/assets/`; // also for HMR
 
 module.exports = {
@@ -9,7 +9,6 @@ module.exports = {
     main: ["./js/Main.jsx"],
     articles: ["./js/Articles.jsx"],
     about: ["./js/About.jsx"],
-    outline: ["./js/outline.js"],
   },
   output: {
     path: `${__dirname}/build`,

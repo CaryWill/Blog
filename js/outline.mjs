@@ -171,3 +171,5 @@ export const outline = [
     ],
   },
 ];
+
+export default { outline };

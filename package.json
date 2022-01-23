@@ -3,12 +3,11 @@
   "version": "1.0.0",
   "description": "如何新增一片文章",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "NODE_ENV=development webpack-dev-server --hot --open localhost:8080",
     "build": "NODE_ENV=production webpack --progress ",
-    "post": "node script/index.js"
+    "post": "node --experimental-modules script/index.mjs"
   },
   "repository": {
     "type": "git",
