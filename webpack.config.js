@@ -1,6 +1,6 @@
 const packageJson = require("./package.json");
 const NODE_ENV = process.env.NODE_ENV || "development";
-const DEV_PORT = 8080;
+const DEV_PORT = 9999;
 const publicPath = `https://localhost:${DEV_PORT}/assets/`; // also for HMR
 
 module.exports = {
