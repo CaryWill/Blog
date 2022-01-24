@@ -1,0 +1,17 @@
+body {
+  position: relative;
+}
+
+@media screen and (min-width: 1385px) {
+  #outline {
+    display: block !important;
+    position: fixed;
+    left: calc(50vw + 384px + 80px);
+    color: black;
+    font-size: 12px;
+  }
+}
+
+#outline {
+  display: none;
+}
