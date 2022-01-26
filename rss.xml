@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>Webpack path alias</title>
+    <link>/src/2022/webpack-path-alias/index.html</link>
+    <description>使用 @ 符号来映射项目根目录</description>
+    <pubDate>Wed Jan 26 2022 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Wed Jan 26 2022 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
     <title>Invalid tag name >=^16.0.0 问题</title>
     <link>/src/2022/npm-versioning/index.html</link>
     <description>npm, nvm, node, versioning</description>
