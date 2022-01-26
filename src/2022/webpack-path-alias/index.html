@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Webpack path alias</title>
+	</head>
+<body>
+<h1>Webpack path alias</h1>
+
+<p><strong>2022.01.25</strong></p>
+
+<p>当前项目的目录结构如下，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span>
+├── <span class="syntax-all syntax-parameter">build</span>
+│   └── <span class="syntax-all syntax-parameter">index</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span>
+├── <span class="syntax-all syntax-parameter">src</span>
+│   ├── <span class="syntax-all syntax-parameter">index</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span>
+│   └── <span class="syntax-all syntax-parameter">utils</span>
+│       └── <span class="syntax-all syntax-parameter">math</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span>
+└── <span class="syntax-all syntax-parameter">webpack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">config</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span>                                                                                                   </code></pre>
+
+<p>下面我们将通过两种模块引入方式来对文件进行打包，<a href="https://github.com/CaryWill/Frontend/tree/master/webpack-alias">项目地址在此</a>。</p>
+
+<h2>绝对路径</h2>
+
+<blockquote>
+<p>An absolute path is defined as the specifying the location of a file or directory from the root directory(/).</p>
+</blockquote>
+
+<p>那么我们在 js 模块中 import 文件的时候，使用<em>绝对路径</em> 的方式的话，就是这样的，<code>import { min } from &quot;/Users/cary/workspace/github/Frontend/webpack-alias/src/utils/math.js&quot;</code>，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// utils - math.js
+</span><span class="syntax-all syntax-keyword">export</span> <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">min</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">1</span>;
+<span class="syntax-all syntax-comment">// src - index.js
+</span><span class="syntax-all syntax-keyword">import</span> { <span class="syntax-all syntax-parameter">min</span> } <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;/Users/cary/workspace/github/Frontend/webpack-alias/src/utils/math.js&quot;</span>;
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;min&quot;</span>, <span class="syntax-all syntax-parameter">min</span>);</code></pre>
+
+<p>然后我们跑下 <code>webpack</code> 命令，将打包好的 js 文件里的内容复制到浏览器的 console 里去，你可以看到打包成功了，</p>
+
+<figure><img src="DraggedImage.tiff"/></figure>
+
+<h2>相对路径</h2>
+
+<p>这个和绝对路径的差别也很明显，绝对路径是以计算机系统根目录为基准，而相对路径是以当前目录为基准。</p>
+
+<p>一般在项目里进行模块引用的时候使用的都是<strong>相对路径</strong>，<strong>绝对路径</strong>太长了。使用相对路径的话，我们不需要知道绝对路径长什么样，就可以对模块进行引用，对比下两种引入方式，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// src - index.js
+</span><span class="syntax-all syntax-keyword">import</span> { <span class="syntax-all syntax-parameter">min</span> } <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;./utils/math.js&quot;</span>;
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;min&quot;</span>, <span class="syntax-all syntax-parameter">min</span>);</code></pre>
+
+<p>跑下 <code>webpack</code> 命令也是可以成功的。</p>
+
+<p>但是实际使用中，我们如果我们要引用的文件和我们的项目根目录很近，和我们的当前目录很远，那么我们需要使用 N 多个 <code>../</code> 才能引用到那个模块，要是我们能相对于项目根目录使用相对路径就好了。</p>
+
+<p>Webpack 就有那么个属性 <code>alias</code>，可以做到这点。来看下我们的 webpack 的配置，可以看到 resolve 里配了个 <code>alias</code> 对象，我们将 <code>@</code> 符号 映射到了 <code>src</code> 文件夹上，为什么会使用 <code>@</code> 符号我们下面会讲，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">path</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">require</span>(<span class="syntax-all syntax-string">&quot;path&quot;</span>);
+
+<span class="syntax-all syntax-constant">module</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">exports</span> <span class="syntax-all syntax-keyword">=</span> {
+  <span class="syntax-all syntax-string">mode</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;development&quot;</span>,
+  <span class="syntax-all syntax-string">entry</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">index</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;./src/index.js&quot;</span>,
+  },
+  <span class="syntax-all syntax-string">output</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">path</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">`</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-constant">__dirname</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">/build`</span>,
+    <span class="syntax-all syntax-string">filename</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;[name].js&quot;</span>,
+    <span class="syntax-all syntax-string">libraryTarget</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;umd&quot;</span>,
+    <span class="syntax-all syntax-string">library</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;test&quot;</span>,
+  },
+  <span class="syntax-all syntax-string">resolve</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">alias</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-string">&quot;@&quot;</span>: <span class="syntax-all syntax-parameter">path</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">resolve</span>(<span class="syntax-all syntax-constant">__dirname</span>, <span class="syntax-all syntax-string">&quot;src/&quot;</span>),
+    },
+  },
+};</code></pre>
+
+<p>这样的话，我们就可以通过下面这种方式进行模块引用了，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">import</span> { <span class="syntax-all syntax-parameter">min</span> } <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;@/utils/math.js&quot;</span>;
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&quot;min&quot;</span>, <span class="syntax-all syntax-parameter">min</span>);</code></pre>
+
+<p>打包下，也是正常的</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">asset</span> <span class="syntax-all syntax-parameter">index</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span> <span class="syntax-all syntax-constant">4.64</span> <span class="syntax-all syntax-parameter">KiB </span>[<span class="syntax-all syntax-parameter">emitted</span>] (<span class="syntax-all syntax-parameter">name</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">index</span>)
+<span class="syntax-all syntax-parameter">runtime</span> <span class="syntax-all syntax-parameter">modules</span> <span class="syntax-all syntax-constant">670</span> <span class="syntax-all syntax-parameter">bytes</span> <span class="syntax-all syntax-constant">3</span> <span class="syntax-all syntax-parameter">modules</span>
+<span class="syntax-all syntax-parameter">cacheable</span> <span class="syntax-all syntax-parameter">modules</span> <span class="syntax-all syntax-constant">224</span> <span class="syntax-all syntax-parameter">bytes</span>
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-string">/src/</span><span class="syntax-all syntax-keyword">i</span><span class="syntax-all syntax-parameter">ndex</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span> <span class="syntax-all syntax-constant">203</span> <span class="syntax-all syntax-parameter">bytes </span>[<span class="syntax-all syntax-parameter">built</span>] [<span class="syntax-all syntax-parameter">code</span> <span class="syntax-all syntax-parameter">generated</span>]
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-string">/src/</span><span class="syntax-all syntax-parameter">utils</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">math</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span> <span class="syntax-all syntax-constant">21</span> <span class="syntax-all syntax-parameter">bytes </span>[<span class="syntax-all syntax-parameter">built</span>] [<span class="syntax-all syntax-parameter">code</span> <span class="syntax-all syntax-parameter">generated</span>]
+<span class="syntax-all syntax-parameter">webpack</span> <span class="syntax-all syntax-constant">5.40</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">0</span> <span class="syntax-all syntax-parameter">compiled</span> <span class="syntax-all syntax-parameter">successfully</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-constant">92</span> <span class="syntax-all syntax-parameter">ms</span></code></pre>
+
+<p><em> 那么为什么在 <code>alias</code> 里使用 <code>@</code> 来映射目录呢</em>？</p>
+
+<p>可以防止和其他 js 模块冲突。比如，如果我们在 <code>alias</code> 里加了个 <code>&quot;eslint&quot;: path.resolve(__dirname, &quot;src/&quot;)</code>，这样的话，我们在其他 js 中引用 src 文件夹下面的 index 文件的话，我们可以这样写，<code>import * from &#39;eslint/index.js&#39;</code>，如果我们项目里有一个包叫 <code>eslint</code> 的，那么不就冲突了吗，谁知道你引用的 eslint 模块呢，还是指代我们的 src 目录。</p>
+
+<p>为了防止冲突，我们给 npm 包命名 的时候还可以给 npm 包加一个 namespace，比如，<code>@alibaba/test</code>，这样就不用担心和 npm 上的其他叫 test 的包冲突了，具体的可以看下<a href="https://docs.npmjs.com/cli/v7/using-npm/scope">这里</a>，</p>
+
+<p>而单独一个 <code>@</code> 是无效的，它不会匹配上任何的 npm 包，所以你可以放心使用 <code>@</code> 来做目录的映射，取其他名字都可能有一定几率会重复，这个就完全 OK。</p>
+
+<figure><img src="DraggedImage-1.tiff"/></figure>
+
+<h2>其他</h2>
+
+<p>一般在 VSCode 里开发的话，项目里还会配一个 <code>jsconfig.json</code> 或者 <code>tsconfig.json</code> 文件，它所在的位置可以用来标志当前目录是项目的根目录，以此来给 VSCode 提供项目上下文，这样 VSCode 里提供的一些 <a href="https://github.com/microsoft/TypeScript/wiki/JavaScript-Language-Service-in-Visual-Studio">JavaScript language service</a> 可以充分利用这个文件来提升我们的开发体验，具体可以<a href="https://code.visualstudio.com/docs/languages/jsconfig">看下这里</a>。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://stackoverflow.com/questions/46164231/relative-vs-non-relative-module-import-for-custom-modules" title="https://stackoverflow.com/questions/46164231/relative-vs-non-relative-module-import-for-custom-modules">Relative vs. non-relative module import for custom modules</a></li>
+	<li><a href="https://docs.npmjs.com/cli/v7/using-npm/scope">Scoped npm</a></li>
+	<li><a href="https://webpack.js.org/concepts/module-resolution/">Resolve - Webpack</a></li>
+	<li><a href="https://www.linux.com/training-tutorials/absolute-path-vs-relative-path-linuxunix/">Absolute Path vs Relative Path in Linux/Unix</a></li>
+	<li><a href="https://webpack.js.org/concepts/module-resolution/">Module Resolution - Webpack</a></li>
+	<li><a href="https://code.visualstudio.com/docs/languages/jsconfig" title="https://code.visualstudio.com/docs/languages/jsconfig">jsconfig.json - VSCode</a></li>
+</ol>
+
+</body>
+</html>
+

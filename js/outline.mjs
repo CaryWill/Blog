@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "Webpack path alias",
+        desc: "使用 @ 符号来映射项目根目录",
+        date: "Jan 26, 2022",
+        href: "/src/2022/webpack-path-alias/index.html",
+      },
+      {
         title: "Invalid tag name >=^16.0.0 问题",
         desc: "npm, nvm, node, versioning",
         date: "Jan 22, 2022",
