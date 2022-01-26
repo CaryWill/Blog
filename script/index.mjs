@@ -111,7 +111,11 @@ walk(path.join("./src"), function (err, results) {
         }
       } else if (p.includes(".css")) {
         // 清空
-        data = "";
+        try {
+          fs.rmSync(p, {
+            force: true,
+          });
+        } catch (error) {}
       }
     });
   } catch (error) {
