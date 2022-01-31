@@ -30,7 +30,6 @@ const Outline = React.memo(() => {
 });
 const App = () => {
   useEffect(() => {
-    console.log("test");
     document.body.innerHTML = `${renderToString(
       <Header />
     )}<div id='outline'></div>${document.body.innerHTML}`;
