@@ -4,7 +4,7 @@ export const outline = [
     2022: [
       {
         title: "手写一个四则运算的 Complier（JS 版）",
-        desc: "一个200行的编辑器",
+        desc: "一个200行的编译器",
         date: "Jan 31, 2022",
         href: "/src/2022/compiler/index.html",
       },
