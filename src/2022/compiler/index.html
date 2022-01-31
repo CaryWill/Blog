@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>手写一个四则运算的 Complier（JS 版）</title>
+	</head>
+<body>
+<h1>手写一个四则运算的 Complier（JS 版）</h1>
+
+<p><strong>2022.01.31</strong></p>
+
+<p>看到以前自己写的躺在草稿箱里的关于 babel 配置的文章，突然萌生了想整理下的念头，然后去 <a href="https://babeljs.io/docs/en/">Babel 官网</a> 看了下，打算重新了解下 babel。我只知道 babel 是一个 JS 转 JS 的编译器，但对于编译器，自己一直觉得它是一个很高级很复杂的东西，但是在官网看到了这么个<a href="https://github.com/thejameskyle/the-super-tiny-compiler">链接</a>，200 行的代码实现的一个编译器！！！ 哎呀，觉得机会来了！！！ 又想起上次去涂鸦面试的时候，面试官问到的一个问题，如何实现，“给定一个四则运算的字符串，算出它的结果”，我也忘了当时怎么回答的了，只是想，‘？？？ 直接 eval 不就行了？’，现在想起来面试官应该是想问 eval 这个字符串的时候，发生了什么吧。</p>
+
+<figure><img src="Screen%20Shot%202022-01-31%20at%2014.54.11.png"/></figure>
+
+<p>大致的编译器都差不多会有下面<a href="https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tiny-compiler.js">几个流程</a>，</p>
+
+<ol>
+	<li>input =&gt; tokenizer =&gt; tokens</li>
+	<li>tokens =&gt; parser =&gt; ast</li>
+	<li>ast =&gt; transformer =&gt; newAst</li>
+	<li>newAst =&gt; generator =&gt; output</li>
+</ol>
+
+<p>下面，我们将参考 <a href="https://github.com/thejameskyle/the-super-tiny-compiler" title="the-super-tiny-compiler">the-super-tiny-compiler</a> 来实现一个四则运算的编译器，这里贴下自己写好的完整的<a href="https://github.com/CaryWill/Frontend/blob/master/complier/arithmetic.js">代码</a>。</p>
+
+<h2>工具</h2>
+
+<p><strong>手</strong></p>
+
+<h2>tokenizer</h2>
+
+<p>首先我们会将字符串分解成组成语法的基本单元，token，也就是所谓的 <em> Lexical Analysis</em>。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">tokenizer</span>(<span class="syntax-all syntax-parameter">input</span>) {
+  <span class="syntax-all syntax-comment">// 将 input 分离成组成语法的基本单元
+</span>  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">current</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>;
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">tokens</span> <span class="syntax-all syntax-keyword">=</span> [];
+  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">current</span> <span class="syntax-all syntax-keyword">&lt;</span> <span class="syntax-all syntax-parameter">input</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span>) {
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">char</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">input</span>[<span class="syntax-all syntax-parameter">current</span>];
+
+    <span class="syntax-all syntax-comment">// 空格跳过
+</span>    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-constant">WHITESPACE</span> <span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string"> /\s/</span>;
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">WHITESPACE</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">char</span>)) {
+      <span class="syntax-all syntax-parameter">current</span><span class="syntax-all syntax-keyword">++</span>;
+      <span class="syntax-all syntax-keyword">continue</span>;
+    }
+
+    <span class="syntax-all syntax-comment">// 数字
+</span>    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">NUMBERS</span> <span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string"> /[0-9]/</span>;
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">NUMBERS</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">char</span>)) {
+      <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;&quot;</span>;
+      <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">NUMBERS</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">char</span>)) {
+        <span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">+=</span> <span class="syntax-all syntax-parameter">char</span>;
+        <span class="syntax-all syntax-parameter">char</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">tokens</span>[<span class="syntax-all syntax-keyword">++</span><span class="syntax-all syntax-parameter">current</span>];
+      }
+      <span class="syntax-all syntax-parameter">tokens</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>({ <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;number&#39;</span>, <span class="syntax-all syntax-parameter">value</span> })
+      <span class="syntax-all syntax-keyword">continue</span>;
+    }
+
+    <span class="syntax-all syntax-comment">// 四则运算符
+</span>    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">ARITHMETI_COPERATOR</span> <span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string"> /[+*\/</span><span class="syntax-all syntax-keyword">-</span>]<span class="syntax-all syntax-keyword">/</span>;
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">ARITHMETI_COPERATOR</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">char</span>)) {
+      <span class="syntax-all syntax-parameter">tokens</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>({ <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;operator&quot;</span>, <span class="syntax-all syntax-string">value</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">char</span> })
+      <span class="syntax-all syntax-parameter">current</span><span class="syntax-all syntax-keyword">++</span>;
+      <span class="syntax-all syntax-keyword">continue</span>;
+    }
+
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">char</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;(&quot;</span>) {
+      <span class="syntax-all syntax-parameter">tokens</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>({ <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;operator&#39;</span>, <span class="syntax-all syntax-string">value</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;(&quot;</span> })
+      <span class="syntax-all syntax-parameter">current</span><span class="syntax-all syntax-keyword">++</span>;
+      <span class="syntax-all syntax-keyword">continue</span>;
+    }
+
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">char</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;)&quot;</span>) {
+      <span class="syntax-all syntax-parameter">tokens</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>({ <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;operator&quot;</span>, <span class="syntax-all syntax-string">value</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;)&quot;</span> })
+      <span class="syntax-all syntax-parameter">current</span><span class="syntax-all syntax-keyword">++</span>;
+      <span class="syntax-all syntax-keyword">continue</span>;
+    }
+
+    <span class="syntax-all syntax-keyword">throw</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">TypeError</span>(<span class="syntax-all syntax-string">&#39;Invalid char found&#39;</span>);
+
+  }
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">tokens</span>;
+}</code></pre>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-variable">tokenizer</span>(<span class="syntax-all syntax-string">&quot;(1+2)/3&quot;</span>));
+<span class="syntax-all syntax-comment">// [
+</span><span class="syntax-all syntax-comment">//   { type: &#39;operator&#39;, value: &#39;(&#39; },
+</span><span class="syntax-all syntax-comment">//   { type: &#39;number&#39;, value: &#39;1&#39; },
+</span><span class="syntax-all syntax-comment">//   { type: &#39;operator&#39;, value: &#39;+&#39; },
+</span><span class="syntax-all syntax-comment">//   { type: &#39;number&#39;, value: &#39;2&#39; },
+</span><span class="syntax-all syntax-comment">//   { type: &#39;operator&#39;, value: &#39;)&#39; },
+</span><span class="syntax-all syntax-comment">//   { type: &#39;operator&#39;, value: &#39;/&#39; },
+</span><span class="syntax-all syntax-comment">//   { type: &#39;number&#39;, value: &#39;3&#39; }
+</span><span class="syntax-all syntax-comment">// ]
+</span></code></pre>
+
+<h2>parser</h2>
+
+<p>这一步是将我们的 token 根据一定的语法转换成一个抽象语法树（AST），也就是所谓的 <em> Syntactic Analysis</em>。</p>
+
+<p>这一步，花了比较长的时候，因为我发现这种 <code>1+2+3</code> 这种 <em>infix</em> 的表达式转成 AST，有点困难，而且十分的绕，花了半天的时间，没想出来，第二天 <a href="https://stackoverflow.com/a/12381550/10190407">google</a> 了下，发现有专门的方法可以将数学表达式转成 AST 的，也就是 <a href="https://zh.wikipedia.org/zh-tw/%E8%B0%83%E5%BA%A6%E5%9C%BA%E7%AE%97%E6%B3%95">调度场算法</a>（<a href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm">英文版</a> 在此），它利用的是逆波兰式（<a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation">Reverse Polish notation</a>），因为我们的四则运算符有优先级，所以使用 <em>infix</em> 的表达式，在计算机里不是特别好表达，所以就有了逆波兰式，我们需要将我们的数学表达式转换成逆波兰式之后，然后再将它转换成 AST 就很方便了。这一步很重要，需要花点时间理解。</p>
+
+<p>比如 <code>1+2*3+4/5*1</code> 转换成逆波兰式是 <code>123*+45/1*+</code>，如果你算出来和我一样，那么继续往下走～</p>
+
+<p>写这个的时候还参考了下<a href="https://astexplorer.net">这个网站</a>，可以将你的表达式转换成 AST，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">parser</span>(<span class="syntax-all syntax-parameter">tokens</span>) {
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">current</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>;
+
+  <span class="syntax-all syntax-comment">// 先将数学表达式转换成 RPN 方便计算机处理运算符号优先级的问题
+</span>  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">outputQueue</span> <span class="syntax-all syntax-keyword">=</span> [];
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">operatorStack</span> <span class="syntax-all syntax-keyword">=</span> [];
+  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">current</span> <span class="syntax-all syntax-keyword">&lt;</span> <span class="syntax-all syntax-parameter">tokens</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span>) {
+    <span class="syntax-all syntax-comment">// 数字的直接 push 到 output queue 去
+</span>    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">token</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">tokens</span>[<span class="syntax-all syntax-parameter">current</span>];
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&#39;number&#39;</span>) {
+      <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+    } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&#39;operator&#39;</span>) {
+      <span class="syntax-all syntax-comment">// 如果是一个运算符
+</span>      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">0</span>) {
+        <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+      } <span class="syntax-all syntax-keyword">else</span> {
+        <span class="syntax-all syntax-comment">// NOTE: 这里只考虑四则运算，而四则运算运算符都是左结合
+</span>
+        <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&#39;(&#39;</span>) {
+          <span class="syntax-all syntax-comment">// 如果這個記號是一個左括號，那麼就將其壓入棧當中
+</span>          <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+        } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&#39;)&#39;</span>) {
+          <span class="syntax-all syntax-comment">// 如果這個記號是一個右括號，那麼：
+</span>          <span class="syntax-all syntax-comment">// 從棧當中不斷地彈出運算子並且放入輸出佇列中，直到棧頂部的元素為左括號為止。
+</span>          <span class="syntax-all syntax-comment">// 將左括號從棧的頂端彈出，但並不放入輸出佇列中去。
+</span>          <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">operatorStack</span>[<span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">-</span> <span class="syntax-all syntax-constant">1</span>] <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&#39;(&#39;</span>) {
+            <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">operator</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
+            <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">operator</span>);
+          }
+          <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
+        } <span class="syntax-all syntax-keyword">else</span> {
+          <span class="syntax-all syntax-comment">// 只要存在另一個記為o2的運算子位於棧的頂端，並且
+</span>          <span class="syntax-all syntax-comment">// 如果o1是左結合性的並且它的運算子優先級要小於或者等於o2的優先級
+</span>          <span class="syntax-all syntax-comment">// 那麼將o2從棧的頂端彈出並且放入輸出佇列中（迴圈直至以上條件不滿足為止）
+</span>          <span class="syntax-all syntax-comment">// 然後，將o1壓入棧的頂端
+</span>          <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-variable">hasHigherPriority</span>(<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>, <span class="syntax-all syntax-parameter">operatorStack</span>[<span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">-</span> <span class="syntax-all syntax-constant">1</span>]) <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>) {
+            <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">operator</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
+            <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">operator</span>);
+          }
+          <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+        }
+      }
+    }
+    <span class="syntax-all syntax-parameter">current</span><span class="syntax-all syntax-keyword">++</span>;
+  }
+
+  <span class="syntax-all syntax-comment">// 當再沒有記號可以讀取時：將運算子逐個彈出並放入輸出佇列中。
+</span>  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">operator</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
+    <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">operator</span>);
+  }
+
+  <span class="syntax-all syntax-comment">// Now outputQueue.join(&#39;&#39;) is RPN
+</span>
+  <span class="syntax-all syntax-comment">// Convert To Binary Tree // AST
+</span>  <span class="syntax-all syntax-comment">// https://stackoverflow.com/a/12381550/10190407
+</span>  <span class="syntax-all syntax-comment">// This is how I would do it: just like the stack based approach, 
+</span>  <span class="syntax-all syntax-comment">// use a stack of nodes. When you encounter an operator, you pop 2 items from the stack, 
+</span>  <span class="syntax-all syntax-comment">// but instead of evaluating, you create a node with the operator, 
+</span>  <span class="syntax-all syntax-comment">// and make it the parent of the 2 popped items. 
+</span>  <span class="syntax-all syntax-comment">// Then you push the node back on the stack.
+</span>
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">stack</span> <span class="syntax-all syntax-keyword">=</span> [];
+  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">token</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">shift</span>();
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">NUMBERS</span> <span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string"> /[0-9]/</span>;
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">ARITHMETI_COPERATOR</span> <span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string"> /[+*\/</span><span class="syntax-all syntax-keyword">-</span>]<span class="syntax-all syntax-keyword">/</span>;
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">NUMBERS</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">token</span>)) {
+      <span class="syntax-all syntax-parameter">stack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">token</span>);
+    } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">ARITHMETI_COPERATOR</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">token</span>)) {
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">right</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">stack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">left</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">stack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
+      <span class="syntax-all syntax-parameter">stack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>({
+        <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;BinaryExpression&#39;</span>,
+        <span class="syntax-all syntax-string">operator</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">token</span>,
+        <span class="syntax-all syntax-string">left</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">NUMBERS</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">left</span>) <span class="syntax-all syntax-keyword">?</span> {
+          <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;Literal&#39;</span>,
+          <span class="syntax-all syntax-string">value</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">left</span>
+        } : <span class="syntax-all syntax-parameter">left</span>,
+        <span class="syntax-all syntax-string">right</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">NUMBERS</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">test</span>(<span class="syntax-all syntax-parameter">right</span>) <span class="syntax-all syntax-keyword">?</span> {
+          <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;Literal&#39;</span>,
+          <span class="syntax-all syntax-string">value</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">right</span>
+        } : <span class="syntax-all syntax-parameter">right</span>,
+      });
+    }
+  }
+
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">ast</span> <span class="syntax-all syntax-keyword">=</span> {
+    <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;Program&#39;</span>,
+    <span class="syntax-all syntax-string">body</span><span class="syntax-all syntax-constant">:</span> [<span class="syntax-all syntax-parameter">stack</span>[<span class="syntax-all syntax-constant">0</span>]],
+  };
+
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">ast</span>;
+}
+<span class="syntax-all syntax-comment">// parser(tokenizer(&#39;1+2*3+4/5*1&#39;)); // RPN: 123*+45/1*+ 
+</span><span class="syntax-all syntax-comment">// parser(tokenizer(&#39;1+(2+3)*4*5*6&#39;)); 
+</span></code></pre>
+
+<h2>transformer</h2>
+
+<p>这一步再我们四则运算的编译器里本来是不用的，但是为了编译器的流程的完整性，我们写了个 noop 的 transformer。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">noopTransformer</span>(<span class="syntax-all syntax-parameter">ast</span>) {
+
+  <span class="syntax-all syntax-comment">// depth-first traversal
+</span>  <span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">traverser</span>(<span class="syntax-all syntax-parameter">ast</span>, <span class="syntax-all syntax-parameter">visitor</span>) {
+    <span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">traverseNode</span>(<span class="syntax-all syntax-parameter">node</span>, <span class="syntax-all syntax-parameter">parent</span>) {
+      <span class="syntax-all syntax-keyword">let</span> { <span class="syntax-all syntax-parameter">enter</span>, <span class="syntax-all syntax-parameter">exit</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">visitor</span>[<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>] <span class="syntax-all syntax-keyword">||</span> {};
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">enter</span>) <span class="syntax-all syntax-variable">enter</span>(<span class="syntax-all syntax-parameter">node</span>, <span class="syntax-all syntax-parameter">parent</span>);
+      <span class="syntax-all syntax-keyword">switch</span> (<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>) {
+        <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&#39;Program&#39;</span>:
+          <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>(<span class="syntax-all syntax-parameter">child</span> <span class="syntax-all syntax-keyword">=&gt;</span> {
+            <span class="syntax-all syntax-variable">traverseNode</span>(<span class="syntax-all syntax-parameter">child</span>, <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span>);
+          })
+          <span class="syntax-all syntax-keyword">break</span>;
+        <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&#39;BinaryExpression&#39;</span>:
+          <span class="syntax-all syntax-variable">traverseNode</span>(<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">left</span>, <span class="syntax-all syntax-parameter">node</span>);
+          <span class="syntax-all syntax-variable">traverseNode</span>(<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">right</span>, <span class="syntax-all syntax-parameter">node</span>);
+          <span class="syntax-all syntax-keyword">break</span>;
+        <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&#39;Literal&#39;</span>:
+          <span class="syntax-all syntax-keyword">break</span>;
+        <span class="syntax-all syntax-keyword">default</span>:
+          <span class="syntax-all syntax-keyword">throw</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">TypeError</span>(<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>);
+      }
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">exit</span>) <span class="syntax-all syntax-variable">exit</span>(<span class="syntax-all syntax-parameter">node</span>, <span class="syntax-all syntax-parameter">parent</span>);
+    }
+    <span class="syntax-all syntax-variable">traverseNode</span>(<span class="syntax-all syntax-parameter">ast</span>, <span class="syntax-all syntax-constant">null</span>);
+  }
+
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">newAst</span> <span class="syntax-all syntax-keyword">=</span> {
+    <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;Program&#39;</span>,
+    <span class="syntax-all syntax-string">body</span><span class="syntax-all syntax-constant">:</span> [],
+  };
+
+  <span class="syntax-all syntax-variable">traverser</span>(<span class="syntax-all syntax-parameter">ast</span>, {
+    <span class="syntax-all syntax-string">BinaryExpression</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-entity">enter</span>(<span class="syntax-all syntax-parameter">node</span>, <span class="syntax-all syntax-parameter">parent</span>) {
+        <span class="syntax-all syntax-parameter">newAst</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">node</span>);
+        <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;enter:&#39;</span>, <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">operator</span>);
+      },
+      <span class="syntax-all syntax-entity">exit</span>(<span class="syntax-all syntax-parameter">node</span>, <span class="syntax-all syntax-parameter">parent</span>) {
+        <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;exit&#39;</span>, <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">operator</span>);
+      }
+    },
+    <span class="syntax-all syntax-string">Literal</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-entity">enter</span>(<span class="syntax-all syntax-parameter">node</span>, <span class="syntax-all syntax-parameter">parent</span>) {
+        <span class="syntax-all syntax-parameter">newAst</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">node</span>);
+        <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;enter:&#39;</span>, <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
+      },
+    }
+  });
+}
+
+<span class="syntax-all syntax-comment">// console.log(noopTransformer(parser(tokenizer(&#39;1+2*3&#39;))));
+</span></code></pre>
+
+<h2>generator</h2>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">codeGenerator</span>(<span class="syntax-all syntax-parameter">node</span>) {
+  <span class="syntax-all syntax-keyword">switch</span> (<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>) {
+    <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&#39;Program&#39;</span>:
+      <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">body</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">map</span>(<span class="syntax-all syntax-parameter">codeGenerator</span>)
+        <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">join</span>(<span class="syntax-all syntax-string">&#39;</span><span class="syntax-all syntax-escape">\n</span><span class="syntax-all syntax-string">&#39;</span>);
+    <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&#39;BinaryExpression&#39;</span>:
+      <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-string">`(</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-variable">codeGenerator</span>(<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">left</span>)<span class="syntax-all syntax-keyword">}${</span><span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">operator</span><span class="syntax-all syntax-keyword">}${</span><span class="syntax-all syntax-variable">codeGenerator</span>(<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">right</span>)<span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">)`</span>;
+    <span class="syntax-all syntax-keyword">case</span> <span class="syntax-all syntax-string">&#39;Literal&#39;</span>:
+      <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>;
+    <span class="syntax-all syntax-keyword">default</span>:
+      <span class="syntax-all syntax-keyword">throw</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">TypeError</span>(<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// console.log(codeGenerator(parser(tokenizer(&#39;(1+2)*(3+1)&#39;))));
+</span><span class="syntax-all syntax-comment">// console.log(JSON.stringify(parser(tokenizer(&#39;(1+2)*3&#39;))))
+</span></code></pre>
+
+<p>以上。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://astexplorer.net">Ast Explorer</a></li>
+	<li><a href="https://github.com/fkling/astexplorer">Ast Explorer - github</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation">Reverse Polish notation</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Binary_expression_tree">Binary expression tree</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm">Shunting-yard algorithm</a></li>
+	<li><a href="https://zh.wikipedia.org/zh-tw/%E8%B0%83%E5%BA%A6%E5%9C%BA%E7%AE%97%E6%B3%95">调度场算法</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Visitor_pattern">Visitor pattern</a></li>
+	<li><a href="https://webpack.js.org/loaders/babel-loader/">babel-loader</a></li>
+	<li><a href="https://github.com/babel/babel-loader/blob/main/src/index.js">babel-loader - gitHub</a></li>
+	<li><a href="https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tiny-compiler.js">The Super Tiny Compiler - github</a></li>
+	<li><a href="https://babeljs.io/docs/en/">What is Babel?</a></li>
+</ol>
+
+</body>
+</html>
+
