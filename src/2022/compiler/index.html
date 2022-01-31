@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -127,22 +127,22 @@
         <span class="syntax-all syntax-comment">// NOTE: 这里只考虑四则运算，而四则运算运算符都是左结合
 </span>
         <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&#39;(&#39;</span>) {
-          <span class="syntax-all syntax-comment">// 如果這個記號是一個左括號，那麼就將其壓入棧當中
+          <span class="syntax-all syntax-comment">// 如果这个 token 是一个做括号，那么将它 push 到 operatorStack 中 
 </span>          <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>);
         } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&#39;)&#39;</span>) {
-          <span class="syntax-all syntax-comment">// 如果這個記號是一個右括號，那麼：
-</span>          <span class="syntax-all syntax-comment">// 從棧當中不斷地彈出運算子並且放入輸出佇列中，直到棧頂部的元素為左括號為止。
-</span>          <span class="syntax-all syntax-comment">// 將左括號從棧的頂端彈出，但並不放入輸出佇列中去。
+          <span class="syntax-all syntax-comment">// 如果这个 token 是一个右括号，那么：
+</span>          <span class="syntax-all syntax-comment">// 从 operatorStack 中不断 pop 运算符并且 push 到 outputQueue 队列中，知道 operatorStack 顶部的运算符尾左括号为止。
+</span>          <span class="syntax-all syntax-comment">// 将左括号从 operatorStack 的顶端 pop 出去，但并不放入到 outputQueue 队列中去。
 </span>          <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">operatorStack</span>[<span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">-</span> <span class="syntax-all syntax-constant">1</span>] <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&#39;(&#39;</span>) {
             <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">operator</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
             <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">operator</span>);
           }
           <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
         } <span class="syntax-all syntax-keyword">else</span> {
-          <span class="syntax-all syntax-comment">// 只要存在另一個記為o2的運算子位於棧的頂端，並且
-</span>          <span class="syntax-all syntax-comment">// 如果o1是左結合性的並且它的運算子優先級要小於或者等於o2的優先級
-</span>          <span class="syntax-all syntax-comment">// 那麼將o2從棧的頂端彈出並且放入輸出佇列中（迴圈直至以上條件不滿足為止）
-</span>          <span class="syntax-all syntax-comment">// 然後，將o1壓入棧的頂端
+          <span class="syntax-all syntax-comment">// 只要存在另一个记为 o2 的运算符位于 operatorStack 栈的顶端，并且
+</span>          <span class="syntax-all syntax-comment">// 如果 token 是左结合性的并且它的运算符的优先级要小于或者等于 o2 的优先级
+</span>          <span class="syntax-all syntax-comment">// 那么将 o2 从 operatorStack 栈的顶端 pop 出来并且放入到 outputQueue 队列中（loop 直至以上的条件不满足为止）
+</span>          <span class="syntax-all syntax-comment">// 然后将 token push 到 operatorStack 去
 </span>          <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-variable">hasHigherPriority</span>(<span class="syntax-all syntax-parameter">token</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>, <span class="syntax-all syntax-parameter">operatorStack</span>[<span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">-</span> <span class="syntax-all syntax-constant">1</span>]) <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>) {
             <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">operator</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
             <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">operator</span>);
@@ -154,7 +154,7 @@
     <span class="syntax-all syntax-parameter">current</span><span class="syntax-all syntax-keyword">++</span>;
   }
 
-  <span class="syntax-all syntax-comment">// 當再沒有記號可以讀取時：將運算子逐個彈出並放入輸出佇列中。
+  <span class="syntax-all syntax-comment">// 当没有 token 可以读取时: 将 operatorStack 里的运算符逐个 pop 并 push 到 outputQueue 队列中
 </span>  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>) {
     <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">operator</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">operatorStack</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">pop</span>();
     <span class="syntax-all syntax-parameter">outputQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">operator</span>);
@@ -202,6 +202,7 @@
 
   <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">ast</span>;
 }
+
 <span class="syntax-all syntax-comment">// parser(tokenizer(&#39;1+2*3+4/5*1&#39;)); // RPN: 123*+45/1*+ 
 </span><span class="syntax-all syntax-comment">// parser(tokenizer(&#39;1+(2+3)*4*5*6&#39;)); 
 </span></code></pre>
@@ -300,6 +301,7 @@
 	<li><a href="https://github.com/babel/babel-loader/blob/main/src/index.js">babel-loader - gitHub</a></li>
 	<li><a href="https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tiny-compiler.js">The Super Tiny Compiler - github</a></li>
 	<li><a href="https://babeljs.io/docs/en/">What is Babel?</a></li>
+	<li><a href="https://lisperator.net/pltut/">How to implement a programming language in JavaScript</a></li>
 </ol>
 
 </body>
