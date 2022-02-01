@@ -7,7 +7,7 @@
    <item>
     <title>手写一个四则运算的 Complier（JS 版）</title>
     <link>/src/2022/compiler/index.html</link>
-    <description>一个200行的编辑器</description>
+    <description>一个200行的编译器</description>
     <pubDate>Mon Jan 31 2022 00:00:00 GMT+0800 (China Standard Time)</pubDate>
     <lastBuildDate>Mon Jan 31 2022 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
   </item><item>
