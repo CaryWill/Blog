@@ -6,10 +6,10 @@
     <description>暂无描述</description>
    <item>
     <title>github 上克隆时候的 SSH 选项</title>
-    <link>/src/2022/compiler/index.html</link>
+    <link>/src/2022/ssh/index.html</link>
     <description>看完你将会了解 SSH 是什么，以及 github</description>
-    <pubDate>Mon Jan 31 2022 00:00:00 GMT+0800 (中国標準時)</pubDate>
-    <lastBuildDate>Mon Jan 31 2022 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+    <pubDate>Sat Feb 05 2022 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Sat Feb 05 2022 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item><item>
     <title>手写一个四则运算的 Complier</title>
     <link>/src/2022/compiler/index.html</link>
