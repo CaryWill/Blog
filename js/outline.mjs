@@ -5,8 +5,8 @@ export const outline = [
       {
         title: "github 上克隆时候的 SSH 选项",
         desc: "看完你将会了解 SSH 是什么，以及 github",
-        date: "Jan 31, 2022",
-        href: "/src/2022/compiler/index.html",
+        date: "Feb 05, 2022",
+        href: "/src/2022/ssh/index.html",
       },
       {
         title: "手写一个四则运算的 Complier",
