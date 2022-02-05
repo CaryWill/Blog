@@ -3,7 +3,13 @@ export const outline = [
   {
     2022: [
       {
-        title: "手写一个四则运算的 Complier（JS 版）",
+        title: "github 上克隆时候的 SSH 选项",
+        desc: "看完你将会了解 SSH 是什么，以及 github",
+        date: "Jan 31, 2022",
+        href: "/src/2022/compiler/index.html",
+      },
+      {
+        title: "手写一个四则运算的 Complier",
         desc: "一个200行的编译器",
         date: "Jan 31, 2022",
         href: "/src/2022/compiler/index.html",

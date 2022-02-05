@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>SSH</title>
+	</head>
+<body>
+<h1>SSH</h1>
+
+<p><strong>2022.02.05</strong></p>
+
+<p>在 github 上克隆代码的时候，会有两个选项，一个是克隆的时候需要输密码的 <code>HTTPS</code> 方式，另一种是不需要输密码的 <code>SSH</code> 的方式。</p>
+
+<p>因为权限的问题，你在使用 <code>HTTPS</code> 克隆私有仓库的时候需要输入账号密码，毕竟万一这个库是别人的私有库，总不能随随便便让你克隆吧。但是输入密码比较麻烦，而且也不是那么安全，密码被人默默的背下来就不好了，所以这里还有一种方式，<code>SSH</code> 克隆，ssh 它处在的目的就是为在不安全的网络中互相不信任的两个 hosts 之间提供一种安全的加密通信。</p>
+
+<p><code>SSH</code> 也可以使用密码登录，但是我们今天想讲的是用 <a href="https://en.wikipedia.org/wiki/Public-key_cryptography">公钥加密</a>进行 ssh 登录(非对称加密），它的作用和密码一样，为了鉴权嘛，但是它对于密码来说就长多了，也就安全不少（当然它不止这一个好处。</p>
+
+<p>这里首先说下 ssh 大致的一个鉴权过程是怎么样的，首先你通过 <code>ssh parallels@localhost</code> 命令就可以向服务端发起 ssh 登录请求了(这里的 localhost 请替换成你的服务器的 ip 地址），我们这里会使用密钥登录(我直接将上面生成的公钥复制粘贴到服务端的 <code>~/.ssh/authorized_keys</code> 文件里了，并且服务端禁用了密码登录，只能密钥登录)，然后服务端首先生成一段文字并通过刚才我们复制粘贴的公钥进行加密来向客户端发起一个“质询”(challenge)，客户端在收到服务端发起的“质询”后使用自己的私钥对其进行解密（因为是非对称加密，只有公钥对应的私钥才可以解密服务端发过来的“质询”内容），然后通过服务端的公钥对解密结果进行加密然后发送给服务端(我们在第一次使用 <code>ssh parallels@localhost</code> 命令的时候，我们本机不认识我们第一次连接的服务端，所以会将服务器的 ip，服务端的公钥等记录到 <code>~/.ssh/known_hosts</code> 文件中去，注意服务端也有自己的一个密钥对来进行通信用，这个不需要我们自己生成，这样我们就获得了服务端的公钥了），然后服务端用自己的私钥对解密结果进行解密对“质询”进行验证（消息内容一致说明验证通过），如果验证通过，那么恭喜你登录成功，如果验证失败，那就登录失败（狗头），然后在后续的通信中，客户端会使用服务端的公钥对数据进行加密，对从服务端接收到的数据使用本机的私钥进行解密，服务端会使用客户端的公钥对数据进行加密，对从客户端接收到的数据使用本机的私钥进行解密，这样一个鉴权过程就完了。</p>
+
+<p>注意一点的是，你会发现，私钥是不会互相传的，以免泄漏。</p>
+
+<figure><img src="CleanShot%202022-02-05%20at%2020.31.09@2x.png" alt="copy paste public key to server "/><figcaption>copy paste public key to server </figcaption></figure>
+
+<figure><img src="CleanShot%202022-02-05%20at%2020.46.30@2x.png" alt="first login"/><figcaption>first login</figcaption></figure>
+
+<figure><img src="CleanShot%202022-02-05%20at%2022.02.40@2x.png" alt="known_hosts file"/><figcaption>known_hosts file</figcaption></figure>
+
+<p>接下来我们介绍下几个实操的过程感受下，</p>
+
+<h2>启动服务器上的 SSH 服务</h2>
+
+<p>这里是本机 ssh 到虚拟机的 ubuntu 去的，需要配置下端口转发和启动 ssh 服务（如果你有一台公有 ip 的服务器，那么虚拟机配置这一段忽略即可），</p>
+
+<figure><img src="CleanShot%202022-02-05%20at%2019.55.39@2x.png" alt="配置网络连接方式"/><figcaption>配置网络连接方式</figcaption></figure>
+
+<figure><img src="CleanShot%202022-02-05%20at%2010.45.23@2x.png" alt="端口转发"/><figcaption>端口转发</figcaption></figure>
+
+<pre><code class="code-highlighted code-config">sudo apt update
+sudo apt install openssh-server
+sudo systemctl start ssh // 启动 ssh 服务
+sudo systemctl status ssh // 确认 ssh 服务的运行状态
+sudo ufw allow ssh // 防火墙允许 ssh 服务的端口</code></pre>
+
+<p>开启后长这样，每个系统不一样，只要 ssh 服务启动起来就行，</p>
+
+<figure><img src="DraggedImage.tiff"/></figure>
+
+<p>后面配置要密钥的时候就可以使用 <code>ssh parallels@localhost  -p 8022 -i ~/.ssh/test_rsa</code> 命令 ssh 到这台虚拟机服务器上了。</p>
+
+<h2>创建密钥对</h2>
+
+<p>使用 <code>ssh-keygen -t rsa -b 4096 -C &quot;test@gmail.com&quot;</code> 命令创建了一个 rsa 的密钥对，并备注了 &quot;test@gmail.com”。创建完你可以在 ~/.ssh 目录下看到，这里是 <code>test_rsa</code> 和 <code>test_rsa.pub</code>。</p>
+
+<figure><img src="DraggedImage-1.tiff"/></figure>
+
+<h2>配置 ssh-agent（可选）</h2>
+
+<p>如果你在创建私钥的时候，给自己的私钥设置了个密码（passphrase）的话，那么你可能需要配下 ssh-agent，它会帮你 cache 这个私钥的密码，这样你每次登录的话，不用一遍遍的输密码。</p>
+
+<p>配置方式也很简单，使用 <code>ssh-add</code> 命令即可，</p>
+
+<pre><code class="code-highlighted code-bash">// Start the ssh-agent <span class="syntax-all syntax-keyword">in</span> the background
+<span class="syntax-all syntax-constant">eval</span> <span class="syntax-all syntax-string">&quot;$(ssh-agent -s)&quot;</span>
+// Add your SSH private key to the ssh-agent and store your passphrase <span class="syntax-all syntax-keyword">in</span> the keychain
+ssh-add <span class="syntax-all syntax-keyword">~</span>/.ssh/test_rsa</code></pre>
+
+<figure><img src="CleanShot%202022-02-05%20at%2008.36.41@2x.png"/></figure>
+
+<h2>登录</h2>
+
+<p>经过上面的过程，我们在将客户端生成的密钥对里的公钥复制到服务端的 <code>~/.ssh/authorized_keys</code> 的文件里后，我们就可以登录了，使用 <code>ssh parallels@localhost  -p 8022 -i ~/.ssh/test_rsa</code>，这里因为需要端口转发所以指定了 <code>-p</code> 的 flag，以及 <code>-i</code> 指定了客户端的私钥。</p>
+
+<figure><img src="CleanShot%202022-02-05%20at%2022.14.58@2x.png"/></figure>
+
+<p>当然我们也可以不通过 <code>-i</code> 来显示地指定私钥文件，我们可以通过修改 <code>~/.ssh/config</code> 文件来指定对应 host 所需要的私钥文件，</p>
+
+<figure><img src="CleanShot%202022-02-05%20at%2022.17.13@2x.png"/></figure>
+
+<p>现在不用 <code>-i</code> 再来试下，</p>
+
+<figure><img src="CleanShot%202022-02-05%20at%2022.18.08@2x.png"/></figure>
+
+<p>然后回到我们最初的问题上，那么其实 <code>git clone</code> 其实最终还是会调用 <code>ssh</code> 如果你要用 ssh 的方式进行仓库克隆的话，用 wireshark 抓了个包，</p>
+
+<figure><img src="CleanShot%202022-02-05%20at%2022.41.49@2x.png" alt="github clone over ssh"/><figcaption>github clone over ssh</figcaption></figure>
+
+<p>以上。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://superuser.com/a/503698">What&#39;s the difference between Host and HostName in SSH Config?</a></li>
+	<li><a href="https://security.stackexchange.com/a/20710">What is the difference between authorized<em>keys and known</em>hosts file for SSH?</a></li>
+	<li><a href="https://apple.stackexchange.com/questions/166970/ssh-key-persists-even-after-i-delete-the-private-key-from-ssh-why">ssh key persists even after I delete the private key from ~/.ssh -- why?</a></li>
+	<li><a href="https://superuser.com/a/808876">How to SSH into VM running within Parallels on OSX</a></li>
+	<li><a href="https://linuxize.com/post/how-to-enable-ssh-on-ubuntu-20-04/">How to Enable SSH on Ubuntu 20.04</a></li>
+	<li><a href="https://blog.csdn.net/lujiandong1/article/details/50036393">linux ssh ip 超时，ssh 内网ip 和 外网ip的情况</a></li>
+	<li><a href="https://www.youtube.com/watch?v=0Sffl7YO0aY">Cryptography Basics - SSH Protocol Explained - YouTube</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Public-key_cryptography">Public-key cryptography</a></li>
+	<li><a href="https://www.rfc-editor.org/rfc/rfc4253">The Secure Shell (SSH) Transport Layer Protocol</a></li>
+	<li><a href="https://medium.com/@dianehu/how-to-ssh-to-an-private-ip-777dec23f86b">How to Ssh to an Machine with Private IP</a></li>
+	<li><a href="https://kb.parallels.com/en/124718">Port forwarding in Parallels Desktop</a></li>
+	<li><a href="https://www.freebsd.org/cgi/man.cgi?query=ssh&amp;apropos=0&amp;sektion=0&amp;manpath=FreeBSD+14.0-current&amp;arch=default&amp;format=html">SSH(man ssh)</a></li>
+	<li><a href="https://www.freebsd.org/cgi/man.cgi?query=+sshd&amp;apropos=0&amp;sektion=0&amp;manpath=FreeBSD+13.0-RELEASE+and+Ports&amp;arch=default&amp;format=html#end">Purpose of known_hosts file</a></li>
+	<li><a href="https://cloud.tencent.com/developer/article/1360587">ssh服务认证---基于密钥的认证过程讲解</a></li>
+	<li><a href="https://zhuanlan.zhihu.com/p/105992750">私有IP和公有IP的区别</a></li>
+	<li><a href="https://unix.stackexchange.com/a/72558">What&#39;s the purpose of ssh-agent?</a></li>
+	<li><a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent">Generating a new SSH key and adding it to the ssh-agent</a></li>
+</ol>
+
+</body>
+</html>
+
