@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>React 组件生命周期</title>
+	</head>
+<body>
+<h1>React 组件生命周期</h1>
+
+<p><strong> 2022.02.06</strong></p>
+
+<figure><img src="CleanShot%202022-02-06%20at%2020.24.30@2x.png" alt="https://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/"/><figcaption>https://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/</figcaption></figure>
+
+<p>这里以 class 组件为例，写了个 <a href="https://codesandbox.io/s/react-component-lifecycle-demo-uluvw">demo</a> 来看下整个组件的生命周期，</p>
+
+<h2>Mount</h2>
+
+<ol>
+	<li>constructor(props)</li>
+	<li>static getDerivedStateFromProps(props, state)</li>
+	<li>render()</li>
+	<li>componentDidMount()</li>
+</ol>
+
+<p>组件在渲染前需要调用 <code>constructor()</code> 函数来初始化组件实例，在渲染前需要调用 <code>static getDerivedStateFromProps(props, state)</code> 函数根据 props 做一次 state 的合并，生成最终的 state，然后接下来组件 <code>render</code> 就能拿到最新的合成后的 state 了，反映在界面上的话，就是状态显示正确了，这个时候 fiber tree （virtual dom tree）就生成了，这样渲染完组件就会调用 <code>componentDidMount</code> 这个钩子了。</p>
+
+<figure><img src="CleanShot%202022-02-06%20at%2016.09.25@2x.png"/></figure>
+
+<figure><img src="CleanShot%202022-02-06%20at%2016.13.58@2x.png" alt="root virtual dom tree"/><figcaption>root virtual dom tree</figcaption></figure>
+
+<h2>Update</h2>
+
+<ul>
+	<li>static getDerivedStateFromProps()</li>
+	<li>shouldComponentUpdate()</li>
+	<li>render()</li>
+	<li>getSnapshotBeforeUpdate()</li>
+	<li>componentDidUpdate()</li>
+</ul>
+
+<p>因为我们的 state 可能会依赖父组件传过来的 props，所以每次渲染的时候都会先调用 <code>static getDerivedStateFromProps(props, state)</code> 来生成最终的 state，接下来是 <code>shouldComponentUpdate(nextProps, nextState)</code> 函数，它给了你一次机会决定是否要进行这次渲染，如果返回 true 的话，那么执行 <code>render</code> 函数函数进行下一次渲染，这里会生成一个新的 virtual dom tree，然后调用 <code>getSnapshotBeforeUpdate(prevProps, prevState)</code> 钩子函数，返回的值会作为下面的 <code>componentDidUpdate(prevProps, prevState, snapshot)</code> 钩子函数的第三个参数，执行完成之后会使用 reconciliation 算法对比新旧 virtual dom tree 进行真实 dom 的操作，结束之后会调用 <code>componentDidUpdate(prevProps, prevState, snapshot)</code> 钩子函数完成本次更新渲染。</p>
+
+<h2>Unmount</h2>
+
+<ul>
+	<li>componentWillUnmount()</li>
+</ul>
+
+<p>组件 unmount 的时候会调用这个方法。</p>
+
+<h2>其他</h2>
+
+<h3>getDerivedStateFromProps</h3>
+
+<p>这里的第二个参数是 state，我的第一想法是，我直接 <code>this.state</code> 不就可以获取到 state 了吗，为什么还需要第二个参数，因为这个函数是一个静态方法啊，拿不到 <code>this</code> 实例。</p>
+
+<p>但是即便如此，我在这个方法里打印了下 <code>this</code>，结果发现是 <em>undefind</em>。正常的话应该是这个 class 类才对。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://medium.com/react-in-depth/the-how-and-why-on-reacts-usage-of-linked-list-in-fiber-67f1014d0eb7">The how and why on React’s usage of linked list in Fiber to walk the component’s tree</a></li>
+	<li><a href="https://medium.com/react-in-depth/inside-fiber-in-depth-overview-of-the-new-reconciliation-algorithm-in-react-e1c04700ef6e">Inside Fiber: in-depth overview of the new reconciliation algorithm in React</a></li>
+	<li><a href="https://medium.com/react-in-depth/in-depth-explanation-of-state-and-props-update-in-react-51ab94563311">In-depth explanation of state and props update in React</a></li>
+	<li><a href="https://stackoverflow.com/a/53194011/10190407">What is getSnapshotBeforeUpdate() in React?</a></li>
+	<li><a href="https://github.com/acdlite/react-fiber-architecture"> React Fiber Architecture </a></li>
+	<li><a href="https://reactjs.org/docs/react-component.html">The Component Lifecycle</a></li>
+	<li><a href="https://medium.com/@bendtherules/exploring-react-fiber-tree-20cbf62fe808">Exploring React Fiber tree</a></li>
+	<li><a href="https://github.com/facebook/react/blob/a129259ad6a61790fe1912a87cb45018d942f90c/packages/react-reconciler/src/ReactFiberClassComponent.js#L789">getDerivedStateFromProps() source code</a></li>
+	<li><a href="https://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/">react-lifecycle-methods-diagram</a></li>
+</ol>
+
+</body>
+</html>
+
