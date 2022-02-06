@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,7 +45,7 @@ sudo ufw allow ssh // 防火墙允许 ssh 服务的端口</code></pre>
 
 <p>开启后长这样，每个系统不一样，只要 ssh 服务启动起来就行，</p>
 
-<figure><img src="DraggedImage.tiff"/></figure>
+<figure><img src="DraggedImage.png"/></figure>
 
 <p>后面配置要密钥的时候就可以使用 <code>ssh parallels@localhost  -p 8022 -i ~/.ssh/test_rsa</code> 命令 ssh 到这台虚拟机服务器上了。</p>
 
@@ -53,7 +53,7 @@ sudo ufw allow ssh // 防火墙允许 ssh 服务的端口</code></pre>
 
 <p>使用 <code>ssh-keygen -t rsa -b 4096 -C &quot;test@gmail.com&quot;</code> 命令创建了一个 rsa 的密钥对，并备注了 &quot;test@gmail.com”。创建完你可以在 ~/.ssh 目录下看到，这里是 <code>test_rsa</code> 和 <code>test_rsa.pub</code>。</p>
 
-<figure><img src="DraggedImage-1.tiff"/></figure>
+<figure><img src="DraggedImage-1.png"/></figure>
 
 <h2>配置 ssh-agent（可选）</h2>
 
