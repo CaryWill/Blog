@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,7 @@
 
 <p>因为权限的问题，你在使用 <code>HTTPS</code> 克隆私有仓库的时候需要输入账号密码，毕竟万一这个库是别人的私有库，总不能随随便便让你克隆吧。但是输入密码比较麻烦，而且也不是那么安全，密码被人默默的背下来就不好了，所以这里还有一种方式，<code>SSH</code> 克隆，ssh 它处在的目的就是为在不安全的网络中互相不信任的两个 hosts 之间提供一种安全的加密通信。</p>
 
-<p><code>SSH</code> 也可以使用密码登录，但是我们今天想讲的是用 <a href="https://en.wikipedia.org/wiki/Public-key_cryptography">公钥加密</a>进行 ssh 登录(非对称加密），它的作用和密码一样，为了鉴权嘛，但是它对于密码来说就长多了，也就安全不少（当然它不止这一个好处。</p>
+<p><code>SSH</code> 也可以使用密码登录，但是我们今天想讲的是用 <a href="https://en.wikipedia.org/wiki/Public-key_cryptography">公钥加密</a> (非对称加密，也就是公钥加密只能用对应的私钥解密）进行 ssh 登录，它的作用和密码一样，为了鉴权嘛，但是它对于密码来说就长多了，也就安全不少（当然它不止这一个好处。</p>
 
 <p>这里首先说下 ssh 大致的一个鉴权过程是怎么样的，首先你通过 <code>ssh parallels@localhost</code> 命令就可以向服务端发起 ssh 登录请求了(这里的 localhost 请替换成你的服务器的 ip 地址），我们这里会使用密钥登录(我直接将上面生成的公钥复制粘贴到服务端的 <code>~/.ssh/authorized_keys</code> 文件里了，并且服务端禁用了密码登录，只能密钥登录)，然后服务端首先生成一段文字并通过刚才我们复制粘贴的公钥进行加密来向客户端发起一个“质询”(challenge)，客户端在收到服务端发起的“质询”后使用自己的私钥对其进行解密（因为是非对称加密，只有公钥对应的私钥才可以解密服务端发过来的“质询”内容），然后通过服务端的公钥对解密结果进行加密然后发送给服务端(我们在第一次使用 <code>ssh parallels@localhost</code> 命令的时候，我们本机不认识我们第一次连接的服务端，所以会将服务器的 ip，服务端的公钥等记录到 <code>~/.ssh/known_hosts</code> 文件中去，注意服务端也有自己的一个密钥对来进行通信用，这个不需要我们自己生成，这样我们就获得了服务端的公钥了），然后服务端用自己的私钥对解密结果进行解密对“质询”进行验证（消息内容一致说明验证通过），如果验证通过，那么恭喜你登录成功，如果验证失败，那就登录失败（狗头），然后在后续的通信中，客户端会使用服务端的公钥对数据进行加密，对从服务端接收到的数据使用本机的私钥进行解密，服务端会使用客户端的公钥对数据进行加密，对从客户端接收到的数据使用本机的私钥进行解密，这样一个鉴权过程就完了。</p>
 
@@ -45,7 +45,7 @@ sudo ufw allow ssh // 防火墙允许 ssh 服务的端口</code></pre>
 
 <p>开启后长这样，每个系统不一样，只要 ssh 服务启动起来就行，</p>
 
-<figure><img src="DraggedImage.png"/></figure>
+<figure><img src="DraggedImage.tiff"/></figure>
 
 <p>后面配置要密钥的时候就可以使用 <code>ssh parallels@localhost  -p 8022 -i ~/.ssh/test_rsa</code> 命令 ssh 到这台虚拟机服务器上了。</p>
 
@@ -53,7 +53,7 @@ sudo ufw allow ssh // 防火墙允许 ssh 服务的端口</code></pre>
 
 <p>使用 <code>ssh-keygen -t rsa -b 4096 -C &quot;test@gmail.com&quot;</code> 命令创建了一个 rsa 的密钥对，并备注了 &quot;test@gmail.com”。创建完你可以在 ~/.ssh 目录下看到，这里是 <code>test_rsa</code> 和 <code>test_rsa.pub</code>。</p>
 
-<figure><img src="DraggedImage-1.png"/></figure>
+<figure><img src="DraggedImage-1.tiff"/></figure>
 
 <h2>配置 ssh-agent（可选）</h2>
 
@@ -82,7 +82,7 @@ ssh-add <span class="syntax-all syntax-keyword">~</span>/.ssh/test_rsa</code></p
 
 <figure><img src="CleanShot%202022-02-05%20at%2022.18.08@2x.png"/></figure>
 
-<p>然后回到我们最初的问题上，那么其实 <code>git clone</code> 其实最终还是会调用 <code>ssh</code> 如果你要用 ssh 的方式进行仓库克隆的话，用 wireshark 抓了个包，</p>
+<p>然后回到我们最初的问题上，那么其实 <code>git clone</code> 其实最终还是会调用 <code>ssh</code> 命令如果你要用 ssh 的方式进行仓库克隆的话，用 wireshark 抓了个包，</p>
 
 <figure><img src="CleanShot%202022-02-05%20at%2022.41.49@2x.png" alt="github clone over ssh"/><figcaption>github clone over ssh</figcaption></figure>
 
