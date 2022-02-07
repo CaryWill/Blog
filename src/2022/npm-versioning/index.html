@@ -1,9 +1,9 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>Invalid tag name &gt;=^16.0.0&quot; 问题</title>
 	</head>
 <body>
@@ -93,7 +93,9 @@
   <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
 }</code></pre>
 
-<figure><img src="DraggedImage.png"/><img src="DraggedImage-1.png"/></figure>
+<figure><img src="DraggedImage.png"/></figure>
+
+<figure><img src="DraggedImage-1.png"/></figure>
 
 <p>这里需要注意的一点是，这里有两个版本的 react 被安装了，一个是 &quot;npm-node&quot; 这个库下面的，另一个是 &quot;npm-node&quot; 的依赖 &quot;cary-peer-deps&quot; 这个库下面的。</p>
 
@@ -351,11 +353,17 @@ npm ERR! to accept an incorrect (and potentially broken) dependency resolution.<
   <span class="syntax-all syntax-string">&quot;license&quot;</span>: <span class="syntax-all syntax-string">&quot;ISC&quot;</span>
 }</code></pre>
 
-<figure><img src="DraggedImage-3.png" alt="复制的测试库"/><img src="DraggedImage-4.png" alt="重新安装依赖"/><figcaption>重新安装依赖</figcaption></figure>
+<figure><img src="DraggedImage-3.png" alt="复制的测试库"/><figcaption>复制的测试库</figcaption></figure>
+
+<figure><img src="DraggedImage-4.png" alt="重新安装依赖"/><figcaption>重新安装依赖</figcaption></figure>
 
 <p>你会发现在有 package-lock.json 存在的情况下，直接 <code>npm install</code> 是不会安装最新的版本的 &quot;cary-peer-deps&quot; 库的，这里也就是 7.0.0，对比下，我们将复制的测试库里的 package-lock.json 删除后，然后 <code>npm install</code> 的话，会出现什么情况，</p>
 
-<figure><img src="DraggedImage-5.png" alt="复制的测试库"/><img src="DraggedImage-6.png" alt="重新安装依赖"/><img src="DraggedImage-7.png" alt="锁死的版本"/><figcaption>锁死的版本</figcaption></figure>
+<figure><img src="DraggedImage-5.png" alt="复制的测试库"/><figcaption>复制的测试库</figcaption></figure>
+
+<figure><img src="DraggedImage-6.png" alt="重新安装依赖"/><figcaption>重新安装依赖</figcaption></figure>
+
+<figure><img src="DraggedImage-7.png" alt="锁死的版本"/><figcaption>锁死的版本</figcaption></figure>
 
 <p>你会发现，直接安装了最新版本的 &quot;cary-peer-deps&quot; 库，也就是 7.0.0 版本的。</p>
 
@@ -372,6 +380,7 @@ npm ERR! to accept an incorrect (and potentially broken) dependency resolution.<
 	<li><a href="https://nodejs.org/en/blog/npm/peer-dependencies/">What is peer deps</a></li>
 	<li><a href="https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages"> How to publish your first npm package? </a></li>
 	<li><a href="https://semver.org/">Semantic Versioning Specification（major.minor.patch)</a></li>
+	<li><a href="https://docs.npmjs.com/cli/v8/configuring-npm/package-lock-json">What is package-lock.json file</a></li>
 </ol>
 
 </body>
