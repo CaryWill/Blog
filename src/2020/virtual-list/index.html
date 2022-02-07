@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Virtual List</title>
+	</head>
+<body>
+<h1>Virtual List</h1>
+
+<p><strong>2020.03.31</strong></p>
+
+<p>这是一种在数据量很大的时候，高效渲染列表的一种方式。</p>
+
+<p>这种方法的核心就是只渲染一屏的列表元素，在滚动的时候动态创建列表元素，具体的做法如下，</p>
+
+<ol>
+	<li>容器有具体的长宽来限制显示区域。</li>
+	<li>滚动列表高度要设置为显示所有元素时的高度，来保证可以滚动。</li>
+	<li>组件自己维护一个滚动距离的状态（scrollOffset)。</li>
+	<li>渲染的时候，根据滚动的距离来动态计算一屏的 item 的 startIndex 和 endIndex 来获取 data 里面的数据，并动态创建元素。</li>
+	<li>滚动更新的时候来更新 scrollOffset 来重新触发 re-render。</li>
+</ol>
+
+<p>具体来看下代码，这里写了个 <a href="https://codesandbox.io/s/virtual-list-tw1iv">demo</a> 可以看下，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">React</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;react&quot;</span>;
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">height</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">500</span>; <span class="syntax-all syntax-comment">// container height
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">itemHeight</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">20</span>;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">itemCount</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">100</span>;
+<span class="syntax-all syntax-keyword">export</span> <span class="syntax-all syntax-keyword">default</span> <span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">VirtualList</span> <span class="syntax-all syntax-keyword">extends</span> <span class="syntax-all syntax-parameter">React</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">Component</span> {
+  <span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> {
+    <span class="syntax-all syntax-string">scrollOffset</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">0</span>
+  };
+
+  <span class="syntax-all syntax-parameter">onScroll</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">event</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">currentTarget</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">event</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">currentTarget</span>;
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">scrollTop</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">currentTarget</span> <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-parameter">currentTarget</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">scrollTop</span> : <span class="syntax-all syntax-constant">0</span>;
+    <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-string">scrollOffset</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">prevScrollOffset</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>;
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">prevScrollOffset</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-parameter">scrollTop</span>) {
+      <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">setState</span>({ <span class="syntax-all syntax-string">scrollOffset</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">scrollTop</span> });
+    }
+  };
+
+  <span class="syntax-all syntax-parameter">getStartIndex</span> <span class="syntax-all syntax-keyword">=</span> () <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">scrollOffset</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>;
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">Math</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">ceil</span>(<span class="syntax-all syntax-parameter">scrollOffset</span> <span class="syntax-all syntax-keyword">/</span> <span class="syntax-all syntax-parameter">itemHeight</span>);
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">index</span>;
+  };
+
+  <span class="syntax-all syntax-parameter">getEndIndex</span> <span class="syntax-all syntax-keyword">=</span> () <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">scrollOffset</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>;
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">index</span>;
+    <span class="syntax-all syntax-comment">// scrollOffset &gt;= clientHeight
+</span>    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">itemHeight</span> <span class="syntax-all syntax-keyword">*</span> <span class="syntax-all syntax-parameter">itemCount</span> <span class="syntax-all syntax-keyword">-</span> <span class="syntax-all syntax-parameter">scrollOffset</span> <span class="syntax-all syntax-keyword">&lt;=</span> <span class="syntax-all syntax-parameter">height</span>) {
+      <span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">itemCount</span>;
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getStartIndex</span>() <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">Math</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">ceil</span>(<span class="syntax-all syntax-parameter">height</span> <span class="syntax-all syntax-keyword">/</span> <span class="syntax-all syntax-parameter">itemHeight</span>);
+    }
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">index</span>;
+  };
+
+  <span class="syntax-all syntax-entity">render</span>() {
+    <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">scrollOffset</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>;
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">items</span> <span class="syntax-all syntax-keyword">=</span> [<span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-variable">Array</span>(<span class="syntax-all syntax-parameter">itemCount</span>)<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">keys</span>()]<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">slice</span>(
+      <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getStartIndex</span>(),
+      <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getEndIndex</span>()
+    );
+
+    <span class="syntax-all syntax-keyword">return</span> (
+      &lt;<span class="syntax-all syntax-tag">div</span>
+        <span class="syntax-all syntax-entity">key</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;container&quot;</span>
+        <span class="syntax-all syntax-entity">onScroll</span><span class="syntax-all syntax-keyword">=</span>{<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">onScroll</span>}
+        <span class="syntax-all syntax-entity">style</span><span class="syntax-all syntax-keyword">=</span>{{ <span class="syntax-all syntax-string">position</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;relative&quot;</span>, <span class="syntax-all syntax-parameter">height</span>, <span class="syntax-all syntax-string">overflow</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;scroll&quot;</span> }}
+      &gt;
+        &lt;<span class="syntax-all syntax-tag">div</span>
+          <span class="syntax-all syntax-entity">style</span><span class="syntax-all syntax-keyword">=</span>{{
+            <span class="syntax-all syntax-string">height</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">`</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">itemHeight</span> <span class="syntax-all syntax-keyword">*</span> <span class="syntax-all syntax-parameter">itemCount</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">px`</span>,
+            <span class="syntax-all syntax-string">position</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;relative&quot;</span>
+          }}
+          <span class="syntax-all syntax-entity">key</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;scrollList&quot;</span>
+        &gt;
+          {<span class="syntax-all syntax-parameter">items</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">map</span>((<span class="syntax-all syntax-parameter">i</span>, <span class="syntax-all syntax-parameter">index</span>) <span class="syntax-all syntax-keyword">=&gt;</span> (
+            &lt;<span class="syntax-all syntax-tag">div</span>
+              <span class="syntax-all syntax-entity">style</span><span class="syntax-all syntax-keyword">=</span>{{
+                <span class="syntax-all syntax-string">width</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;100%&quot;</span>,
+                <span class="syntax-all syntax-string">height</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">`</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">itemHeight</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">px`</span>,
+                <span class="syntax-all syntax-string">position</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;absolute&quot;</span>,
+                <span class="syntax-all syntax-string">top</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">scrollOffset</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">*</span> <span class="syntax-all syntax-parameter">itemHeight</span>
+              }}
+              <span class="syntax-all syntax-entity">key</span><span class="syntax-all syntax-keyword">=</span>{<span class="syntax-all syntax-parameter">index</span>}
+            &gt;
+              {<span class="syntax-all syntax-parameter">i</span>}
+            &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+          ))}
+        &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+      &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+    );
+  }
+}</code></pre>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://github.com/bvaughn/react-virtualized">react-virtualized - github</a></li>
+</ol>
+
+</body>
+</html>
+

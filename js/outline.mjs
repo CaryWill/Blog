@@ -194,6 +194,16 @@ export const outline = [
       },
     ],
   },
+  {
+    2020: [
+      {
+        title: "Virtual list",
+        desc: "在数据量很大的情况下的高性能列表方案",
+        date: "Mar 31, 2020",
+        href: "/src/2020/virtual-list/index.html",
+      },
+    ],
+  },
 ];
 
 export default { outline };
