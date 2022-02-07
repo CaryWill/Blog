@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,7 +30,7 @@
 
 <p>项目启动起来后，什么缓存的请求头/响应头都没有配，所以，每次请求都直接从本地服务器获取。</p>
 
-<figure><img src="DraggedImage.tiff" alt="刷新好几次的结果，都没有缓存"/><figcaption>刷新好几次的结果，都没有缓存</figcaption></figure>
+<figure><img src="DraggedImage.png" alt="刷新好几次的结果，都没有缓存"/><figcaption>刷新好几次的结果，都没有缓存</figcaption></figure>
 
 <figure><img src="DraggedImage.png"/></figure>
 
@@ -54,7 +54,7 @@
 
 <p>测试：我们在服务器响应的时候，设置一个 <code>Cache-Control</code> 的响应头，值为 <em> max-age=10</em>，也就是 10秒的有效期，然后我们在请求完成后再次刷新页面，看浏览器是否使用了缓存。如下图所示，浏览器使用了缓存（10秒过后，浏览器就会重新向浏览器获取资源）。</p>
 
-<figure><img src="DraggedImage-1.tiff"/></figure>
+<figure><img src="DraggedImage-1.png"/></figure>
 
 <p>但无论使用 <code>Expires</code> 还是 <code>Cache-Control</code> 的<em> max-age</em> 进行强制缓存，都会有一个问题，“就是当缓存时间到了需要去服务器重新获取资源的时候，如果服务器上的该资源没有被改动，那么，我们这次向服务器重新获取资源不就是浪费的吗？直接使用本地缓存不就行了吗？”</p>
 
@@ -94,17 +94,17 @@
 
 <p>首次请求（10秒有效期，文件的最新修改时间也已经知道）</p>
 
-<figure><img src="DraggedImage-2.tiff"/></figure>
+<figure><img src="DraggedImage-2.png"/></figure>
 
 <p>再次请求（因为还在缓存时间内 10秒，所以直接使用缓存）</p>
 
-<figure><img src="DraggedImage-3.tiff"/></figure>
+<figure><img src="DraggedImage-3.png"/></figure>
 
 <p>等待 10s 等缓存过期，再次请求，因为服务器上这个文件一直没有动过，对比服务器上该文件的最新修改时间和请求头里的上次修改时间，发现时间一致，即文件没有改动，返回 304 告诉浏览器可以继续使用缓存，</p>
 
-<figure><img src="DraggedImage-4.tiff"/></figure>
+<figure><img src="DraggedImage-4.png"/></figure>
 
-<figure><img src="DraggedImage-5.tiff"/></figure>
+<figure><img src="DraggedImage-5.png"/></figure>
 
 <p>不过这个响应头使用的时候还是会有一个问题，<strong>时间精度问题</strong>。</p>
 
@@ -143,11 +143,11 @@
 
 <p>测试：首先将缓存有效期设置为 0 秒（等同于 <code>Cache-Control: public,no-cache</code>，并且注意 “no-cache” 的作用是不是用本地缓存而不是不缓存），这样每次请求浏览器会直接向服务器获取资源并写入到本地缓存，然后连续刷新好几次页面，你会发现，如果两次刷新发生在某一秒内，那么在该某一秒内的最新的资源变更你就拿不到了，</p>
 
-<figure><img src="DraggedImage-6.tiff"/></figure>
+<figure><img src="DraggedImage-6.png"/></figure>
 
-<figure><img src="DraggedImage-7.tiff"/></figure>
+<figure><img src="DraggedImage-7.png"/></figure>
 
-<figure><img src="DraggedImage-8.tiff"/></figure>
+<figure><img src="DraggedImage-8.png"/></figure>
 
 <p>上面就是一秒内刷新了两次出现的情况，我们设置了每次请求 demo.js 文件都会发生改动，但是由于两次刷新是在 1 秒内完成的，所以当缓存时间到的时候，浏览器发起协商缓存，请求是 200，因为文件变动了，然后 1秒内的再次请求将会返回 304，因为在<strong>秒级</strong>上做时间对比是通过的，所以服务器 304 告诉浏览器使用本地缓存。</p>
 
@@ -192,15 +192,15 @@
 
 <p>还是同样的操作，1秒内多次请求，可以看到第 4 次和第 5 次刷新是发生在 1秒内的，然后你会发现虽然这两条数据都在同 1 秒，但和 <code>Last-Modified</code> 不同的是，2 个响应的响应内容不同，而且也绝不会相同。</p>
 
-<figure><img src="DraggedImage-9.tiff"/></figure>
+<figure><img src="DraggedImage-9.png"/></figure>
 
-<figure><img src="DraggedImage-10.tiff"/></figure>
+<figure><img src="DraggedImage-10.png"/></figure>
 
-<figure><img src="DraggedImage-11.tiff"/></figure>
+<figure><img src="DraggedImage-11.png"/></figure>
 
-<figure><img src="DraggedImage-12.tiff"/></figure>
+<figure><img src="DraggedImage-12.png"/></figure>
 
-<figure><img src="DraggedImage-13.tiff"/></figure>
+<figure><img src="DraggedImage-13.png"/></figure>
 
 <p>第 4 次请求 demo.js 文件的时候，服务器会在响应头里该文件的 <code>Etag</code> 也返回回来，当我们发出第 5 次请求的时候，我们向服务器发起了协商缓存（因为我们设置了 max-age=0），并在请求头上带上了 <code>If-None-Match</code> 的请求头，值是第 4 次请求的 <code>ETag</code>，服务器对服务器上的 demo.js 的 hash（ETag 值）和 <code>If-None-Match</code> 的值进行了对比，因为我们每次请求 demo.js 的内容都会改变，所以这次对比就会就发现文件发生了变动，于是就返回 200，并在响应头里加上了新文件的 ETag 值。</p>
 
@@ -243,7 +243,7 @@
   });
 });</code></pre>
 
-<figure><img src="DraggedImage-14.tiff"/></figure>
+<figure><img src="DraggedImage-14.png"/></figure>
 
 <p>可以看到，在一个缓存有效期内（10秒），即便文件变了（目前每次请求都会重新生成 demo.js 的文件内容），浏览器也不会从服务器获取资源，而是直接使用缓存。</p>
 
