@@ -5,12 +5,6 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
-    <title>React 组件生命周期</title>
-    <link>/src/2022/react-comp-lifecycle/index.html</link>
-    <description>React 组件生命周期一览</description>
-    <pubDate>Sun Feb 06 2022 00:00:00 GMT+0800 (中国標準時)</pubDate>
-    <lastBuildDate>Sun Feb 06 2022 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
-  </item><item>
     <title>github 上克隆时候的 SSH 选项</title>
     <link>/src/2022/ssh/index.html</link>
     <description>看完你将会了解 SSH 是什么，以及 github</description>
@@ -196,6 +190,12 @@
     <description>在数据量很大的情况下的高性能列表方案</description>
     <pubDate>Tue Mar 31 2020 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Tue Mar 31 2020 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>React 组件生命周期</title>
+    <link>/src/2019/react-comp-lifecycle/index.html</link>
+    <description>React 组件生命周期一览</description>
+    <pubDate>Thu Dec 19 2019 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Thu Dec 19 2019 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item> 
   </channel>
 </rss>
