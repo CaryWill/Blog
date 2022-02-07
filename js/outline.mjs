@@ -3,12 +3,6 @@ export const outline = [
   {
     2022: [
       {
-        title: "React 组件生命周期",
-        desc: "React 组件生命周期一览",
-        date: "Feb 06, 2022",
-        href: "/src/2022/react-comp-lifecycle/index.html",
-      },
-      {
         title: "github 上克隆时候的 SSH 选项",
         desc: "看完你将会了解 SSH 是什么，以及 github",
         date: "Feb 05, 2022",
@@ -201,6 +195,16 @@ export const outline = [
         desc: "在数据量很大的情况下的高性能列表方案",
         date: "Mar 31, 2020",
         href: "/src/2020/virtual-list/index.html",
+      },
+    ],
+  },
+  {
+    2019: [
+      {
+        title: "React 组件生命周期",
+        desc: "React 组件生命周期一览",
+        date: "Dec 19, 2019",
+        href: "/src/2019/react-comp-lifecycle/index.html",
       },
     ],
   },
