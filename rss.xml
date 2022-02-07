@@ -190,6 +190,12 @@
     <description>WeakMap 和 GC 的关系</description>
     <pubDate>Tue Jul 28 2020 00:00:00 GMT+0800 (中国標準時)</pubDate>
     <lastBuildDate>Tue Jul 28 2020 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
+  </item><item>
+    <title>Virtual list</title>
+    <link>/src/2020/virtual-list/index.html</link>
+    <description>在数据量很大的情况下的高性能列表方案</description>
+    <pubDate>Tue Mar 31 2020 00:00:00 GMT+0800 (中国標準時)</pubDate>
+    <lastBuildDate>Tue Mar 31 2020 00:00:00 GMT+0800 (中国標準時)</lastBuildDate>
   </item> 
   </channel>
 </rss>
