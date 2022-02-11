@@ -3,8 +3,8 @@ export const outline = [
   {
     2022: [
       {
-        title: "一定要知道的关于 Unicode 和 Charset 的知识",
-        desc: "什么是 charset，unicode，encoding？",
+        title: "一定要知道的关于字符集和编码的知识",
+        desc: "什么是 charset，encoding，Unicode，UTF-8？",
         date: "Feb 11, 2022",
         href: "/src/2022/unicode-charset-encoding/index.html",
       },
