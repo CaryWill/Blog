@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "一定要知道的关于 Unicode 和 Charset 的知识",
+        desc: "什么是 charset，unicode，encoding？",
+        date: "Feb 11, 2022",
+        href: "/src/2022/unicode-charset-encoding/index.html",
+      },
+      {
         title: "github 上克隆时候的 SSH 选项",
         desc: "看完你将会了解 SSH 是什么，以及 github",
         date: "Feb 05, 2022",
