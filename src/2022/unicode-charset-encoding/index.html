@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -172,11 +172,11 @@ U+10000 - U+10FFFF  | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code></pre>
 
 <p>UTF-8 和 ASCII 编码兼容，但 UTF-16 和 ASCII <a href="https://en.wikipedia.org/wiki/Comparison_of_Unicode_encodings">不兼容</a>。</p>
 
-<p>一开始我是挺不能理解的，我是这样想的，UTF-16 编码的字符，比如 “A” 0x0041，转换成 ASCII 编码的时候，直接去掉前面的两个 0，变成 0x41 不就和 ASCII 保持一致了吗？</p>
+<p>一开始我是挺不能理解的，我是这样想的，UTF-16 编码的字符，比如 “A” <code>00000000 01000001</code>，转换成 ASCII 编码的时候，把前面 1 个 byte 的 0 给去掉，不就和 ASCII 保持一致了吗？</p>
 
 <p>网上看到的<a href="https://stackoverflow.com/a/61848232/10190407">答案</a>都很简单，就是说因为 UTF-16 是 16bit（code unit）的，所以和 ASCII 不兼容，我都想打他们了，不能说详细点吗？后面才发现他们说的是对的，我的思路有问题，不是 “转换” 而是单纯的 “解码”！</p>
 
-<p>举个例子，还是 UTF-16 的 “A” 0x0041，它用 ASCII 进行解码的时候，是两个字符！！！ 一个是 NULL 字符（00），一个是 A（41）。。。</p>
+<p>举个例子，还是 UTF-16 的 “A” <code>00000000 01000001</code>，它用 ASCII 进行解码的时候，按照一个字符一个 byte 的规则进行读取，读到的是两个字符！！！ 一个是 NULL 字符（00000000），一个是 A（01000001）。。。</p>
 
 <h3>BOM 字节序</h3>
 
