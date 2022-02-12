@@ -8,6 +8,13 @@ import "./post.style.css";
 
 const Outline = React.memo(() => {
   const h2s = document.getElementsByTagName("h2");
+
+  useEffect(() => {
+    Array.from(h2s).forEach((item) => {
+      item.innerHTML = `<a href='#${id}'>${item.textContent}</a>`;
+    })
+  }, [])
+
   return (
     <ol>
       {Array.from(h2s).map((item, index) => {
