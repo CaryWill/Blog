@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,6 +62,8 @@ U+0800  - U+FFFF    | 1110xxxx 10xxxxxx 10xxxxxx
 U+10000 - U+10FFFF  | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code></pre>
 
 <p>举个例子，<code>%3D%F0%9F%A5%B6%26</code> 中的第一个 <code>%hh</code>（3D） 的二进制值是 <code>00111101</code>，开头是 0 没有 1，所以占用一个 byte，所以 <code>%3D</code> 本身就是一个字符了，对应的 Unicode 表示是 <code>U+003D</code> 也就是 <code>=</code>。第二个 <code>%hh</code>（F0）对应的是 <code>11110000</code>，看上表可以发现它占用了四个 byte，所以我们可以判断出 <code>%F0%9F%A5%B6</code> 是一个字符，对应的二进制就是 <code>11110000 10011111 10100101 10110110</code>，也就是 <code>U+1F976</code> 也就是我们的 🥶 符号了。</p>
+
+<p>以上。</p>
 
 <h2>参考</h2>
 
