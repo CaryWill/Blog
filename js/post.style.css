@@ -18,6 +18,6 @@ body {
 
 h2 a {
   text-decoration: none;
-  color: rgb(226, 223, 219);
+  color: rgb(226, 223, 219) !important;
   cursor: pointer;
 }
