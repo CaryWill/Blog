@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -154,7 +154,7 @@ U+10000 - U+10FFFF  | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code></pre>
 <ol>
 	<li>🥶 的 Unicode code point 是 U+1F976。</li>
 	<li>我们可以在上表看到，U+1F976 是属于 U+10000 - U+10FFFF这一层，所以我们需要 4 个 8bit 来对其进行编码（encode）。</li>
-	<li>十六进制的 129398 的二进制表示是 <code>11110111000</code>，看上表，U+10000 - U+10FFFF 这一层需要的 x 的数量是 21 个，位数不足的从左边开始补 0，<code>000 011111 100101 110110</code>。</li>
+	<li>1F976 的二进制表示是 <code>11111 100101 110110</code>，看上表，U+10000 - U+10FFFF 这一层需要的 x 的数量是 21 个，位数不足的从左边开始补 0，<code>000 011111 100101 110110</code>。</li>
 	<li>然后我们将刚才获得的二进制从左到右开始截取，从左到右依次填入到 <code>11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code> 中，那么就会获得 <code>11110000 10011111 10100101 10110110</code>，这个就是我们需要的 UTF-8 的二进制值了。</li>
 </ol>
 
@@ -239,6 +239,7 @@ U+10000 - U+10FFFF  | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code></pre>
 	<li><a href="https://news.ycombinator.com/item?id=2192274">UTF-8 good，UTF-16 bad</a></li>
 	<li><a href="https://stackoverflow.com/a/18291517/10190407">HTML meta charset not working</a></li>
 	<li><a href="https://www.educative.io/edpresso/how-to-insert-unicode-in-javascript">How to insert Unicode in JavaScript</a></li>
+	<li><a href="https://gils-blog.tayar.org/posts/iterating-over-emoji-characters-the-es6-way/">Iterating Over Emoji Characters the ES6 Way</a></li>
 </ol>
 
 <h2>拓展阅读</h2>
