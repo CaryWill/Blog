@@ -15,3 +15,9 @@ body {
 #outline {
   display: none;
 }
+
+h2 a {
+  text-decoration: none;
+  color: rgb(226, 223, 219);
+  cursor: pointer;
+}

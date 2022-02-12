@@ -12,6 +12,7 @@ const Outline = React.memo(() => {
     <ol>
       {Array.from(h2s).map((item, index) => {
         const id = `outline-${item.textContent}-${index}`;
+        item.innerHTML = `<a href='#${id}'>${item.textContent}</a>`;
         item.setAttribute("id", id);
         return (
           <li
