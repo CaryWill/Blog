@@ -1,7 +1,13 @@
-// alse for rss use
+// also for rss use
 export const outline = [
   {
     2022: [
+      {
+        title: "encodeURI Vs encodeURIComponent",
+        desc: "通过手写 UTF-8 编码/解码带你理解这两条 API",
+        date: "Feb 12, 2022",
+        href: "/src/2022/uri-encode-decode/index.html",
+      },
       {
         title: "一定要知道的关于字符集和编码的知识",
         desc: "什么是 charset，encoding，Unicode，UTF-8？",

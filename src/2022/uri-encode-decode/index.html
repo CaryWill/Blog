@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>encodeURI Vs encodeURIComponent</title>
+	</head>
+<body>
+<h1>encodeURI Vs encodeURIComponent</h1>
+
+<p><strong>2022.02.12</strong></p>
+
+<h2>区别</h2>
+
+<p>在 JavaScript 中有两个方法是用来 URI encode 相关的，一个是 <code>encodeURI</code> 一个是 <code>encodeURIComponent</code>，前者主要用来编码 URI，对于组成 URI 的一部分的字符不会进行编码，比如 <code>&amp;</code> 字符，因为这个字符在 URI 中充当的是 querystring 里的参数的分隔，后者是对于非 non-alphanumeric 字符都会进行编码，所以 <code>&amp;</code> 这个字符也会被编码。不过也有例外，两者对于这几个字符 <code>-_.!~*&#39;()</code> 都是不会进行编码的。</p>
+
+<p>如果你想要将一个 URL 作为另一个 URL 的 query string 的入参，那么应该使用 <code>encodeURIComponent</code>，否则应该使用 <code>encodeURI</code>。</p>
+
+<h2>编码</h2>
+
+<p><code>encodeURI</code> 和 <code>encodeURIComponent</code> 使用都都是 UTF-8 编码。</p>
+
+<p><strong>场景1</strong>： URL1 的 query string 里的某个参数的值是一个 URL2，且 URL2 有多个参数，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">url</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">URL</span>(<span class="syntax-all syntax-string">&#39;https://www.example.com?redirectTo=https://google.com?keyword=🥶&amp;date=now&#39;</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">searchParams</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">URLSearchParams</span>(<span class="syntax-all syntax-parameter">url</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">search</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">redirectTo</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">searchParams</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-string">&#39;redirectTo&#39;</span>);
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">redirectTo</span>); <span class="syntax-all syntax-comment">// &quot;https://google.com?keyword=🥶&quot;
+</span></code></pre>
+
+<p>你发现没，<code>redirectTo</code> 这个参数的值不完整，因为 query string 的参数是按照 <code>&amp;</code> 符号进行分隔的，所以我们需要将这个参数的值里的 <code>&amp;</code> 符号进行编码。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">redirectUrl</span>  <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&#39;https://google.com?keyword=🥶&amp;date=now&#39;</span>;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">encodedRedirectUrl</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">encodeURIComponent</span>(<span class="syntax-all syntax-parameter">redirectUrl</span>); <span class="syntax-all syntax-comment">// &quot;https%3A%2F%2Fgoogle.com%3Fkeyword%3D%F0%9F%A5%B6%26date%3Dnow&quot;
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">url</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">URL</span>(<span class="syntax-all syntax-string">`https://www.example.com?redirectTo=</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">encodedRedirectUrl</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">`</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">searchParams</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">URLSearchParams</span>(<span class="syntax-all syntax-parameter">url</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">search</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">redirectTo</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">searchParams</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">get</span>(<span class="syntax-all syntax-string">&#39;redirectTo&#39;</span>);
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-parameter">redirectTo</span>); <span class="syntax-all syntax-comment">// &quot;https://google.com?keyword=🥶&amp;date=now&quot; // 完整且自动 decode 了
+</span></code></pre>
+
+<p>这里 <code>encodedRedirectUrl</code> 对象返回的是 <code>https%3A%2F%2Fgoogle.com%3Fkeyword%3D%F0%9F%A5%B6%26date%3Dnow</code> 那么一串字符，这个是怎么进行转换的呢？</p>
+
+<p>其实也很简单，JavaScript 是 UTF-16 的，调用 <code>encodeURIComponent</code> 方法的时候只是将字符串里的需要编码（encode）的字符进行了 UTF-8 的转换而已。UTF-16 和 UTF-8 的介绍可以看下我的<a href="https://carywill.github.io/Blog/src/2022/unicode-charset-encoding/index.html">这篇文章</a>。</p>
+
+<p>首先 <code>https://google.com?keyword=🥶&amp;date=now</code> 这个字符串里 <code>🥶=&amp;</code> 这几个字符需要进行转换，我们只需要拿到这些药转换的字符的 Unicode code point 然后对 code point 进行 UTF-8 的转换即可，🥶 转换成 UTF-8 的话是 <code>11110000 10011111 10100101 10110110</code>，将其表示成十六进制的话就是 <code>F0 9F A5 B6</code>，然后在每一个 byte 前面加一个 “%” 就是我们上面 encodedRedirectUrl 字符串里的编码后的字符串了，<code>=&amp;</code> 这两个字符也进行相同的处理即可。</p>
+
+<h2>解码</h2>
+
+<p>在上面的例子中我们有了编码后的字符串 <code>https%3A%2F%2Fgoogle.com%3Fkeyword%3D%F0%9F%A5%B6%26date%3Dnow</code>，那么我们怎么将其解码复原呢？</p>
+
+<p>JavaScript 有两个解码的方法 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURI">decodeURI</a> 和 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent">decodeURIComponent</a> 可以用来解码。当然上面使用对应的 <code>decodeURIComponent</code> 方法即可。</p>
+
+<p>解码的细节呢，就涉及到 UTF-8 的解码了，你看编码后的字符串，就拿连着的 <code>%3D%F0%9F%A5%B6%26</code> 这一串来说，你怎么知道几个 <code>%hh</code> 表示一个字符呢？看第一个 <code>%hh</code> 的二进制值即可，8位的二进制值前面有几个连续的 <strong>1</strong> 加一个 <strong>0</strong>，就表示占用几个 byte，也就是几个 <code>%hh</code>，参考下表，</p>
+
+<pre><code class="code-highlighted code-PlainText">Unicode range       |   UTF-8 
+Code point          |   Binary
+--------------------+------------------
+U+0000  - U+007F    | 0xxxxxxx
+U+0080  - U+07FF    | 110xxxxx 10xxxxxx
+U+0800  - U+FFFF    | 1110xxxx 10xxxxxx 10xxxxxx
+U+10000 - U+10FFFF  | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code></pre>
+
+<p>举个例子，<code>%3D%F0%9F%A5%B6%26</code> 中的第一个 <code>%hh</code>（3D） 的二进制值是 <code>00111101</code>，开头是 0 没有 1，所以占用一个 byte，所以 <code>%3D</code> 本身就是一个字符了，对应的 Unicode 表示是 <code>U+003D</code> 也就是 <code>=</code>。第二个 <code>%hh</code>（F0）对应的是 <code>11110000</code>，看上表可以发现它占用了四个 byte，所以我们可以判断出 <code>%F0%9F%A5%B6</code> 是一个字符，对应的二进制就是 <code>11110000 10011111 10100101 10110110</code>，也就是 <code>U+1F976</code> 也就是我们的 🥶 符号了。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURI">encodeURI</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent">encodeURIComponent</a></li>
+	<li><a href="https://carywill.github.io/Blog/src/2022/unicode-charset-encoding/index.html">一定要知道的关于字符集和编码的知识</a></li>
+	<li><a href="https://dev.to/wanoo21/difference-between-encodeuri-and-encodeuricomponent-j3j">when to use encodeURI or encodeURIComponent</a></li>
+</ol>
+
+</body>
+</html>
+
