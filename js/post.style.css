@@ -18,6 +18,12 @@ body {
 
 h2 a {
   text-decoration: none;
-  color: rgb(226, 223, 219) !important;
+  color: rgb(10, 10, 10) !important;
   cursor: pointer;
+}
+
+/* 标题 */
+h1 {
+  width: 100%;
+  word-break: break-word;
 }

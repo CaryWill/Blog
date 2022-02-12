@@ -263,7 +263,7 @@ code {
   font-family: mycode, monospace;
   font-size: 80%;
   color: white;
-
+  word-break: break-word; 
   padding: 0.3em 0.5em;
   background: black;
   border-radius: 5px;
