@@ -1,9 +1,9 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		<title>手写 React Hooks</title>
 	</head>
 <body>
@@ -50,7 +50,7 @@
 
 <h2>use at the top level of the function </h2>
 
-<p>每一个 hooks 被调用后，会移动当前的指针（currentHook|<code>++|</code>），指针的位置决定你的数据（hooks|<code>[currentHook]|</code>），所以我们不能随意调用 hooks 函数，把它当正常的函数用，因为每次调用指针都会移动，那么你的指针的位置就不对了，所以数据也就不对了。</p>
+<p>每一个 hooks 被调用后，会移动当前的指针（currentHook++），指针的位置决定你的数据（hooks[currentHook]），所以我们不能随意调用 hooks 函数，把它当正常的函数用，因为每次调用指针都会移动，那么你的指针的位置就不对了，所以数据也就不对了。</p>
 
 <p>同理，条件性的在最顶层调用也是禁止的，因为这样指针还是不对的，所以数据也不对。</p>
 
@@ -79,6 +79,10 @@
 	<li><a href="https://www.jianshu.com/p/a162302ee85c">Hooks - implementation初探 </a></li>
 	<li><a href="https://reactjs.org/docs/hooks-rules.html">Rules of Hooks</a></li>
 	<li><a href="https://reactjs.org/docs/hooks-faq.html">Hooks FAQ</a></li>
+	<li><a href="https://reactjs.org/docs/hooks-reference.html#useeffect">Hooks API Reference</a></li>
+	<li><a href="https://reactjs.org/docs/faq-internals.html">Virtual DOM and Internals</a></li>
+	<li><a href="https://reactjs.org/docs/jsx-in-depth.html">JSX In Depth</a></li>
+	<li><a href="https://pomb.us/build-your-own-react/">Build your own React（这里的动画也太酷了）</a></li>
 </ol>
 
 </body>
