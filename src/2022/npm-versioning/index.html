@@ -57,6 +57,8 @@
 
 <p>假设你电脑上的 node 版本是 12 的，但是你想使用 16 版本的，那么你可以使用 <code>nvm install 16</code> 命令来安装 node 16，并且可以使用 <code>nvm use 16</code> 来切换到 node 16 版本，后面不想用了可以使用 <code>nvm use 12</code> 切回到你的 node 12 版本，十分的方便，切换 node 的时候，npm 也会自动的切换。</p>
 
+<p>你还可以使用 <code>nvm list</code> 查看安装了的 node 版本，可以使用 <code>nvm alias default 16</code> 来指定默认的 node 版本。</p>
+
 <h2>peer-dependency</h2>
 
 <p>在介绍这个概念之前，我们先来了解下你在你的项目的根目录下执行 <code>npm install</code> 的时候，会发生什么，这里我建了个项目，叫 <strong>npm-node</strong>，它有两个依赖，所有的依赖都放在了 package.json 里的 dependencies 字段里，当你执行 <code>npm install</code> 的时候，npm 会构建一个依赖树，帮你安装你的项目里 package.json 里的 dependencies 字段里的依赖，并且 dependencies 字段里的每一个依赖包自己的 package.json 里的依赖，比如下面这个，</p>
@@ -381,6 +383,7 @@ npm ERR! to accept an incorrect (and potentially broken) dependency resolution.<
 	<li><a href="https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages"> How to publish your first npm package? </a></li>
 	<li><a href="https://semver.org/">Semantic Versioning Specification（major.minor.patch)</a></li>
 	<li><a href="https://docs.npmjs.com/cli/v8/configuring-npm/package-lock-json">What is package-lock.json file</a></li>
+	<li><a href="https://stackoverflow.com/a/47787025/10190407">How can the default node version be set using NVM?</a></li>
 </ol>
 
 </body>
