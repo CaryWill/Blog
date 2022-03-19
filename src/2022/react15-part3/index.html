@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>最小可用 React 15 系列 3 - 组件</title>
+	</head>
+<body>
+<h1>最小可用 React 15 系列 3 - 组件</h1>
+
+<p><strong>2022.03.19</strong></p>
+
+<p>上一篇我们优化了下渲染的性能，这一篇我们会引入组件来实现组件化开发。</p>
+
+<p>组件和元素的区别是，组件返回的是元素，元素是构成组件的基本单元。</p>
+
+<p>先来看下正常的 React 组件实例的返回用 Vnode 表示的话是怎么样子，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Counter</span> <span class="syntax-all syntax-keyword">extends</span> <span class="syntax-all syntax-parameter">Didact</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">Component</span> {
+  <span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-string">count</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">1</span> };
+  <span class="syntax-all syntax-entity">render</span>() {
+    <span class="syntax-all syntax-keyword">return</span> (
+      &lt;<span class="syntax-all syntax-tag">div</span>&gt;
+        {<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">count</span>}
+        &lt;<span class="syntax-all syntax-tag">button</span>
+          <span class="syntax-all syntax-entity">onClick</span><span class="syntax-all syntax-keyword">=</span>{() <span class="syntax-all syntax-keyword">=&gt;</span> {
+            <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">setState</span>({ <span class="syntax-all syntax-string">count</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">count</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">1</span> });
+          }}
+        &gt;
+          click
+        &lt;/<span class="syntax-all syntax-tag">button</span>&gt;
+      &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+    );
+  }
+}
+&lt;<span class="syntax-all syntax-tag">Counter</span> /&gt;</code></pre>
+
+<p>用 babel 转译后是这样子，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">Didact</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-parameter">Counter</span>, <span class="syntax-all syntax-constant">null</span>)</code></pre>
+
+<p><code>createElement</code> 我们还是不动，我们在 <code>instantiate</code> 方法里加个条件处理下组件即可，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">instantiate</span>(<span class="syntax-all syntax-parameter">element</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">isComponentElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&quot;string&quot;</span>;
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">dom</span>;
+
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">isComponentElement</span>) {
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> {};
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">componentInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">createComponentInstance</span>(<span class="syntax-all syntax-parameter">element</span>, <span class="syntax-all syntax-parameter">instance</span>); <span class="syntax-all syntax-comment">// vnode(element)
+</span>
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">componentInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>();
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">instantiate</span>(<span class="syntax-all syntax-parameter">childElement</span>);
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">dom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">childInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>; <span class="syntax-all syntax-comment">// 我们 diff 组件的话，需要 `childInstance`
+</span>
+    <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">assign</span>(<span class="syntax-all syntax-parameter">instance</span>, {
+      <span class="syntax-all syntax-parameter">dom</span>,
+      <span class="syntax-all syntax-parameter">element</span>,
+      <span class="syntax-all syntax-parameter">componentInstance</span>,
+      <span class="syntax-all syntax-parameter">childInstance</span>
+    });
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">instance</span>;
+  } 
+}
+
+<span class="syntax-all syntax-comment">// 实例化组件
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">createComponentInstance</span>(
+  <span class="syntax-all syntax-parameter">element</span>,
+  <span class="syntax-all syntax-parameter">internalInstance</span> <span class="syntax-all syntax-comment">// vnode 对应的实例，不是组件实例，我们需要获取 vnode 对应的实例身上的 `dom` 属性方便 patch
+</span>) {
+  <span class="syntax-all syntax-comment">// 自定义 element 的话实例化组件
+</span>  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">type</span>, <span class="syntax-all syntax-parameter">props</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">element</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">componentInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">type</span>(<span class="syntax-all syntax-parameter">props</span>);
+  <span class="syntax-all syntax-parameter">componentInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__internalInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">internalInstance</span>;
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">componentInstance</span>;
+}</code></pre>
+
+<p>这样我们 <code>reconcile</code> 的逻辑也要改，当我们的 element 的 type 是组件的话，应该怎么 diff，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&quot;string&quot;</span>) {
+    <span class="syntax-all syntax-comment">// 如果 element 是组件的话
+</span>    <span class="syntax-all syntax-comment">// 更新组件实例
+</span>    <span class="syntax-all syntax-comment">// this.props
+</span>    <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">componentInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>;
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">componentInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>();
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">prevChildInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">childInstance</span>;
+    <span class="syntax-all syntax-comment">// diff 两个组件实例返回的 vdom
+</span>    <span class="syntax-all syntax-comment">// 如果只是更新组件的话，我们其实只需要该组件对应的 vnode instance 就行了
+</span>    <span class="syntax-all syntax-comment">// 然后将 vnode instance 身上的组件实例 `render()` 方法调用一下生成新的 vnode
+</span>    <span class="syntax-all syntax-comment">// 和 childInstance 里面的 `element` 旧 vnode 进行 reconcile 就行了
+</span>    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">reconcile</span>(<span class="syntax-all syntax-parameter">parentDom</span>, <span class="syntax-all syntax-parameter">prevChildInstance</span>, <span class="syntax-all syntax-parameter">childElement</span>);
+
+    <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">childInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>;
+    <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">childInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">childInstance</span>;
+    <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">element</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">element</span>;
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">prevInstance</span>;
+}</code></pre>
+
+<p> 然后定义下组件 Base 类，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Component</span> {
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">props</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">props</span> <span class="syntax-all syntax-keyword">||</span> {};
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">||</span> {}; <span class="syntax-all syntax-comment">// 实例有可能自己定义了
+</span>  }
+
+  <span class="syntax-all syntax-entity">setState</span>(<span class="syntax-all syntax-parameter">partialState</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>, <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">partialState</span> };
+    <span class="syntax-all syntax-comment">// re-render and patch dom
+</span>    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">componentVnodeInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__internalInstance</span>;
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">parentDom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">componentVnodeInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parentNode</span>;
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">element</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">componentVnodeInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">element</span>;
+    <span class="syntax-all syntax-variable">reconcile</span>(<span class="syntax-all syntax-parameter">parentDom</span>, <span class="syntax-all syntax-parameter">componentVnodeInstance</span>, <span class="syntax-all syntax-parameter">element</span>);
+  }
+}</code></pre>
+
+<p>我们在使用 <code>createComponentInstance</code> 初始化组件的同时，将我们的 Vnode 通过 <code>__internalInstance</code> 属性一并放到组件实例上，这样我们在调用 <code>setState</code> 的时候就能重新调用组件的 <code>render</code> 函数来生成新的 Vnode 然后和实例身上的 <code>childInstances</code> 进行 diff 然后 patch 到 DOM 上了。</p>
+
+<p><a href="https://codesandbox.io/s/didact-component-state-zjewvn">DEMO</a> 在此，源码<a href="https://github.com/CaryWill/Frontend/blob/master/react-fiber/src/stack-reconciler/component-state.js">在此</a>。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://engineering.hexacta.com/didact-components-and-state-53ab4c900e37">https://engineering.hexacta.com/didact-components-and-state-53ab4c900e37</a></li>
+</ol>
+
+</body>
+</html>
+

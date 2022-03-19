@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>最小可用 React 16 系列 1 - Fiber 架构</title>
+	</head>
+<body>
+<h1>最小可用 React 16 系列 1 - Fiber 架构</h1>
+
+<p><strong>2022.03.19</strong></p>
+
+<p>在动手写完一个最小可用的 React15 后，终于来到了 React16 的新架构 Fiber。</p>
+
+<p>首先来看个用我们 React15 里的 stack reconcile 架构写的 <a href="https://codesandbox.io/s/didact-sync-rendering-tcqloq?file=/src/component-state.js">DEMO</a>，你会发现页面里的动画会卡卡的，原因就在于它的 diff 使用的是基于 stack 的递归 diff，导致 diff 一旦开始就不可断，等待 diff 结束，浏览器再去计算 style，layout 然后 repaint，</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>要想使动画变得流畅，那么我们就需要在 ~16ms 内渲染完一帧，我们可以打开控制台看到，上面动画的卡顿是因为，主线程被我们的 diff 函数给 block 住了，每次 diff 需要花费将近 700ms，剩下的 300ms 才会以 16ms 一帧进行绘制，</p>
+
+<figure><img src="DraggedImage-1.png"/></figure>
+
+<p>整个页面的渲染是下面这样的，</p>
+
+<figure><img src="DraggedImage-2.png"/></figure>
+
+<p>diff -&gt; animation style calc -&gt; layout -&gt; repaint</p>
+
+<p>但是 diff 的时候 700ms 是我们心中永远的痛啊，这就不可能达到 1s 60 帧的效果了，要是我们可以将 700ms 的 diff 过程分成一个一个小块进行执行的话，那么就能达到 16ms 一帧的效果了，这也就是 React16 里引入的 time slicing 的概念，利用的也是新的 React 的架构，<strong>Fiber</strong> 。</p>
+
+<p>Stack 形式的 diff 算法这里是不可能用了，所以 fiber 采用的是链表(linked list)的数据结构，将树状结构变成了链表结构， 然后上面的流程就变成了，</p>
+
+<p>single vnode diff -&gt; animation style calc -&gt; layout -&gt; repaint -&gt; next single node diff -&gt; … -&gt; repaint -&gt; completed vdom diff -&gt; patch DOM -&gt; … -&gt; repaint</p>
+
+<p>所以我们之前 React 15 里的所有逻辑就都要重写了，fiber 架构里面有几个点需要注意下，首先是组件的渲染分为两个部分，</p>
+
+<p>第一个是 Render Phase。既然我们将大 diff 分解了，那么我们就需要在整个 diff 完成后才 patch DOM，不然会造成界面渲染不正确，所以 render phase 只负责 diff 不负责 patch，但是 diff 的过程会给每一个 fiber node 进行打标，也就是 effect，这个会在 patch 的时候用到，看是更新 DOM 节点，删除节点还是新增节点呢。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">updateClassComponent</span>(<span class="syntax-all syntax-parameter">wipFiber</span>) {
+  <span class="syntax-all syntax-comment">// 如果是 class 组件的话，那么 stateNode 表示组件实例
+</span>  <span class="syntax-all syntax-comment">// 如果是 dom 元素的话，那么 stateNode 表示 dom 节点
+</span>  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">instance</span>) {
+    <span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">createComponentInstance</span>(<span class="syntax-all syntax-parameter">wipFiber</span>);
+    <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">instance</span>;
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-comment">// TODO: props 和 state 没变的话，可以做一个优化
+</span>    <span class="syntax-all syntax-comment">// clone and return
+</span>  }
+
+  <span class="syntax-all syntax-comment">// 更新组件
+</span>  <span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>;
+  <span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">assign</span>({}, <span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>, <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">partialState</span>);
+  <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">partialState</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+
+  <span class="syntax-all syntax-comment">// 根据新的 state 和 props 生成新的组件返回值（children）
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">newChildElements</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>();
+  <span class="syntax-all syntax-comment">// 为每一个 child 创建一个 fiber 并且和链表到 wipFiber
+</span>  <span class="syntax-all syntax-variable">reconcileChildrenArray</span>(<span class="syntax-all syntax-parameter">wipFiber</span>, <span class="syntax-all syntax-parameter">newChildElements</span>);
+}
+
+<span class="syntax-all syntax-comment">// Effect tags
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">PLACEMENT</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">1</span>;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">DELETION</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">2</span>;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">UPDATE</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">3</span>;
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">reconcileChildrenArray</span>(<span class="syntax-all syntax-parameter">wipFiber</span>, <span class="syntax-all syntax-parameter">newChildElements</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">elements</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">Array</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">isArray</span>(<span class="syntax-all syntax-parameter">newChildElements</span>)
+    <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-parameter">newChildElements</span>
+    : [<span class="syntax-all syntax-parameter">newChildElements</span>];
+
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">oldFiber</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">alternate</span><span class="syntax-all syntax-keyword">?.</span><span class="syntax-all syntax-parameter">child</span>;
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">prevSibling</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+  <span class="syntax-all syntax-comment">// wipFiber.alternate.child (也就是 oldFiber) 链表形式
+</span>  <span class="syntax-all syntax-comment">// 和 newChildElement 数组是一一对应的
+</span>  <span class="syntax-all syntax-comment">// 所以如果 elements[index] 有值，oldFiber 无值
+</span>  <span class="syntax-all syntax-comment">// 说明新增了 一些 elements，反之，删除了一些 elements
+</span>  <span class="syntax-all syntax-keyword">for</span> (
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>;
+    <span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">&lt;</span> <span class="syntax-all syntax-parameter">elements</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">||</span> <span class="syntax-all syntax-parameter">oldFiber</span>;
+    <span class="syntax-all syntax-parameter">oldFiber</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldFiber</span><span class="syntax-all syntax-keyword">?.</span><span class="syntax-all syntax-parameter">sibling</span>, <span class="syntax-all syntax-comment">// 继续链表里的下一个 oldFiber
+</span>      <span class="syntax-all syntax-parameter">index</span><span class="syntax-all syntax-keyword">++</span>
+  ) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">element</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">elements</span>[<span class="syntax-all syntax-parameter">index</span>];
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">newFiber</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">sameType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldFiber</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">element</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">oldFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>;
+
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">sameType</span>) {
+      <span class="syntax-all syntax-comment">// 组件相同，那么复用原来的组件
+</span>      <span class="syntax-all syntax-comment">// 而且 element 身上只有 type 和 props 两个属性
+</span>      <span class="syntax-all syntax-parameter">newFiber</span> <span class="syntax-all syntax-keyword">=</span> {
+        <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>,
+        <span class="syntax-all syntax-string">tag</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">oldFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">tag</span>,
+        <span class="syntax-all syntax-string">stateNode</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">oldFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>,
+        <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>, <span class="syntax-all syntax-comment">// 可能会有 children
+</span>        <span class="syntax-all syntax-string">parent</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">wipFiber</span>,
+        <span class="syntax-all syntax-string">alternate</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">oldFiber</span>,
+        <span class="syntax-all syntax-string">partialState</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">oldFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">partialState</span>, <span class="syntax-all syntax-comment">// 还记得我们在 scheduleUpdate 的时候拷贝的 partialState 吗
+</span>        <span class="syntax-all syntax-string">effectTag</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">UPDATE</span>,
+      };
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-comment">// 销毁新增或者只新增或者只销毁
+</span>      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">element</span>) {
+        <span class="syntax-all syntax-comment">// 新增
+</span>        <span class="syntax-all syntax-parameter">newFiber</span> <span class="syntax-all syntax-keyword">=</span> {
+          <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>,
+          <span class="syntax-all syntax-string">tag</span><span class="syntax-all syntax-constant">:</span>
+            <span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;string&quot;</span> <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-constant">HOST_COMPONENT</span> : <span class="syntax-all syntax-constant">CLASS_COMPONENT</span>,
+          <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>,
+          <span class="syntax-all syntax-string">parent</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">wipFiber</span>,
+          <span class="syntax-all syntax-string">effectTag</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">PLACEMENT</span>,
+        };
+      }
+
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">oldFiber</span>) {
+        <span class="syntax-all syntax-comment">// 删除
+</span>        <span class="syntax-all syntax-comment">// 注意这个是 旧的 fiber
+</span>        <span class="syntax-all syntax-parameter">oldFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effectTag</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">DELETION</span>;
+        <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span> <span class="syntax-all syntax-keyword">||</span> [];
+        <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">oldFiber</span>);
+      }
+    }
+    <span class="syntax-all syntax-comment">// 将 newFiber 关联到 wipFiber 上建立链表
+</span>    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">index</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">0</span>) {
+      <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">child</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newFiber</span>;
+    } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">element</span>) {
+      <span class="syntax-all syntax-parameter">prevSibling</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">sibling</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newFiber</span>;
+    }
+    <span class="syntax-all syntax-parameter">prevSibling</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">newFiber</span>;
+  }
+}
+
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">completeWork</span>(<span class="syntax-all syntax-parameter">fiber</span>) {
+  <span class="syntax-all syntax-comment">// 该 fiber diff 完成
+</span>  <span class="syntax-all syntax-comment">// 需要将 fiber 身上有 effect tag 的 fiber 聚集
+</span>  <span class="syntax-all syntax-comment">// 到 fiber.parent 身上，这样到最后 wipRoot 身上就会
+</span>  <span class="syntax-all syntax-comment">// 有所有的子 fiber 身上的 effects
+</span>
+  <span class="syntax-all syntax-comment">// 更新组件身上的 fiber 对象
+</span>  <span class="syntax-all syntax-comment">// 如果有多个 update 的话，需要保证组件身上的 fiber 是最新的
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">tag</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-constant">CLASS_COMPONENT</span>) {
+    <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__fiber</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span>;
+  }
+
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childEffects</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span> <span class="syntax-all syntax-keyword">||</span> [];
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">selfEffect</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effectTag</span> <span class="syntax-all syntax-keyword">?</span> [<span class="syntax-all syntax-parameter">fiber</span>] : [];
+    <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span> <span class="syntax-all syntax-keyword">||</span> [];
+    <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span> <span class="syntax-all syntax-keyword">=</span> [
+      <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span>,
+      <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">selfEffect</span>,
+      <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">childEffects</span>,
+    ];
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-comment">// fiber root, a.k.a wipRoot
+</span>    <span class="syntax-all syntax-comment">// diff 完毕进入 commit phase
+</span>    <span class="syntax-all syntax-parameter">pendingCommit</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span>;
+  }
+}
+
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">updateHostComponent</span>(<span class="syntax-all syntax-parameter">wipFiber</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">dom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">dom</span>) {
+    <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">createDomElement</span>(<span class="syntax-all syntax-parameter">wipFiber</span>);
+  }
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">newChildElements</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">children</span>;
+  <span class="syntax-all syntax-variable">reconcileChildrenArray</span>(<span class="syntax-all syntax-parameter">wipFiber</span>, <span class="syntax-all syntax-parameter">newChildElements</span>);
+}
+
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">beginWork</span>(<span class="syntax-all syntax-parameter">wipFiber</span>) {
+  <span class="syntax-all syntax-comment">// 更新 fiber 根 children 之间建立链表
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">tag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">CLASS_COMPONENT</span>) {
+    <span class="syntax-all syntax-variable">updateClassComponent</span>(<span class="syntax-all syntax-parameter">wipFiber</span>);
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-variable">updateHostComponent</span>(<span class="syntax-all syntax-parameter">wipFiber</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// diff 单个 fiber
+</span><span class="syntax-all syntax-comment">// diff 该 fiber 的 children，并通过链表和 fiber 进行关联
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">performNextUnitOfWork</span>(<span class="syntax-all syntax-parameter">wipFiber</span>) {
+  <span class="syntax-all syntax-variable">beginWork</span>(<span class="syntax-all syntax-parameter">wipFiber</span>);
+
+  <span class="syntax-all syntax-comment">// 返回下一个 fiber(next unit of work)
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">child</span>) {
+    <span class="syntax-all syntax-comment">// 说明当前 wipFiber 是有 children 的
+</span>    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">child</span>;
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-comment">// 虽然 wipFiber 没有 children 但是它可能有 sibling
+</span>    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">unitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span>;
+    <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">unitOfWork</span>) {
+      <span class="syntax-all syntax-comment">// 一个 child work diff 完成因为它没有 children 可以
+</span>      <span class="syntax-all syntax-comment">// diff 了
+</span>      <span class="syntax-all syntax-variable">completeWork</span>(<span class="syntax-all syntax-parameter">unitOfWork</span>);
+      <span class="syntax-all syntax-comment">// child -&gt; sibling -&gt; uncle(child.parent.sibling)
+</span>      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">unitOfWork</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">sibling</span>) {
+        <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">unitOfWork</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">sibling</span>;
+      } <span class="syntax-all syntax-keyword">else</span> {
+        <span class="syntax-all syntax-comment">// uncle
+</span>        <span class="syntax-all syntax-parameter">unitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">unitOfWork</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>;
+        <span class="syntax-all syntax-comment">// 继续 loop parent.sibling
+</span>      }
+    }
+  }
+}
+
+<span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+<span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">currentRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>; <span class="syntax-all syntax-comment">// 上个 commit 的 fiber root
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">updateQueue</span> <span class="syntax-all syntax-keyword">=</span> []; <span class="syntax-all syntax-comment">// setState, render 等触发一个任务
+</span><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">pendingCommit</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>; <span class="syntax-all syntax-comment">// 当前 diff 完成的 update
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">ENOUGH_TIME</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">1</span>; <span class="syntax-all syntax-comment">// milliseconds
+</span>
+<span class="syntax-all syntax-comment">// Step3. 1
+</span><span class="syntax-all syntax-comment">// 如果当前没有任务的话 `nextUnitOfWork` 那么
+</span><span class="syntax-all syntax-comment">// 从 `updateQueue` dequeue 一个出来
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">kickStartWorkLoop</span>() {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">update</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">updateQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">shift</span>();
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">update</span>) {
+    <span class="syntax-all syntax-keyword">return</span>;
+  }
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">getFiberRoot</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">_fiber</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">fiberRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">_fiber</span>;
+    <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">fiberRoot</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>) {
+      <span class="syntax-all syntax-parameter">fiberRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiberRoot</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>;
+    }
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">fiberRoot</span>;
+  };
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">root</span> <span class="syntax-all syntax-keyword">=</span>
+    <span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">from</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">HOST_ROOT</span>
+      <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-parameter">currentRoot</span>
+      : <span class="syntax-all syntax-variable">getFiberRoot</span>(<span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__fiber</span>); <span class="syntax-all syntax-comment">// traverse `.parent` 属性
+</span>
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">from</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">HOST_ROOT</span>) {
+    <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> {
+      <span class="syntax-all syntax-string">tag</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">HOST_ROOT</span>, <span class="syntax-all syntax-comment">// commit phase 做判断的时候需要
+</span>      <span class="syntax-all syntax-string">stateNode</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>,
+      <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">newProps</span>,
+      <span class="syntax-all syntax-string">alternate</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span>,
+    };
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-comment">// component
+</span>    <span class="syntax-all syntax-comment">// 将 update.partialState 拷到 intance.__fiber 身上
+</span>    <span class="syntax-all syntax-comment">// 而不是直接在 setState 的时候直接更新 this.state
+</span>    <span class="syntax-all syntax-comment">// 是因为我们可以在后面 diff 的时候看 this.state
+</span>    <span class="syntax-all syntax-comment">// 和 update.partialState 对比，看是否需要重新渲染
+</span>    <span class="syntax-all syntax-comment">// 来做一个优化，毕竟只有 props 或者 state 改变了才会重新渲染
+</span>    <span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">partialState</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">update</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">partialState</span>;
+
+    <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> {
+      <span class="syntax-all syntax-string">tag</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">HOST_ROOT</span>, <span class="syntax-all syntax-comment">// commit phase 做判断的时候需要
+</span>      <span class="syntax-all syntax-string">stateNode</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>,
+      <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>,
+      <span class="syntax-all syntax-string">alternate</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span>,
+    };
+  }
+}
+
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">workLoop</span>(<span class="syntax-all syntax-parameter">deadline</span>) {
+  <span class="syntax-all syntax-comment">// 如果没有任务，那么从 updateQueue 中取一个出来
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">nextUnitOfWork</span>) {
+    <span class="syntax-all syntax-variable">kickStartWorkLoop</span>();
+  }
+
+  <span class="syntax-all syntax-comment">// 是否应该产出任务来继续下一个任务的 diff
+</span>  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">shouldYield</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">true</span>;
+  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-parameter">shouldYield</span>) {
+    <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">performNextUnitOfWork</span>(<span class="syntax-all syntax-parameter">nextUnitOfWork</span>);
+    <span class="syntax-all syntax-parameter">shouldYield</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">deadline</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">timeRemaining</span>() <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">ENOUGH_TIME</span>;
+  }
+
+  <span class="syntax-all syntax-comment">// Render phase 结束：所有 update 的 diff 都已完成
+</span>  <span class="syntax-all syntax-comment">// 进入 Commit phase
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">pendingCommit</span>) {
+    <span class="syntax-all syntax-variable">commitAllWork</span>(<span class="syntax-all syntax-parameter">pendingCommit</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// 用来清空 updateQueue 的
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">performWork</span>(<span class="syntax-all syntax-parameter">deadline</span>) {
+  <span class="syntax-all syntax-comment">// Step3: 渐进式 diff
+</span>  <span class="syntax-all syntax-variable">workLoop</span>(<span class="syntax-all syntax-parameter">deadline</span>);
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">isCurrentUpdateNotFinished</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">nextUnitOfWork</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">haveMoreUpdateInTheQueue</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">updateQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-constant">0</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">isCurrentUpdateNotFinished</span> <span class="syntax-all syntax-keyword">||</span> <span class="syntax-all syntax-parameter">haveMoreUpdateInTheQueue</span>) {
+    <span class="syntax-all syntax-comment">// 继续调用 workLoop 进行 diff
+</span>    <span class="syntax-all syntax-variable">requestIdleCallback</span>(<span class="syntax-all syntax-parameter">performWork</span>);
+  }
+}
+
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">scheduleUpdate</span>(<span class="syntax-all syntax-parameter">instance</span>, <span class="syntax-all syntax-parameter">partialState</span>) {
+  <span class="syntax-all syntax-parameter">updateQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>({
+    <span class="syntax-all syntax-string">from</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">CLASS_COMPONENT</span>,
+    <span class="syntax-all syntax-parameter">instance</span>,
+    <span class="syntax-all syntax-parameter">partialState</span>,
+  });
+
+  <span class="syntax-all syntax-variable">requestIdleCallback</span>(<span class="syntax-all syntax-parameter">performWork</span>);
+}
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Component</span> {
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">props</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">props</span> <span class="syntax-all syntax-keyword">||</span> {};
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">||</span> {}; <span class="syntax-all syntax-comment">// 实例有可能自己定义了
+</span>  }
+
+  <span class="syntax-all syntax-entity">setState</span>(<span class="syntax-all syntax-parameter">partialState</span>) {
+    <span class="syntax-all syntax-variable">scheduleUpdate</span>(<span class="syntax-all syntax-constant">this</span>, <span class="syntax-all syntax-parameter">partialState</span>);
+  }
+}
+
+<span class="syntax-all syntax-comment">// 实例化组件
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">createComponentInstance</span>(<span class="syntax-all syntax-parameter">fiber</span>) {
+  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">type</span>, <span class="syntax-all syntax-parameter">props</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">componentInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">type</span>(<span class="syntax-all syntax-parameter">props</span>);
+  <span class="syntax-all syntax-parameter">componentInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__fiber</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span>;
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">componentInstance</span>;
+}
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">HOST_COMPONENT</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;host&quot;</span>;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">CLASS_COMPONENT</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;class&quot;</span>;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">HOST_ROOT</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;root&quot;</span>;
+
+<span class="syntax-all syntax-comment">// 更新的话 都是 fiber 和 element 进行对比
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">render</span>(<span class="syntax-all syntax-parameter">element</span>, <span class="syntax-all syntax-parameter">parentDom</span>) {
+  <span class="syntax-all syntax-comment">// Step1: queue 一个 update
+</span>  <span class="syntax-all syntax-parameter">updateQueue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>({
+    <span class="syntax-all syntax-string">from</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">HOST_ROOT</span>,
+    <span class="syntax-all syntax-string">dom</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">parentDom</span>,
+    <span class="syntax-all syntax-string">newProps</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-string">children</span><span class="syntax-all syntax-constant">:</span> [<span class="syntax-all syntax-parameter">element</span>],
+    },
+  });
+
+  <span class="syntax-all syntax-comment">// Step2: diff 一个 update
+</span>  <span class="syntax-all syntax-comment">// 一个 update 会有很多 fiber 的 diff
+</span>  <span class="syntax-all syntax-comment">// 一个 fiber 的 diff 是一个 work
+</span>  <span class="syntax-all syntax-variable">requestIdleCallback</span>(<span class="syntax-all syntax-parameter">performWork</span>);
+}
+<span class="syntax-all syntax-comment">// 用 Didact.render 的时候，直接跑 diff
+</span><span class="syntax-all syntax-variable">requestIdleCallback</span>(<span class="syntax-all syntax-parameter">workLoop</span>);
+
+<span class="syntax-all syntax-keyword">export</span> <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">Didact</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-parameter">createElement</span>, <span class="syntax-all syntax-parameter">render</span>, <span class="syntax-all syntax-parameter">Component</span> };
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Innter</span> <span class="syntax-all syntax-keyword">extends</span> <span class="syntax-all syntax-parameter">Didact</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">Component</span> {
+  <span class="syntax-all syntax-entity">render</span>() {
+    <span class="syntax-all syntax-keyword">return</span> (
+      &lt;<span class="syntax-all syntax-tag">div</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">span</span>&gt;1&lt;/<span class="syntax-all syntax-tag">span</span>&gt;
+        &lt;<span class="syntax-all syntax-tag">span</span>&gt;2&lt;/<span class="syntax-all syntax-tag">span</span>&gt;
+      &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+    );
+  }
+}
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Counter</span> <span class="syntax-all syntax-keyword">extends</span> <span class="syntax-all syntax-parameter">Didact</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">Component</span> {
+  <span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-string">count</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">1</span> };
+  <span class="syntax-all syntax-entity">render</span>() {
+    <span class="syntax-all syntax-keyword">return</span> (
+      &lt;<span class="syntax-all syntax-tag">div</span>&gt;
+        {<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">count</span>}
+        {<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">count</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">1</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> &lt;<span class="syntax-all syntax-tag">Innter</span> /&gt;}
+        &lt;<span class="syntax-all syntax-tag">button</span>
+          <span class="syntax-all syntax-entity">onClick</span><span class="syntax-all syntax-keyword">=</span>{() <span class="syntax-all syntax-keyword">=&gt;</span> {
+            <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">setState</span>({ <span class="syntax-all syntax-string">count</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">count</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">1</span> });
+          }}
+        &gt;
+          click
+        &lt;/<span class="syntax-all syntax-tag">button</span>&gt;
+      &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+    );
+  }
+}
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">rootDom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getElementById</span>(<span class="syntax-all syntax-string">&quot;root&quot;</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">clockElement</span> <span class="syntax-all syntax-keyword">=</span> &lt;<span class="syntax-all syntax-tag">Counter</span> /&gt;;
+<span class="syntax-all syntax-variable">render</span>(<span class="syntax-all syntax-parameter">clockElement</span>, <span class="syntax-all syntax-parameter">rootDom</span>);</code></pre>
+
+<p>第二个就是 Commit Phase。这一步我们会将 fiber root 节点身上的所有 effect 遍历一遍，patch DOM。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">commitDeletion</span>(<span class="syntax-all syntax-parameter">fiber</span>, <span class="syntax-all syntax-parameter">domParent</span>) {
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">node</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span>;
+  <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-constant">true</span>) {
+    <span class="syntax-all syntax-comment">// 因为 fiber 是链表结构的
+</span>    <span class="syntax-all syntax-comment">// 所以 fiber 如果是组件的话 需要.chlid -&gt; .sibling -&gt; uncle(.parent.sibling) 的删除
+</span>
+    <span class="syntax-all syntax-comment">// fiber -&gt; child -&gt; sibling -&gt; sibling
+</span>    <span class="syntax-all syntax-comment">// ↓  ↓----------parent-------------⏎
+</span>    <span class="syntax-all syntax-comment">// sibling -&gt; child -&gt; sibling
+</span>    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">tag</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-constant">CLASS_COMPONENT</span>) {
+      <span class="syntax-all syntax-parameter">node</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">child</span>;
+      <span class="syntax-all syntax-keyword">continue</span>;
+    }
+    <span class="syntax-all syntax-parameter">domParent</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">removeChild</span>(<span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>);
+    <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">node</span> <span class="syntax-all syntax-keyword">!=</span> <span class="syntax-all syntax-parameter">fiber</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">sibling</span>) {
+      <span class="syntax-all syntax-parameter">node</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>;
+    }
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">node</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-parameter">fiber</span>) {
+      <span class="syntax-all syntax-keyword">return</span>;
+    }
+    <span class="syntax-all syntax-parameter">node</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">sibling</span>;
+  }
+}
+
+<span class="syntax-all syntax-comment">// 打了 effectTag 的 fiber 就是一个 effect
+</span><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">commitWork</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">fiber</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">parentFiber</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>;
+
+  <span class="syntax-all syntax-comment">// 如果是组件的话，那么得 traverse parent
+</span>  <span class="syntax-all syntax-comment">// 找到一个 HOST_COMPONENT，也就是 dom 元素
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">parentFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">tag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">CLASS_COMPONENT</span>) {
+    <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">parentFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">tag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">CLASS_COMPONENT</span>) {
+      <span class="syntax-all syntax-parameter">parentFiber</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">parentFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>;
+    }
+  }
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">parentDom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">parentFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effectTag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">PLACEMENT</span>) {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">tag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">HOST_COMPONENT</span>) {
+      <span class="syntax-all syntax-parameter">parentDom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">appendChild</span>(<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>);
+    }
+  } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effectTag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">UPDATE</span>) {
+    <span class="syntax-all syntax-variable">updateDomProperties</span>(<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>, <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">alternate</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>, <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>);
+  } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effectTag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">DELETION</span>) {
+    <span class="syntax-all syntax-variable">commitDeletion</span>(<span class="syntax-all syntax-parameter">fiber</span>, <span class="syntax-all syntax-parameter">parentDom</span>);
+  }
+};
+
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">commitAllWork</span>(<span class="syntax-all syntax-parameter">fiber</span>) {
+  <span class="syntax-all syntax-parameter">fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">effects</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">effect</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-variable">commitWork</span>(<span class="syntax-all syntax-parameter">effect</span>));
+
+  <span class="syntax-all syntax-parameter">currentRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiber</span>;
+  <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+  <span class="syntax-all syntax-parameter">pendingCommit</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+}</code></pre>
+
+<p>然后我们再来看下在 fiber 架构下，页面的渲染，可以看到页面已经不会卡顿了。</p>
+
+<figure><img src="DraggedImage-3.png"/></figure>
+
+<p>DEMO <a href="https://codesandbox.io/s/didact-async-rendering-h15mkr?file=/src/component-state.js">在此</a>，源码<a href="https://github.com/CaryWill/Frontend/blob/master/react-fiber/src/fiber-reconciler/new-fiber.js">在此</a>。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://engineering.hexacta.com/didact-fiber-incremental-reconciliation-b2fe028dcaec">Didact Fiber: Incremental reconciliation - Rodrigo Pombo</a></li>
+	<li><a href="https://pomb.us/build-your-own-react/">Build your own React(new) - Rodrigo Pombo</a></li>
+	<li><a href="https://github.com/acdlite/react-fiber-architecture#what-is-a-fiber">React Fiber Architecture - acdlite</a></li>
+	<li><a href="https://indepth.dev/posts/1009/in-depth-explanation-of-state-and-props-update-in-react">In-depth explanation of state and props update in React</a></li>
+	<li><a href="https://indepth.dev/posts/1008/inside-fiber-in-depth-overview-of-the-new-reconciliation-algorithm-in-react">Inside Fiber: in-depth overview of the new reconciliation algorithm in React</a></li>
+	<li><a href="https://jasonformat.com/wtf-is-jsx/">WTF is JSX</a></li>
+	<li><a href="https://hacks.mozilla.org/2011/08/animating-with-javascript-from-setinterval-to-requestanimationframe/">Animating with javascript: from setInterval to requestAnimationFrame</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/CSS_JavaScript_animation_performance">CSS and JavaScript animation performance - MDN</a></li>
+	<li><a href="https://reactjs.org/blog/2018/03/27/update-on-async-rendering.html">Update on Async Rendering - React official</a></li>
+	<li><a href="https://github.com/facebook/react/issues/13306">Releasing Time Slicing - GitHub issues</a></li>
+	<li><a href="https://reactjs.org/blog/2018/03/01/sneak-peek-beyond-react-16.html">Sneak Peek: Beyond React 16</a></li>
+	<li><a href="https://reactjs.org/blog/2021/06/08/the-plan-for-react-18.html">The Plan for React 18</a></li>
+	<li><a href="https://reactjs.org/docs/concurrent-mode-reference.html">Concurrent Mode API Reference (Experimental)</a></li>
+	<li><a href="https://reactjs.org/docs/concurrent-mode-intro.html#interruptible-rendering">Introducing Concurrent Mode (Experimental)</a></li>
+	<li><a href="https://developers.google.com/web/fundamentals/performance/rendering/optimize-javascript-execution">Optimize JavaScript Execution</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Animation_performance_and_frame_rate">Animation performance and frame rate</a></li>
+	<li><a href="https://github.com/mobz/lag-radar/blob/master/lag-radar.js">lag-radar - Github</a></li>
+	<li><a href="https://github.com/gaearon/react-lag-radar/blob/main/Radar.js">react-lag-radar - Github</a></li>
+	<li><a href="https://reactjs.org/blog/2013/06/05/why-react.html#reactive-updates-are-dead-simple">Why did we build React?</a></li>
+	<li><a href="https://segmentfault.com/a/1190000039682751">React Fiber很难？六个问题助你理解 React Fiber</a></li>
+	<li><a href="https://reactjs.org/docs/concurrent-mode-patterns.html">Concurrent UI Patterns (Experimental)</a></li>
+	<li><a href="https://reactjs.org/docs/concurrent-mode-adoption.html">Adopting Concurrent Mode (Experimental)</a></li>
+	<li><a href="https://reactjs.org/blog/2015/12/18/react-components-elements-and-instances.html">React Components, Elements, and Instances</a></li>
+	<li><a href="https://reactjs.org/blog/2017/09/26/react-v16.0.html">React v16.0</a></li>
+	<li><a href="https://babeljs.io/setup#installation">babel for jsx setting</a></li>
+	<li><a href="https://youtu.be/aV1271hd9ew" title="What&#39;s Next for React (ReactNext 2016)">What&#39;s Next for React (ReactNext 2016) - Fiber - Youtube</a></li>
+	<li><a href="https://www.youtube.com/watch?v=ZCuYPiUIONs&amp;list=WL&amp;index=4&amp;t=1412s">Lin Clark - A Cartoon Intro to Fiber - React Conf 2017 - Youtube</a></li>
+	<li><a href="https://www.youtube.com/watch?v=nLF0n9SACd4&amp;t=526s" title="Dan Abramov: Beyond React 16 | JSConf Iceland">Dan Abramov: Beyond React 16 | JSConf Iceland - time slicing - suspense - Youtube</a></li>
+	<li><a href="https://react-beta-seven.vercel.app">Dan Abramov: Beyond React 16 | JSConf Iceland demo1</a></li>
+	<li><a href="https://facebook.github.io/react/docs/reconciliation.html" title="described in the React docs">Algorithm of Reconciliation</a></li>
+	<li><a href="https://facebook.github.io/react/contributing/design-principles.html#scheduling" title="Design Principles">React Design Principles</a></li>
+	<li><a href="https://react-beta-seven.vercel.app">Time-slicing demo - react conf</a></li>
+	<li><a href="https://github.com/facebook/react/issues/13306">https://github.com/facebook/react/issues/13306</a></li>
+	<li><a href="https://reactjs.org/blog/2017/09/26/react-v16.0.html">React v16.0</a></li>
+	<li><a href="https://t.co/3snoahB3uV">what &quot;async rendering&quot; means? </a></li>
+	<li><a href="https://blog.logrocket.com/deep-dive-into-react-fiber-internals/">A deep dive into React Fiber internals</a></li>
+	<li><a href="https://github.com/koba04/react-fiber-resources">react-fiber-resources</a></li>
+</ol>
+
+</body>
+</html>
+

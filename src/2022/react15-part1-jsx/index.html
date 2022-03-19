@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>最小可用 React 15 系列 1 - JSX</title>
+	</head>
+<body>
+<h1>最小可用 React 15 系列 1 - JSX</h1>
+
+<p><strong>2022.03.19</strong></p>
+
+<p>从 React16 开始使用，React 使用了新的架构，也就是 fiber。为了帮助理解 fiber 架构我们先来写一个最小可用的 React15 来看下在当前 React15 的架构下存在的问题。</p>
+
+<p>React15 的diff 算法我们称为 <em>stack reconciler</em>，因为是基于 stack 来的，一个函数的调用会 push to stack，一个函数的 return 会 pop from stack。</p>
+
+<p>本篇博客大量参考了 <a href="https://engineering.hexacta.com/didact-learning-how-react-works-by-building-it-from-scratch-51007984e5c5">Didact: a DIY guide to build your own React</a>，为了不产生歧义，下面我们会用 <code>Vnode</code> 和 <code>Element</code> 互用来表示 React 元素，使用 <code>dom</code> 来表示原声 DOM 节点。</p>
+
+<p>Let’s Go</p>
+
+<hr />
+
+<p>首先来回顾下在 React 中使用最原始的方式是怎么将一个 React Element 渲染进 DOM 中去的，<a href="https://codesandbox.io/s/react-element-moh32r?file=/src/index.js">demo</a>，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">React</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;react&quot;</span>;
+<span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">ReactDOM</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;react-dom&quot;</span>;
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">myElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">React</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-string">&quot;h1&quot;</span>, <span class="syntax-all syntax-constant">null</span>, <span class="syntax-all syntax-string">&quot;Hello World!&quot;</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">rootElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getElementById</span>(<span class="syntax-all syntax-string">&quot;root&quot;</span>);
+<span class="syntax-all syntax-parameter">ReactDOM</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>(<span class="syntax-all syntax-parameter">myElement</span>, <span class="syntax-all syntax-parameter">rootElement</span>);</code></pre>
+
+<p>想必你也见过下面这种写法，<a href="https://codesandbox.io/s/react-element-jsx-2nvio6?file=/src/index.js">demo</a>，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">React</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;react&quot;</span>;
+<span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">ReactDOM</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&quot;react-dom&quot;</span>;
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">myElement</span> <span class="syntax-all syntax-keyword">=</span> &lt;<span class="syntax-all syntax-tag">h1</span>&gt;Hello World!&lt;/<span class="syntax-all syntax-tag">h1</span>&gt;;
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">rootElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getElementById</span>(<span class="syntax-all syntax-string">&quot;root&quot;</span>);
+<span class="syntax-all syntax-parameter">ReactDOM</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>(<span class="syntax-all syntax-parameter">myElement</span>, <span class="syntax-all syntax-parameter">rootElement</span>);</code></pre>
+
+<p>两者实现的效果是完全一样的，但是下面的写法可以让我们的开发简单很多，不用写一堆的 <code>React.createElement</code>。</p>
+
+<p>而第二种写法就是我们要介绍的 <code>JSX</code>，它可以让我们以 HTML 标签的形式来创建 React Element（Vnode），而 JSX 依赖 Babel 编译器，它可以将我们的 JSX 语法编译成一堆 <code>React.createElement</code> 函数调用，并且第一个入参是 <code>type</code> 标签类型，第二个是 <code>props</code> 标签属性，第三及之后都是该标签的 children。</p>
+
+<p>还有你是不是也注意到了，其实第二种写法里的 myElement 的值是无效的 JS 表达，所以还得依赖编译器将其转换成有效的 JS 表达。</p>
+
+<p>而我们要写一个最小可用的 React 的话，第一步就需要创建我们自己的 <code>React.createElement</code> 函数来管控整个 Vnode 的创建的过程以便我们可以给 Vnode 添加一些额外的属性等。我们可以在文件顶部添加一行 <code>// @jsx Didact.createElement</code> 注释来告诉 Babel 解析 JSX 语法的时候请使用定义在 <code>Didact</code> 上的 <code>createElement</code> 函数来创建 React Element，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">TEXT_ELEMENT</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;TEXT_ELEMENT&quot;</span>;
+<span class="syntax-all syntax-comment">// 构建 vnode
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">createElement</span>(<span class="syntax-all syntax-parameter">type</span>, <span class="syntax-all syntax-parameter">_props</span>, <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">_children</span>) {
+  <span class="syntax-all syntax-comment">// props 如果为空的话 babel 会给你一个 null
+</span>  <span class="syntax-all syntax-comment">// 这里做下处理让 props 永远为 object
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">props</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">_props</span> };
+  <span class="syntax-all syntax-comment">// 入参里的 props 参数之后的所有参数都是 child element
+</span>  <span class="syntax-all syntax-comment">// 这里统一将那么 child element 整合到 `props.children`
+</span>  <span class="syntax-all syntax-comment">// 并且如果 child element 是 text node 的话，就是一个字符串
+</span>  <span class="syntax-all syntax-comment">// 我们需要将其转换成 element（vnode）的格式
+</span>  <span class="syntax-all syntax-comment">// 比如，&lt;div&gt;123&lt;/div&gt; 会转成下面的
+</span>  <span class="syntax-all syntax-comment">// React.createElement(&quot;div&quot;, null, &quot;123&quot;)
+</span>  <span class="syntax-all syntax-comment">// 比如，&lt;div&gt;123&lt;div&gt;345&lt;/div&gt;&lt;/div&gt; 会转成下面的
+</span>  <span class="syntax-all syntax-comment">// const ele = React.createElement(&quot;div&quot;, null, &quot;123&quot;, React.createElement(&quot;div&quot;, null, &quot;345&quot;));
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">children</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">_children</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">map</span>(<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">normalize</span>(<span class="syntax-all syntax-parameter">child</span>) {
+    <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">typeof</span> <span class="syntax-all syntax-parameter">child</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;object&quot;</span>) {
+      <span class="syntax-all syntax-comment">// element
+</span>      <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">child</span>;
+    } <span class="syntax-all syntax-keyword">else</span> {
+      <span class="syntax-all syntax-comment">// string(not an element), needs convert to element
+</span>      <span class="syntax-all syntax-keyword">return</span> {
+        <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">TEXT_ELEMENT</span>,
+        <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> {
+          <span class="syntax-all syntax-string">nodeValue</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">child</span>,
+          <span class="syntax-all syntax-string">children</span><span class="syntax-all syntax-constant">:</span> [],
+        },
+      };
+    }
+  });
+  <span class="syntax-all syntax-keyword">return</span> { <span class="syntax-all syntax-parameter">type</span>, <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> { <span class="syntax-all syntax-keyword">...</span><span class="syntax-all syntax-parameter">props</span>, <span class="syntax-all syntax-parameter">children</span> } };
+}</code></pre>
+
+<p>创建完 Vnode 节点后，我们需要将 Vnode 转换成真实的 DOM 节点，这就是我们的 <code>render</code> 函数需要做的了，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">render</span>(<span class="syntax-all syntax-parameter">element</span>, <span class="syntax-all syntax-parameter">parentDom</span>) {
+  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">type</span>, <span class="syntax-all syntax-parameter">props</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">element</span>;
+  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">children</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">props</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">isTextElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">TEXT_ELEMENT</span>;
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">dom</span>;
+
+  <span class="syntax-all syntax-comment">// create dom
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">isTextElement</span>) {
+    <span class="syntax-all syntax-parameter">dom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createTextNode</span>(<span class="syntax-all syntax-string">&quot;&quot;</span>);
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-parameter">dom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-parameter">type</span>);
+  }
+  <span class="syntax-all syntax-parameter">children</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">childElement</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-variable">render</span>(<span class="syntax-all syntax-parameter">childElement</span>, <span class="syntax-all syntax-parameter">dom</span>));
+
+  <span class="syntax-all syntax-comment">// add props
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">isListener</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">attr</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">attr</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">startsWith</span>(<span class="syntax-all syntax-string">&quot;on&quot;</span>);
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">isProperty</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">attr</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">attr</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&quot;children&quot;</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-variable">isListener</span>(<span class="syntax-all syntax-parameter">attr</span>);
+  <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">keys</span>(<span class="syntax-all syntax-parameter">props</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>(<span class="syntax-all syntax-parameter">isProperty</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">key</span>) <span class="syntax-all syntax-keyword">=&gt;</span> (<span class="syntax-all syntax-parameter">dom</span>[<span class="syntax-all syntax-parameter">key</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">props</span>[<span class="syntax-all syntax-parameter">key</span>]));
+
+  <span class="syntax-all syntax-comment">// add event listener
+</span>  <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">keys</span>(<span class="syntax-all syntax-parameter">props</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>(<span class="syntax-all syntax-parameter">isListener</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">key</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">eventType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">key</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toLowerCase</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">slice</span>(<span class="syntax-all syntax-constant">2</span>);
+      <span class="syntax-all syntax-parameter">dom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">addEventListener</span>(<span class="syntax-all syntax-parameter">eventType</span>, <span class="syntax-all syntax-parameter">props</span>[<span class="syntax-all syntax-parameter">key</span>]);
+    });
+
+  <span class="syntax-all syntax-comment">// render to dom
+</span>  <span class="syntax-all syntax-parameter">parentDom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">appendChild</span>(<span class="syntax-all syntax-parameter">dom</span>);
+}</code></pre>
+
+<p>最终 <a href="https://codesandbox.io/s/didact-render-1xrfdi">DEMO</a>，源码<a href="https://github.com/CaryWill/Frontend/blob/master/react-fiber/src/stack-reconciler/render.js">在这</a>。</p>
+
+<p>PS：虽然看的是别人的教程，但是为了理清楚教程里的各个细节，整个过程还是花了半个多月，包括一些其他的概念，比如，hooks 的实现用的是链表，浏览器的渲染过程，fiber 架构等。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://engineering.hexacta.com/didact-rendering-dom-elements-91c9aa08323b">Didact: Rendering DOM elements</a> </li>
+	<li><a href="https://engineering.hexacta.com/didact-element-creation-and-jsx-d05171c55c56">Didact: Element creation and JSX</a> </li>
+</ol>
+
+</body>
+</html>
+

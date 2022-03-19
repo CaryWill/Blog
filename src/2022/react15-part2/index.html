@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>最小可用 React 15 系列 2 - Diff 算法</title>
+	</head>
+<body>
+<h1>最小可用 React 15 系列 2 - Diff 算法</h1>
+
+<p><strong>2022.03.19</strong></p>
+
+<p>在上篇最后的 <a href="https://codesandbox.io/s/didact-render-1xrfdi?file=/src/index.js">demo</a> 里我们可以看到，我们每次都是销毁容器节点里的 children，然后重新构建 dom 树渲染进容器的，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">rootDom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getElementById</span>(<span class="syntax-all syntax-string">&quot;root&quot;</span>);
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">tick</span>() {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">time</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Date</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toLocaleTimeString</span>();
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">clockElement</span> <span class="syntax-all syntax-keyword">=</span> (
+    &lt;<span class="syntax-all syntax-tag">div</span>&gt;
+      &lt;<span class="syntax-all syntax-tag">span</span>&gt;Date: &lt;/<span class="syntax-all syntax-tag">span</span>&gt;
+      &lt;<span class="syntax-all syntax-tag">h1</span>&gt;{<span class="syntax-all syntax-parameter">time</span>}&lt;/<span class="syntax-all syntax-tag">h1</span>&gt;
+    &lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+  );
+  <span class="syntax-all syntax-comment">// empty children of rootDom
+</span>  <span class="syntax-all syntax-parameter">rootDom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">replaceChildren</span>();
+  <span class="syntax-all syntax-comment">// then rerender
+</span>  <span class="syntax-all syntax-parameter">Didact</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>(<span class="syntax-all syntax-parameter">clockElement</span>, <span class="syntax-all syntax-parameter">rootDom</span>);
+}
+
+<span class="syntax-all syntax-variable">tick</span>();
+<span class="syntax-all syntax-constant">setInterval</span>(<span class="syntax-all syntax-parameter">tick</span>, <span class="syntax-all syntax-constant">1000</span>);</code></pre>
+
+<p>这样就会有性能问题，因为操作 DOM 是很费性能的，而我们可以在 demo 里看到，我们页面上变动的只有时间这一个 <code>&lt;h1&gt;{time}&lt;/h1&gt;</code> 节点，如果我们可以每次只修改这个 DOM 节点的话，那么性能会提升不少。</p>
+
+<p>因为 React 使用的是 VDOM（虚拟 DOM），所以我们如果能在下次渲染的时候，将需要渲染的 <code>Element</code> 和 上次的渲染的时候的 <code>Element</code> 进行 diff（就只是两个 JS 对象而已），然后我们将变化的部分，给 DOM 打补丁就好了，这样就能最小程度的修改 DOM 来更新页面。</p>
+
+<p>这里有两个点需要注意，第一个点，我们需要一个变量用来储存上一个 VDOM 对象，我们需要能够 diff 上一个 VDOM 对象的时候，如果发现之前的 Vnode 和当前的 Vnode 不同的话，我们可以直接 patch Vnode 到 DOM 中去。</p>
+
+<p>所以当前的 <code>element</code> vnode 已经不够用了，这里我们引入 <code>instance</code> 的概念，将 <code>element</code> 包一层，并且在 <code>instance</code> 身上加入 <code>dom</code> 属性，这样方便我们 diff 的时候直接 patch DOM。对了，这里的 <code>instance</code> 指的不是组件的实例，而是一种数据结构，组件当前的实现还不支持，我们会在下一篇中进行讲解。</p>
+
+<p><code>createElement</code> 保持不变，我们可以添加一个新的方法 <code>instantiate</code> 来将原来的 <code>createElement</code> 返回的 <code>element</code> 包一层，加上对应的 DOM 引用，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">updateDomProperties</span>(<span class="syntax-all syntax-parameter">dom</span>, <span class="syntax-all syntax-parameter">prevProps</span>, <span class="syntax-all syntax-parameter">nextProps</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">isListener</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">attr</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">attr</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">startsWith</span>(<span class="syntax-all syntax-string">&quot;on&quot;</span>);
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">isProperty</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">attr</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">attr</span> <span class="syntax-all syntax-keyword">!==</span> <span class="syntax-all syntax-string">&quot;children&quot;</span> <span class="syntax-all syntax-keyword">&amp;&amp;</span> <span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-variable">isListener</span>(<span class="syntax-all syntax-parameter">attr</span>);
+
+  <span class="syntax-all syntax-comment">// 移除重新添加为了试 demo 更加简洁
+</span>  <span class="syntax-all syntax-comment">// remove props
+</span>  <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">keys</span>(<span class="syntax-all syntax-parameter">prevProps</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>(<span class="syntax-all syntax-parameter">isProperty</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">key</span>) <span class="syntax-all syntax-keyword">=&gt;</span> (<span class="syntax-all syntax-parameter">dom</span>[<span class="syntax-all syntax-parameter">key</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>));
+  <span class="syntax-all syntax-comment">// remove event listener
+</span>  <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">keys</span>(<span class="syntax-all syntax-parameter">prevProps</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>(<span class="syntax-all syntax-parameter">isListener</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">key</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">eventType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">key</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toLowerCase</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">slice</span>(<span class="syntax-all syntax-constant">2</span>);
+      <span class="syntax-all syntax-parameter">dom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">removeEventListener</span>(<span class="syntax-all syntax-parameter">eventType</span>, <span class="syntax-all syntax-parameter">prevProps</span>[<span class="syntax-all syntax-parameter">key</span>]);
+    });
+
+  <span class="syntax-all syntax-comment">// add props
+</span>  <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">keys</span>(<span class="syntax-all syntax-parameter">nextProps</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>(<span class="syntax-all syntax-parameter">isProperty</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">key</span>) <span class="syntax-all syntax-keyword">=&gt;</span> (<span class="syntax-all syntax-parameter">dom</span>[<span class="syntax-all syntax-parameter">key</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">nextProps</span>[<span class="syntax-all syntax-parameter">key</span>]));
+  <span class="syntax-all syntax-comment">// add event listener
+</span>  <span class="syntax-all syntax-constant">Object</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">keys</span>(<span class="syntax-all syntax-parameter">nextProps</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>(<span class="syntax-all syntax-parameter">isListener</span>)
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">key</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">eventType</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">key</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">toLowerCase</span>()<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">slice</span>(<span class="syntax-all syntax-constant">2</span>);
+      <span class="syntax-all syntax-parameter">dom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">addEventListener</span>(<span class="syntax-all syntax-parameter">eventType</span>, <span class="syntax-all syntax-parameter">nextProps</span>[<span class="syntax-all syntax-parameter">key</span>]);
+    });
+}
+
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">instantiate</span>(<span class="syntax-all syntax-parameter">element</span>) {
+  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">type</span>, <span class="syntax-all syntax-parameter">props</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">element</span>;
+  <span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">children</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">props</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">isTextElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-constant">TEXT_ELEMENT</span>;
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">dom</span>;
+
+  <span class="syntax-all syntax-comment">// create dom
+</span>  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">isTextElement</span>) {
+    <span class="syntax-all syntax-parameter">dom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createTextNode</span>(<span class="syntax-all syntax-string">&quot;&quot;</span>);
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-parameter">dom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createElement</span>(<span class="syntax-all syntax-parameter">type</span>);
+  }
+
+  <span class="syntax-all syntax-variable">updateDomProperties</span>(<span class="syntax-all syntax-parameter">dom</span>, [], <span class="syntax-all syntax-parameter">props</span>);
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childElements</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">children</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childInstances</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">childElements</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">map</span>(<span class="syntax-all syntax-parameter">instantiate</span>);
+  <span class="syntax-all syntax-comment">// render child nodes to dom
+</span>  <span class="syntax-all syntax-parameter">childInstances</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">childInstance</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">dom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">appendChild</span>(<span class="syntax-all syntax-parameter">childInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>));
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">instance</span> <span class="syntax-all syntax-keyword">=</span> { <span class="syntax-all syntax-parameter">dom</span>, <span class="syntax-all syntax-parameter">element</span>, <span class="syntax-all syntax-parameter">childInstances</span> };
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">instance</span>;
+}</code></pre>
+
+<p>我们也遵从 React 的 diff 规则，相同的 type 的 vnode 可以复用打补丁，不同的话销毁重建。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 用来存储上一个 instance 以便做 diff
+</span><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">rootInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">reconcile</span>(<span class="syntax-all syntax-parameter">parentDom</span>, <span class="syntax-all syntax-parameter">instance</span>, <span class="syntax-all syntax-parameter">element</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">prevInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">instance</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">prevInstance</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">newInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">instantiate</span>(<span class="syntax-all syntax-parameter">element</span>);
+    <span class="syntax-all syntax-parameter">parentDom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">appendChild</span>(<span class="syntax-all syntax-parameter">newInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>);
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">newInstance</span>;
+  } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-keyword">!</span><span class="syntax-all syntax-parameter">element</span>) {
+    <span class="syntax-all syntax-parameter">parentDom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">removeChild</span>(<span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>);
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-constant">null</span>;
+  } <span class="syntax-all syntax-keyword">else</span> <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">type</span>) {
+    <span class="syntax-all syntax-comment">// 更新 prevInstance
+</span>    <span class="syntax-all syntax-comment">// 如果两个 element（vnode）是同种 tag 的
+</span>    <span class="syntax-all syntax-comment">// 那么我们更新 prevInstance 身上的 dom 属性/listener 就行了
+</span>    <span class="syntax-all syntax-comment">// 复用原有的 dom 节点性能更好
+</span>
+    <span class="syntax-all syntax-comment">// 更新 dom
+</span>    <span class="syntax-all syntax-variable">updateDomProperties</span>(
+      <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>,
+      <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>,
+      <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>
+    );
+    <span class="syntax-all syntax-comment">// 更新 element
+</span>    <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">element</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">element</span>;
+    <span class="syntax-all syntax-comment">// 上面只更新了当前 dom 节点的属性，dom 节点 children 的属性也需要更新下
+</span>    <span class="syntax-all syntax-comment">// 而 children 的 dom 你可以通过 diff prevInstance 身上的
+</span>    <span class="syntax-all syntax-comment">// `childInstances` 这个属性
+</span>    <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">childInstances</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">reconcileChildren</span>(<span class="syntax-all syntax-parameter">prevInstance</span>, <span class="syntax-all syntax-parameter">element</span>);
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">prevInstance</span>;
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-comment">// 替换 prevInstance
+</span>    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">newInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">instantiate</span>(<span class="syntax-all syntax-parameter">element</span>);
+    <span class="syntax-all syntax-parameter">parentDom</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">replaceChild</span>(<span class="syntax-all syntax-parameter">newInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>, <span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>);
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">newInstance</span>;
+  }
+}</code></pre>
+
+<p>当然 <code>element</code> 也有 children，所以 <code>instance</code> 里面会有一个 <code>childInstances</code> 属性，其实就是模拟 element，不过是给 element 加上了对应的 DOM 节点的引用而已，上面 <code>reconcileChildren</code> 方法里其实也就是调用 <code>reconcile</code> 方法对 <code>element.props.children</code> 进行 diff，也就是递归 diff，所以这个算法的名称也被叫做 <code>stack reconcilation</code>。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">reconcileChildren</span>(<span class="syntax-all syntax-parameter">instance</span>, <span class="syntax-all syntax-parameter">element</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">prevInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">instance</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">prevChildInstances</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">childInstances</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">parentDom</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">prevInstance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">dom</span>;
+  <span class="syntax-all syntax-comment">// childInstances 里的每一项也都是 instance，
+</span>  <span class="syntax-all syntax-comment">// 所以直接使用 reconcile 就行
+</span>  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childElements</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">element</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">children</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">nextChildInstances</span> <span class="syntax-all syntax-keyword">=</span> [];
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">length</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">Math</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">max</span>(<span class="syntax-all syntax-parameter">prevChildInstances</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span>, <span class="syntax-all syntax-parameter">childElements</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">length</span>);
+
+  <span class="syntax-all syntax-keyword">for</span> (<span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">i</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>; <span class="syntax-all syntax-parameter">i</span> <span class="syntax-all syntax-keyword">&lt;</span> <span class="syntax-all syntax-parameter">length</span>; <span class="syntax-all syntax-parameter">i</span><span class="syntax-all syntax-keyword">++</span>) {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">prevChildInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">prevChildInstances</span>[<span class="syntax-all syntax-parameter">i</span>];
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">childElement</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">childElements</span>[<span class="syntax-all syntax-parameter">i</span>];
+
+    <span class="syntax-all syntax-comment">// patch child dom
+</span>    <span class="syntax-all syntax-comment">// 因为有可能 prevChildInstances.length 比 childElements.length 长
+</span>    <span class="syntax-all syntax-comment">// 导致调用下面 `reconcile` 的时候 childElement 为 undefined
+</span>    <span class="syntax-all syntax-comment">// 也有可能反之，
+</span>    <span class="syntax-all syntax-comment">// prevChildInstance 为 undefined
+</span>    <span class="syntax-all syntax-comment">// 所以这两种情况也需要在 reconcile 中 cover 到
+</span>    <span class="syntax-all syntax-parameter">nextChildInstances</span>[<span class="syntax-all syntax-parameter">i</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">reconcile</span>(
+      <span class="syntax-all syntax-parameter">parentDom</span>,
+      <span class="syntax-all syntax-parameter">prevChildInstance</span>,
+      <span class="syntax-all syntax-parameter">childElement</span>
+    );
+  }
+
+  <span class="syntax-all syntax-comment">// 因为有可能 element 被移除，所以同时需要过滤下
+</span>  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">nextChildInstances</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">filter</span>(<span class="syntax-all syntax-constant">Boolean</span>);
+}</code></pre>
+
+<p>最后我们改下 <code>render</code> 函数，这样每次更新的时候，我们将上次生成的 VDOM（instance）和新的要渲染的 VNode（element） 进行 diff，来对 DOM 进行 patch。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">render</span>(<span class="syntax-all syntax-parameter">element</span>, <span class="syntax-all syntax-parameter">parentDom</span>) {
+  <span class="syntax-all syntax-comment">// render to dom
+</span>  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">prevInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">rootInstance</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">nextInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">reconcile</span>(<span class="syntax-all syntax-parameter">parentDom</span>, <span class="syntax-all syntax-parameter">prevInstance</span>, <span class="syntax-all syntax-parameter">element</span>);
+  <span class="syntax-all syntax-parameter">rootInstance</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">nextInstance</span>;
+}</code></pre>
+
+<p>DEMO <a href="https://codesandbox.io/s/didact-reconcile-pzkl1q?file=/src/index.js">在这</a>，源码<a href="https://github.com/CaryWill/Frontend/blob/master/react-fiber/src/stack-reconciler/render.js">在这</a>。</p>
+
+<p>下一篇我们将会介绍下如何引入组件。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://engineering.hexacta.com/didact-instances-reconciliation-and-virtual-dom-9316d650f1d0">Didact: Instances, reconciliation and virtual DOM</a></li>
+</ol>
+
+</body>
+</html>
+
