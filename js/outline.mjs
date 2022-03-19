@@ -3,6 +3,30 @@ export const outline = [
   {
     2022: [
       {
+        title: "最小可用 React 16 系列 1 - Fiber 架构",
+        desc: "什么是 Fiber 架构？",
+        date: "Mar 19, 2022",
+        href: "/src/2022/react16-part1/index.html",
+      },
+      {
+        title: "最小可用 React 15 系列 3 - 组件",
+        desc: "组件化",
+        date: "Mar 19, 2022",
+        href: "/src/2022/react15-part3/index.html",
+      },
+      {
+        title: "最小可用 React 15 系列 2 - Diff 算法",
+        desc: "什么是 stack reconciler 算法",
+        date: "Mar 19, 2022",
+        href: "/src/2022/react15-part2/index.html",
+      },
+      {
+        title: "最小可用 React 15 系列 1 - JSX",
+        desc: "什么是 JSX，作用是什么？",
+        date: "Mar 19, 2022",
+        href: "/src/2022/react15-part1-jsx/index.html",
+      },
+      {
         title: "encodeURI Vs encodeURIComponent",
         desc: "通过手写 UTF-8 编码/解码带你理解这两条 API",
         date: "Feb 12, 2022",
