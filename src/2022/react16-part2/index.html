@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>最小可用 React 16 系列 2 - React hooks</title>
+	</head>
+<body>
+<h1>最小可用 React 16 系列 2 - React hooks</h1>
+
+<p><strong>2022.03.20</strong></p>
+
+<p>这里在上一篇的基础上，参考<a href="https://pomb.us/build-your-own-react/">这篇</a>文章，重构了下命名以及逻辑来支持 function 组件和 hooks，hooks 在 React 中的实现使用的是链表（linked list），这里简化了下，使用数组代替。</p>
+
+<p>取消 tag 属性，并且在在 <code>Component</code> base 类上面添加了 <code>Component.prototype.isReactComponent</code> 来判断是否是 Class 组件来区分 function 组件。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 用来判断是 class 组件还是 function 组件
+</span><span class="syntax-all syntax-entity">Component</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">prototype</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">isReactComponent</span> <span class="syntax-all syntax-keyword">=</span> {};</code></pre>
+
+<p>effects 现在不用放在 fiber 上，我们直接遍历新的 fiber root（wipRoot）链表即可，删除的 fiber 放到 <code>deletions</code> 数组里去，毕竟，wipRoot 上不会出现有删除了的 fiber。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">commitRoot</span>() {
+  <span class="syntax-all syntax-comment">// 因为我们是根据 wipRoot 的链表来处理带有 effectTag 的
+</span>  <span class="syntax-all syntax-comment">// fiber，所以 wipRoot 里是没有被删除了的 fiber node
+</span>  <span class="syntax-all syntax-comment">// 的，所以我们需要一个数组来保存这些需要被删除的 fiber nodes
+</span>  <span class="syntax-all syntax-comment">// 原作者那边删除的时候，处理的有问题 deletions.forEach(commitWork) 不大行
+</span>  <span class="syntax-all syntax-parameter">deletions</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">fiber</span>) <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-variable">commitDeletion</span>(<span class="syntax-all syntax-parameter">fiber</span>));
+  <span class="syntax-all syntax-comment">// 从第一个 child 开始 patch
+</span>  <span class="syntax-all syntax-variable">commitWork</span>(<span class="syntax-all syntax-parameter">wipRoot</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">child</span>);
+  <span class="syntax-all syntax-comment">// patch 结束 wipRoot 变成 旧 fiber root
+</span>  <span class="syntax-all syntax-parameter">currentRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipRoot</span>;
+  <span class="syntax-all syntax-parameter">wipRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">null</span>;
+}</code></pre>
+
+<p>workLoop 里的 updateQueue 取消，更新的时候，直接抛弃旧的，直接使用新的 nextUnitOfWork 进行 diff。</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// class 组件的更新
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">scheduleUpdate</span>(<span class="syntax-all syntax-parameter">instance</span>, <span class="syntax-all syntax-parameter">partialState</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">getFiberRoot</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">_fiber</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">fiberRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">_fiber</span>;
+    <span class="syntax-all syntax-keyword">while</span> (<span class="syntax-all syntax-parameter">fiberRoot</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>) {
+      <span class="syntax-all syntax-parameter">fiberRoot</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">fiberRoot</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span>;
+    }
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-parameter">fiberRoot</span>;
+  };
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">root</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">getFiberRoot</span>(<span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__fiber</span>);
+
+  <span class="syntax-all syntax-parameter">wipRoot</span> <span class="syntax-all syntax-keyword">=</span> {
+    <span class="syntax-all syntax-string">stateNode</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span>,
+    <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span><span class="syntax-all syntax-keyword">?.</span><span class="syntax-all syntax-parameter">props</span>,
+    <span class="syntax-all syntax-string">type</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span><span class="syntax-all syntax-keyword">?.</span><span class="syntax-all syntax-parameter">type</span>,
+    <span class="syntax-all syntax-string">alternate</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span>,
+  };
+  <span class="syntax-all syntax-comment">// component
+</span>  <span class="syntax-all syntax-comment">// 将 update.partialState 拷到 intance.__fiber 身上
+</span>  <span class="syntax-all syntax-comment">// 而不是直接在 setState 的时候直接更新 this.state
+</span>  <span class="syntax-all syntax-comment">// 是因为我们可以在后面 diff 的时候看 this.state
+</span>  <span class="syntax-all syntax-comment">// 和 update.partialState 对比，看是否需要重新渲染
+</span>  <span class="syntax-all syntax-comment">// 来做一个优化，毕竟只有 props 或者 state 改变了才会重新渲染
+</span>  <span class="syntax-all syntax-parameter">instance</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">__fiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">partialState</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">partialState</span>;
+  <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipRoot</span>;
+  <span class="syntax-all syntax-parameter">deletions</span> <span class="syntax-all syntax-keyword">=</span> [];
+}
+
+<span class="syntax-all syntax-comment">// function 组件的更新
+</span><span class="syntax-all syntax-comment">// 我们在 function 组件被初始化的时候，调用 useState 等 hooks
+</span><span class="syntax-all syntax-comment">// 我们可以直接拿到当前组件对应的 fiber 也就是全局变量 wipFiber 了
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">useState</span>(<span class="syntax-all syntax-parameter">initialState</span>) {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">oldHook</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">?.</span><span class="syntax-all syntax-parameter">alternate</span><span class="syntax-all syntax-keyword">?.</span><span class="syntax-all syntax-parameter">hooks</span><span class="syntax-all syntax-keyword">?.</span>[<span class="syntax-all syntax-parameter">hookIndex</span>];
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">hook</span> <span class="syntax-all syntax-keyword">=</span> {
+    <span class="syntax-all syntax-string">state</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">oldHook</span> <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-parameter">oldHook</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> : <span class="syntax-all syntax-parameter">initialState</span>,
+    <span class="syntax-all syntax-string">queue</span><span class="syntax-all syntax-constant">:</span> [],
+  };
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">actions</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">oldHook</span> <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-parameter">oldHook</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">queue</span> : [];
+  <span class="syntax-all syntax-parameter">actions</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">forEach</span>((<span class="syntax-all syntax-parameter">action</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-parameter">hook</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">action</span>(<span class="syntax-all syntax-parameter">hook</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>);
+  });
+
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">setState</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">action</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-parameter">hook</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">queue</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">action</span>);
+    <span class="syntax-all syntax-comment">// 和 render(element, container) 一样的逻辑
+</span>    <span class="syntax-all syntax-parameter">wipRoot</span> <span class="syntax-all syntax-keyword">=</span> {
+      <span class="syntax-all syntax-string">stateNode</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">currentRoot</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">stateNode</span>,
+      <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">currentRoot</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span>,
+      <span class="syntax-all syntax-string">alternate</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">currentRoot</span>,
+    };
+    <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipRoot</span>;
+    <span class="syntax-all syntax-parameter">deletions</span> <span class="syntax-all syntax-keyword">=</span> [];
+  };
+
+  <span class="syntax-all syntax-parameter">wipFiber</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">hooks</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">push</span>(<span class="syntax-all syntax-parameter">hook</span>);
+  <span class="syntax-all syntax-parameter">hookIndex</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>;
+  <span class="syntax-all syntax-keyword">return</span> [<span class="syntax-all syntax-parameter">hook</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span>, <span class="syntax-all syntax-parameter">setState</span>];
+}
+
+<span class="syntax-all syntax-comment">// 直接渲染
+</span><span class="syntax-all syntax-comment">// 更新的话 都是 fiber 和 element 进行对比
+</span><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">render</span>(<span class="syntax-all syntax-parameter">element</span>, <span class="syntax-all syntax-parameter">container</span>) {
+  <span class="syntax-all syntax-comment">// Step1: discard 之前的 diff
+</span>  <span class="syntax-all syntax-comment">// 进行下一个 diff
+</span>  <span class="syntax-all syntax-parameter">wipRoot</span> <span class="syntax-all syntax-keyword">=</span> {
+    <span class="syntax-all syntax-string">stateNode</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">container</span>,
+    <span class="syntax-all syntax-string">props</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-string">children</span><span class="syntax-all syntax-constant">:</span> [<span class="syntax-all syntax-parameter">element</span>],
+    },
+    <span class="syntax-all syntax-string">alternate</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">currentRoot</span>,
+  };
+  <span class="syntax-all syntax-comment">// 一个 fiber 的 diff 是一个 work
+</span>  <span class="syntax-all syntax-comment">// 我们设置了 nextUnitOfWork 就行了
+</span>  <span class="syntax-all syntax-comment">// 它会自动 diff，因为我们在 workLoop 函数里设置了
+</span>  <span class="syntax-all syntax-comment">// 无限 diff
+</span>  <span class="syntax-all syntax-parameter">nextUnitOfWork</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">wipRoot</span>;
+  <span class="syntax-all syntax-parameter">deletions</span> <span class="syntax-all syntax-keyword">=</span> [];
+}</code></pre>
+
+<p>DEMO<a href="https://codesandbox.io/s/didact-async-rendering-hooks-support-h15mkr?file=/src/component-state.js">在此</a>，源码在此。</p>
+
+<p>所以 React hooks 的使用会有两个规则，</p>
+
+<ol>
+	<li>Only Call Hooks at the Top Level。Hooks 的顺序依赖链表结构，所以不能条件性的调用 hooks。</li>
+	<li>Only Call Hooks from React Functions。 Hooks 依赖 fiber 架构，所以需要在 React 组件里才可以。</li>
+</ol>
+
+<p>以上。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://overreacted.io/how-does-react-tell-a-class-from-a-function/">How Does React Tell a Class from a Function? - Dan</a></li>
+	<li><a href="https://yushuanhsieh.github.io/post/2019-02-27-react-hooks/">React Hooks with memoizedState</a></li>
+	<li><a href="https://www.youtube.com/watch?v=dFO4m7Y-yhs">React with Hooks from Scratch: Build a Hooks clone in just 29 lines of readable JS - Shawn Wang - Youtube</a></li>
+	<li><a href="https://dev.to/wuz/linked-lists-in-the-wild-react-hooks-3ep8">Linked lists in the wild: React Hooks</a></li>
+	<li><a href="https://github.com/facebook/react/blob/67e3f3fb6e342f95f00215c84d5d013d7b0e1b33/packages/react/src/ReactHooks.js">React hooks Source code - github</a></li>
+	<li><a href="https://reactjs.org/docs/hooks-rules.html">Rules of Hooks</a></li>
+</ol>
+
+<h2>其他</h2>
+
+<p>自己的问题已经得到解答，但是还未看，觉得不错的文章</p>
+
+<ol>
+	<li><a href="https://react.iamkasong.com/">React技术揭秘</a> </li>
+	<li><a href="https://dev.to/aspittel/thank-u-next-an-introduction-to-linked-lists-4pph">thank u, next: an introduction to linked lists</a></li>
+</ol>
+
+</body>
+</html>
+
