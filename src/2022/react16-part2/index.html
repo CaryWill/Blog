@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +13,7 @@
 
 <p>这里在上一篇的基础上，参考<a href="https://pomb.us/build-your-own-react/">这篇</a>文章，重构了下命名以及逻辑来支持 function 组件和 hooks，hooks 在 React 中的实现使用的是链表（linked list），这里简化了下，使用数组代替。</p>
 
-<p>取消 tag 属性，并且在在 <code>Component</code> base 类上面添加了 <code>Component.prototype.isReactComponent</code> 来判断是否是 Class 组件来区分 function 组件。</p>
+<p>在 <code>Component</code> base 类上面添加了 <code>Component.prototype.isReactComponent</code> 来判断是否是 Class 组件来区分 function 组件。</p>
 
 <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 用来判断是 class 组件还是 function 组件
 </span><span class="syntax-all syntax-entity">Component</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">prototype</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">isReactComponent</span> <span class="syntax-all syntax-keyword">=</span> {};</code></pre>
