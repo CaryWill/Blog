@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "Vim as IDE 2.0",
+        desc: "再次使用 Vim 作为 IDE",
+        date: "Apr 03, 2022",
+        href: "/src/2022/neovim-as-ide/index.html",
+      },
+      {
         title: "最小可用 React 16 系列 2 - React hooks",
         desc: "通过实现一个 mini react hooks 来理解为什么 hooks 会有那两条规则",
         date: "Mar 20, 2022",
