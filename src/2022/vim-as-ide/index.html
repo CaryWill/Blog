@@ -3,11 +3,11 @@
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="utf-8" />
-		
-		<title>VIM setup as an IDE</title>
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Vim setup as an IDE</title>
 	</head>
 <body>
-<h1>VIM setup as an IDE</h1>
+<h1>Vim setup as an IDE</h1>
 
 <p><strong> 2022.01.16</strong></p>
 
@@ -28,7 +28,7 @@
 
 <p>| 命令 | 描述 | 是否自定义 |</p>
 
-<p>| ----------- | ----------- |</p>
+<p>| ----------- | ----------- | ----- |</p>
 
 <p>| <code>&lt;ctrl&gt; h</code> | 这里的 h 可以替换成 <em>hljk</em>，用来切换 vim 的 pane | 是|</p>
 
@@ -96,7 +96,7 @@
 
 <p>| 命令 | 描述 | 是否自定义 |</p>
 
-<p>| ----------- | ----------- |</p>
+<p>| ----------- | ----------- | ----- |</p>
 
 <p>| <code>prefix s</code> | 查看所有的 tmux session with previews | 否|</p>
 
@@ -107,8 +107,6 @@
 <p>| <code>prefix prefix</code> | 切换到上一个 window | 是|</p>
 
 <p>| <code>prefix z</code> | 全屏一个 pane，再使用一次会复原 | 否|</p>
-
-<p>| <code>prefix s</code> | 显示 tmux sessions | 否|</p>
 
 <p>| <code>prefix w</code> | 显示 tmux sessions with pane preview | 否|</p>
 
@@ -137,6 +135,14 @@ set -g @continuum-restore &#39;on&#39;
 run &#39;~/.tmux/plugins/tpm/tpm&#39;</code></pre>
 
 <p>上面会自动隔 15 分钟帮你保存一下 sessions，当然你也可以使用 <code>prefix-Ctrl-s </code> 自动保存，然后使用 <code>prefix-Ctrl-r</code> 来手动恢复 sessions。</p>
+
+<h3>Tmux vim mode</h3>
+
+<p>一开始不太熟练的时候，发现 tmux 里打印出来的日志拷贝文字的时候拷贝不出来，搜了下，看到了 <code>prefix-[</code> 可以进入到 copy mode 用来查看日志，拷贝文字等！！！ 然后 tmux 里的配置里 <code>setw -g mode-keys vi</code> 这个就是用来在进入 copy mode 的时候有类似于 vim 的快捷键。</p>
+
+<p>你可以使用 <code>tmux -f /dev/null list-keys -T copy-mode-vi</code> 命令查看所有的 copy mode 下的 tmux 的一些快捷键，参考了<a href="https://www.freecodecamp.org/news/tmux-in-practice-integration-with-system-clipboard-bcd72c62ff7b/">这篇文章</a>。</p>
+
+<p>在 Mac 下的 Tmux 配置里加入 <code>bind -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel &quot;pbcopy&quot;</code> 命令后，你在进入到 copy mode 的时候，使用 &lt;space&gt; 键开始触发选择的动作，使用我们上面覆盖的 <code>Enter</code> 命令拷贝到系统的剪贴板。</p>
 
 <h2>其他</h2>
 
@@ -169,7 +175,7 @@ run &#39;~/.tmux/plugins/tpm/tpm&#39;</code></pre>
 
 <h3>如何设置 python3 为默认的 python 版本</h3>
 
-<p>在 .zshrc 或者 .bashrc 里写上，<code>alias python=&#39;python3.2&#39;</code>，这里的 3.2 是自己电脑上的 python3 的版本。</p>
+<p>在 .zshrc 或者 .bashrc 里写上，<code>alias python=&#39;python3&#39;</code>。</p>
 
 <h3>如何使用 tmux 同时开发多个项目</h3>
 
@@ -193,7 +199,7 @@ run &#39;~/.tmux/plugins/tpm/tpm&#39;</code></pre>
 	<li><a href="https://nickjanetakis.com/blog/using-tmux-sessions-windows-panes-and-vim-buffers-together">Using tmux Sessions, Windows, Panes and Vim Buffers Together - Youtube</a></li>
 	<li><a href="https://superuser.com/a/582069">On tmux, what is the difference between &quot;bind&quot; and &quot;bind-key&quot;?</a></li>
 	<li><a href="https://vim.rtorr.com">vim cheetsheet</a></li>
-	<li><a href="https://www.youtube.com/watch?v=sSOfr2MtRU8&amp;t=585s"> My dev workflow using tmux+vim (video)</a> </li>
+	<li><a href="https://www.youtube.com/watch?v=sSOfr2MtRU8&amp;t=585s">My dev workflow using tmux+vim (video)</a> </li>
 	<li><a href="https://www.reddit.com/r/vim/comments/4kncnl/vim_tmux_what_tmux_prefix_do_you_use/">Best Tmux prefix key(ctrl+space) - reddit</a></li>
 	<li><a href="https://koenwoortman.com/tmux-prefix-ctrl-space/">Change the tmux prefix to ctrl+space</a></li>
 	<li><a href="https://github.com/tmux-plugins/tpm">tmux manager</a></li>
