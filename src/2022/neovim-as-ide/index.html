@@ -1,328 +1,115 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta charset="utf-8" />
-    <link rel="stylesheet" type="text/css" href="css/style.css" />
-    <title>Vim as IDE 2.0</title>
-  </head>
-  <body>
-    <h1>Vim as IDE 2.0</h1>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Vim as IDE 2.0</title>
+	</head>
+<body>
+<h1>Vim as IDE 2.0</h1>
 
-    <p><strong>2022.03.26</strong></p>
+<p><strong>2022.03.26</strong></p>
 
-    <p>
-      想起第一次看到同事在用 Vim
-      的时候，还是第一家公司看到老辜在用的时候，第二次看到直接使用 Vim 作为前端
-      IDE 的时候是看到瑾源大哥在用的时候（看到的时候感觉十分的震撼）。
-    </p>
+<p>想起第一次看到同事在用 Vim 的时候，还是第一家公司看到老辜在用的时候，第二次看到直接使用 Vim 作为前端 IDE 的时候是看到瑾源大哥在用的时候（看到的时候感觉十分的震撼）。</p>
 
-    <p>
-      在今年 1 月 16 号写完
-      <strong> VIM setup as an IDE</strong> 这篇文章后，使用 Vim 作为前端 IDE
-      开发的时候，还是觉得有点不顺，于是配置好的 3
-      天后基本就放弃了，主要是那时候几个问题导致的，
-    </p>
+<p>在今年 1 月 16 号写完 <strong> VIM setup as an IDE</strong> 这篇文章后，使用 Vim 作为前端 IDE 开发的时候，还是觉得有点不顺，于是配置好的 3 天后基本就放弃了，主要是那时候几个问题导致的，</p>
 
-    <ul>
-      <li>使用 tmux window/ session 和 vim tab 的不熟练</li>
-      <li>
-        每次 <code>git commit</code> 前会想要看下各个文件的改动，在 VSCode
-        里使用 gitlens 插件就行了，但是在 Vim 里暂时没看到什么办法
-      </li>
-      <li>VSCode 里下方的命令行的 toggle</li>
-      <li>
-        Vim 里不会自动保存，需要使用 <code>：w</code> 写保存
-        buffer，让自己没有安全感
-      </li>
-    </ul>
+<ul>
+	<li>使用 tmux window/ session 和 vim tab 的不熟练</li>
+	<li>每次 <code>git commit</code> 前会想要看下各个文件的改动，在 VSCode 里使用 gitlens 插件就行了，但是在 Vim 里暂时没看到什么办法</li>
+	<li>VSCode 里下方的命令行的 toggle</li>
+	<li>Vim 里不会自动保存，需要使用 <code>：w</code> 写保存 buffer，让自己没有安全感</li>
+</ul>
 
-    <p>
-      但是使用 VSCode 的时候还是有几个问题让我有点不舒服，所以准备再次尝试下，
-    </p>
+<p>但是使用 VSCode 的时候还是有几个问题让我有点不舒服，所以准备再次尝试下，</p>
 
-    <ul>
-      <li>
-        使用 VSCode 里的目录树打开文件不是特别好打开虽然也使用了 Vim
-        快捷键的插件
-      </li>
-      <li>toggle 命令行的快捷键有点难记但是又不想 remap。。。</li>
-      <li>启动速度慢（就没有达到 sublime 或者 vim 那种丝滑的感觉</li>
-      <li>
-        VSCode 里折叠函数的时候，如果使用 Vim 方向键 cross
-        这个折叠区域的时候，整个折叠函数会自动打开
-      </li>
-      <li>VSCode 的 Vim 插件总感觉不能完全实现 Vim 的所有功能</li>
-      <li>需要不时使用鼠标来剪贴和滚动查看代码觉得有点手疼</li>
-    </ul>
+<ul>
+	<li>使用 VSCode 里的目录树打开文件不是特别好打开虽然也使用了 Vim 快捷键的插件</li>
+	<li>toggle 命令行的快捷键有点难记但是又不想 remap。。。</li>
+	<li>启动速度慢（就没有达到 sublime 或者 vim 那种丝滑的感觉</li>
+	<li>VSCode 里折叠函数的时候，如果使用 Vim 方向键 cross 这个折叠区域的时候，整个折叠函数会自动打开</li>
+	<li>VSCode 的 Vim 插件总感觉不能完全实现 Vim 的所有功能</li>
+	<li>需要不时使用鼠标来剪贴和滚动查看代码觉得有点手疼</li>
+</ul>
 
-    <p>这一次上面提到的所有问题都在 Vim 和 Tmux 里解掉了。</p>
+<p>这一次上面提到的所有问题都在 Vim 和 Tmux 里解掉了。</p>
 
-    <p>
-      先说下感想吧，使用了一个礼拜进行项目开发感觉还是十分的流畅的，因为强迫使用纯键盘来
-      Coding and Navigation
-      所以逼自己将组件颗粒度细化了，不然组件代码太长看上去很累，需要不断的
-      <code>ctrl-d</code> 来滚动。
-    </p>
+<p>先说下感想吧，使用了一个礼拜进行项目开发感觉还是十分的流畅的，因为强迫使用纯键盘来 Coding and Navigation 所以逼自己将组件颗粒度细化了，不然组件代码太长看上去很累，需要不断的 <code>ctrl-d</code> 来滚动。</p>
 
-    <p>好了，接下来就来看下我的 Vim 环境配置以及遇到的一些问题和解法吧。</p>
+<p>好了，接下来就来看下我的 Vim 环境配置以及遇到的一些问题和解法吧。</p>
 
-    <h2>前置条件</h2>
+<h2>前置条件</h2>
 
-    <p>
-      参考下我的配置以及安装方式，<a
-        href="https://github.com/CaryWill/dotfiles/blob/master/README.md"
-        >传送门</a
-      >。
-    </p>
+<p>参考下我的配置以及安装方式，<a href="https://github.com/CaryWill/dotfiles/blob/master/README.md">传送门</a>。</p>
 
-    <h2>遇到的问题和解法</h2>
+<h2>遇到的问题和解法</h2>
 
-    <ol>
-      <li>
-        Terminal toggle。使用
-        <code>prefix &quot;</code> 命令在下方创建一个命令行，切换到 vim 所在的
-        tmux pane 然后使用 <code>prefix z</code> 来 toggle 命令行。
-      </li>
-      <li>Folding。<code>zc</code> 关闭折叠，<code>zo</code> 打开折叠。</li>
-      <li>
-        Indent。进入 Vim visual mode 然后，使用 <code>&lt;</code> 或者
-        <code>&gt;</code> 然后可以配合 <code>.</code> repeat 键。
-      </li>
-      <li>在 nerdtree 里创建文件。使用 <code>m</code> 唤起操作菜单。</li>
-      <li>
-        Git unstage。<code>:G</code> 然后使用 <code>u</code> 就可以 unstage
-        一个文件。
-      </li>
-      <li>
-        将搜索的文件新开 tab。使用 <code>;f</code> 来搜索项目文件，<code
-          >ctrl-p</code
-        >
-        和 <code>ctrl-n</code> 上下移动文件，对于选中的文件可以使用
-        <code>ctrl-u</code> 来新开 tab。
-      </li>
-      <li>
-        全局文件内容全局搜索。<code>;r</code> 来使用fzf vim 进行全局搜索。
-      </li>
-      <li>
-        Git commit 前看下文件改动。使用
-        <code>:G</code> 查看所有变动的文件，然后可以使用
-        <code>ctrl-n</code> 或者
-        <code>ctrl-p</code> 来将光标上下移动，然后使用直接敲击
-        <code>dv</code> 命令就可以以分屏的方式查看当前光标所在行（文件）的 diff
-        了，其他的一些快捷键可以参考下官方<a
-          href="https://github.com/tpope/vim-fugitive/blob/master/doc/fugitive.txt"
-          >文档</a
-        >。可以使用 <code>te</code> 回车来新建一个 vim tab 进行 diff review。
-      </li>
-      <li>
-        系统异常了文件丢失了怎么办？可以去 <code>/tmp</code> 目录下找对应的
-        <code>.swp</code> 文件进行恢复。
-      </li>
-      <li>
-        vim 里 <code>ctrl-d</code> 不会翻页怎么办，而是会删除。这里是 Mac
-        系统设置了大小写键绑定成了 control 键，开了 karabiner
-        会有这个问题，需要在 karabiner 里也将 大小写键绑定成了 control
-        键。（Tips: 可以通过 karabiner-eventviewer 排查问题）
-      </li>
-      <li>
-        使用 tmux 同时开发多个项目，可以使用 tmux session，每一个 sessioin
-        作为管理一个项目。使用 <code>tmux</code> 命令会默认创建一个
-        session，你也可以使用 <code>tmux new -s mysession</code> 来创建命名后的
-        session。
-      </li>
-      <li>
-        运行后台服务，比如 wds。可以使用 tmux window，可以使用
-        <code>&lt;prefix&gt; c</code> 来创建一个
-        window，用来跑服务。但是目前我比较喜欢类似 VSCode 里的 terminal
-        的布局，所以我会使用
-        <code>&lt;prefix&gt; &quot;</code> 在屏幕下方创建一个 tmux
-        pane，然后使用 <code>&lt;prefix&gt; l</code> 移动到上面的 pane，然后使用
-        <code>&lt;prefix&gt; z</code> 来全屏上面的 pane，这样下面的 pane
-        就会自动 minimized 了，<code>prefix</code> 我定义为了
-        <code>ctrl+space</code>，然后你也可以使用 tmux window 临时打开一些项目。
-      </li>
-      <li>
-        折叠。可以使用 <code>zc</code> 和 <code>zo</code> 来进行 fold 和
-        unfold，这里配置了 <code>set foldmethod=indent</code> 是根据缩进来进行
-        fold 的，所以相同的缩进的行会被
-        fold，还是很方便的。而且缩进后会变成一行，你使用 vim
-        方向键上下移动而会将其视作一行，而不会移到该行自动展开，非常 nice！
-      </li>
-      <li>
-        打开 nerdtree，快速定位到当前打开文件所在的位置，使用
-        <code>&lt;localleader&gt;e</code> 就行了。我将
-        <code>&lt;localleader&gt;</code> 和
-        <code>&lt;leader&gt;</code> 都设置为了 <code>&lt;space&gt;</code>。
-      </li>
-      <li>
-        Vim pane 之间的移动可以使用 <code>ctrl-hjkl</code>，Tmux pane
-        之间的移动可以使用 <code>&lt;prefix&gt;-hjkl</code> 或者
-        <code>&lt;prefix&gt;-&lt;Tab&gt;</code>，Vim 的 tabs 功能可以使用 tab
-        键进行切换，如果你只有一个 tab 的话，tab 键还可以用来切换 vim pane。
-      </li>
-      <li>重命名 tmux window。使用 <code>&lt;prefix&gt; ,</code>。</li>
-      <li>
-        刷新 nerdtree，使用 <code>r</code>，toggle 使用 <code>ctrl-e</code>。
-      </li>
-      <li>
-        使用 <code>zR</code> 和 <code>zM</code> 来打开当前 vim buffer 里的所有的
-        fold 和关闭所有的 fold。
-      </li>
-      <li>
-        可以使用 <code>te</code> 命令创建一个新的 vim tab 然后
-        <code>:G</code> 来查看改动，review 之后使用
-        <code>&lt;prefix&gt;z</code> toggle 我们之前创建的 tmux pane，commit
-        完之后可以使用 <code>tq</code> 关闭当前的 vim tab。
-      </li>
-      <li>
-        将当前的 vim pane 移动到新的 tab，有时候因为当前 tab
-        已经分屏了，但是在工作的那个 vim pane 需要继续分屏来开发，这样可以使用
-        <code>ctrl-w-T</code> 来实现，然后继续 <code>sv</code> 进行 vim 分屏。
-      </li>
-      <li>
-        找到当前引用该组件的地方，可以使用 coc 的 coc-references 功能，这里将其
-        map 成了 <code>gr</code>。
-      </li>
-      <li>
-        可以使用 <code>;r</code> 进行 rg 的搜索，<code>&#39;</code>
-        加上搜索词进行 exact match，当然还可以进行 prefix 匹配等，语法可以参考<a
-          href="https://github.com/junegunn/fzf#search-syntax"
-          >这里</a
-        >。
-      </li>
-      <li>
-        你可以使用 <code>:Gclog</code> 来查看 commits 的改动，或者使用 fzf 的
-        <code>;c</code> 命令来查看 commits 的改动（<code>;c</code>
-        是自己设置的快捷键）。
-      </li>
-      <li>FzF 里使用 <code>:Lines</code> 等也支持 rg 的匹配符。</li>
-      <li>你还可以使用 <code>:Colors</code> 来切换一次性的主题。</li>
-    </ol>
+<ol>
+	<li>Terminal toggle。使用 <code>prefix &quot;</code> 命令在下方创建一个命令行，切换到 vim 所在的 tmux pane 然后使用 <code>prefix z</code> 来 toggle 命令行。</li>
+	<li>Folding。<code>zc</code> 关闭折叠，<code>zo</code> 打开折叠。</li>
+	<li>Indent。进入 Vim visual mode 然后，使用 <code>&lt;</code> 或者 <code>&gt;</code> 然后可以配合 <code>.</code> repeat 键。</li>
+	<li>在 nerdtree 里创建文件。使用 <code>m</code> 唤起操作菜单。</li>
+	<li>Git unstage。<code>:G</code> 然后使用 <code>u</code> 就可以 unstage 一个文件。</li>
+	<li>将搜索的文件新开 tab。使用 <code>;f</code> 来搜索项目文件，<code>ctrl-p</code> 和 <code>ctrl-n</code> 上下移动文件，对于选中的文件可以使用 <code>ctrl-u</code> 来新开 tab。</li>
+	<li>全局文件内容全局搜索。<code>;r</code> 来使用fzf vim 进行全局搜索。</li>
+	<li>Git commit 前看下文件改动。使用 <code>:G</code> 查看所有变动的文件，然后可以使用 <code>ctrl-n</code> 或者 <code>ctrl-p</code> 来将光标上下移动，然后使用直接敲击 <code>dv</code> 命令就可以以分屏的方式查看当前光标所在行（文件）的 diff 了，其他的一些快捷键可以参考下官方<a href="https://github.com/tpope/vim-fugitive/blob/master/doc/fugitive.txt">文档</a>。可以使用 <code>te</code> 回车来新建一个 vim tab 进行 diff review。</li>
+	<li>系统异常了文件丢失了怎么办？可以去 <code>/tmp</code> 目录下找对应的 <code>.swp</code> 文件进行恢复。</li>
+	<li>vim 里 <code>ctrl-d</code> 不会翻页怎么办，而是会删除。这里是 Mac 系统设置了大小写键绑定成了 control 键，开了 karabiner 会有这个问题，需要在 karabiner 里也将 大小写键绑定成了 control 键。（Tips: 可以通过 karabiner-eventviewer 排查问题）</li>
+	<li>使用 tmux 同时开发多个项目，可以使用 tmux session，每一个 sessioin 作为管理一个项目。使用 <code>tmux</code> 命令会默认创建一个 session，你也可以使用 <code>tmux new -s mysession</code> 来创建命名后的 session。</li>
+	<li>运行后台服务，比如 wds。可以使用 tmux window，可以使用 <code>&lt;prefix&gt; c</code> 来创建一个 window，用来跑服务。但是目前我比较喜欢类似 VSCode 里的 terminal 的布局，所以我会使用 <code>&lt;prefix&gt; &quot;</code> 在屏幕下方创建一个 tmux pane，然后使用 <code>&lt;prefix&gt; l</code> 移动到上面的 pane，然后使用 <code>&lt;prefix&gt; z</code> 来全屏上面的 pane，这样下面的 pane 就会自动 minimized 了，<code>prefix</code> 我定义为了 <code>ctrl+space</code>，然后你也可以使用 tmux window 临时打开一些项目。</li>
+	<li>折叠。可以使用 <code>zc</code> 和 <code>zo</code> 来进行 fold 和 unfold，这里配置了 <code>set foldmethod=indent</code> 是根据缩进来进行 fold 的，所以相同的缩进的行会被 fold，还是很方便的。而且缩进后会变成一行，你使用 vim 方向键上下移动而会将其视作一行，而不会移到该行自动展开，非常 nice！</li>
+	<li>打开 nerdtree，快速定位到当前打开文件所在的位置，使用 <code>&lt;localleader&gt;e</code> 就行了。我将 <code>&lt;localleader&gt;</code> 和 <code>&lt;leader&gt;</code> 都设置为了 <code>&lt;space&gt;</code>。</li>
+	<li>Vim pane 之间的移动可以使用 <code>ctrl-hjkl</code>，Tmux pane 之间的移动可以使用 <code>&lt;prefix&gt;-hjkl</code> 或者 <code>&lt;prefix&gt;-&lt;Tab&gt;</code>，Vim 的 tabs 功能可以使用 tab 键进行切换，如果你只有一个 tab 的话，tab 键还可以用来切换 vim pane。</li>
+	<li>重命名 tmux window。使用 <code>&lt;prefix&gt; ,</code>。</li>
+	<li>刷新 nerdtree，使用 <code>r</code>，toggle 使用 <code>ctrl-e</code>。</li>
+	<li>使用 <code>zR</code> 和 <code>zM</code> 来打开当前 vim buffer 里的所有的 fold 和关闭所有的 fold。</li>
+	<li>可以使用 <code>te</code> 命令创建一个新的 vim tab 然后 <code>:G</code> 来查看改动，review 之后使用 <code>&lt;prefix&gt;z</code> toggle 我们之前创建的 tmux pane，commit 完之后可以使用 <code>tq</code> 关闭当前的 vim tab。</li>
+	<li>将当前的 vim pane 移动到新的 tab，有时候因为当前 tab 已经分屏了，但是在工作的那个 vim pane 需要继续分屏来开发，这样可以使用 <code>ctrl-w-T</code> 来实现，然后继续 <code>sv</code> 进行 vim 分屏。</li>
+	<li>找到当前引用该组件的地方，可以使用 coc 的 coc-references 功能，这里将其 map 成了 <code>gr</code>。</li>
+	<li>可以使用 <code>;r</code> 进行 rg 的搜索，<code>&#39;</code> 加上搜索词进行 exact match，当然还可以进行 prefix 匹配等，语法可以参考<a href="https://github.com/junegunn/fzf#search-syntax">这里</a>。</li>
+	<li>你可以使用 <code>:Gclog</code> 来查看 commits 的改动，或者使用 fzf 的 <code>;c</code> 命令来查看 commits 的改动（<code>;c</code> 是自己设置的快捷键）。</li>
+	<li>FzF 里使用 <code>:Lines</code> 等也支持 rg 的匹配符。</li>
+	<li>你还可以使用 <code>:Colors</code> 来切换一次性的主题。</li>
+</ol>
 
-    <h2>其他</h2>
+<h2>其他</h2>
 
-    <ol>
-      <li>
-        Defx 使用报错的话，可以在安装完依赖后，跑下
-        <code>:UpdateRemotePlugins</code> 命令，并且它使用的是 python3。
-      </li>
-      <li>中文 yank 乱码。在 .vimrc 里加入 <code>lang zh_C`.UTF-8</code>。</li>
-      <li>
-        Coc 插件不正当删除后报错。类似
-        <code
-          >[coc.nvim] Unable to load global extension at
-          /Users/cary/.config/coc/extensions/node_modules/coc-cssmodules:
-          package.json not found</code
-        >，可以删除 <code>~/.config/coc</code> 文件夹后重新进入 vim 自动安装 coc
-        插件，参考了下<a
-          href="https://github.com/neoclide/coc.nvim/issues/1941#issuecomment-637682527"
-          >这里</a
-        >。
-      </li>
-      <li>
-        Github 的代码补全插件配置完成需要跑下 <code>:Copilot setup</code>。
-      </li>
-      <li>Iterm2 可以设置字体 ligatures，目前使用 Monolisa 字体。</li>
-      <li>
-        可以在系统里设置键位 repeat 为最大，delay 最大减一，提高移动速度。
-      </li>
-      <li>
-        Coc.nvim 安装出问题，可以切到
-        <code>cd ~/.local/share/nvim/plugged/coc.nvim</code> 这个目录下，然后
-        <code>npm i</code>。
-      </li>
-      <li>
-        安装完 fish shell 后找不到 nvm 了，安装 fisher
-        <code
-          >curl -sL https://git.io/fisher | source &amp;&amp; fisher install
-          jorgebucaran/fisher</code
-        >，然后 <code>fisher install edc/bass</code>，再在 config.fish
-        配置里添加 下面的函数
+<ol>
+	<li>Defx 使用报错的话，可以在安装完依赖后，跑下 <code>:UpdateRemotePlugins</code> 命令，并且它使用的是 python3。</li>
+	<li>中文 yank 乱码。在 .vimrc 里加入 <code>lang zh_C`.UTF-8</code>。</li>
+	<li>Coc 插件不正当删除后报错。类似 <code>[coc.nvim] Unable to load global extension at /Users/cary/.config/coc/extensions/node_modules/coc-cssmodules: package.json not found</code>，可以删除 <code>~/.config/coc</code> 文件夹后重新进入 vim 自动安装 coc 插件，参考了下<a href="https://github.com/neoclide/coc.nvim/issues/1941#issuecomment-637682527">这里</a>。</li>
+	<li> Github 的代码补全插件配置完成需要跑下 <code>:Copilot setup</code>。</li>
+	<li>Iterm2 可以设置字体 ligatures，目前使用 Monolisa 字体。</li>
+	<li>可以在系统里设置键位 repeat 为最大，delay 最大减一，提高移动速度。</li>
+	<li>Coc.nvim 安装出问题，可以切到 <code>cd ~/.local/share/nvim/plugged/coc.nvim</code> 这个目录下，然后 <code>npm i</code>。</li>
+	<li>安装完 fish shell 后找不到 nvm 了，安装 fisher <code>curl -sL https://git.io/fisher | source &amp;&amp; fisher install jorgebucaran/fisher</code>，然后 <code>fisher install edc/bass</code> 就行了，参考<a href="https://dev.to/carstenbehrens/how-to-fix-unknown-command-nvm-on-linux-2kc4">这里</a>。</li>
+</ol>
 
-        <pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">nvm</span>
-   bass source $HOME/.nvm/nvm.sh --no-use &#39;;&#39; nvm $argv
-end</code></pre>
-      </li>
-    </ol>
+<h2>TODO</h2>
 
-    <h2>TODO</h2>
+<ol>
+	<li>Git merge。感觉还是可视化的比较快，目前用 VSCode 解决冲突，不知道以后有没有更好的办法。</li>
+	<li>如何逐个 find and replace。文件纬度的话，可以使用 <code>%s/old/new/gc</code> 命令，但是项目纬度呢？(其实想想全替的场景应该挺少的，一般直接 refactor）</li>
+	<li>如何查看某个文件的历史版本的变更呢? 目前有时候使用 <code>Gclog</code> 或者 fzf 的 <code>;c</code>，有时直接使用 VSCode。</li>
+</ol>
 
-    <ol>
-      <li>
-        Git merge。感觉还是可视化的比较快，目前用 VSCode
-        解决冲突，不知道以后有没有更好的办法。
-      </li>
-      <li>
-        如何逐个 find and replace。文件纬度的话，可以使用
-        <code>%s/old/new/gc</code>
-        命令，但是项目纬度呢？(其实想想全替的场景应该挺少的，一般直接 refactor）
-      </li>
-      <li>
-        如何查看某个文件的历史版本的变更呢? 目前有时候使用
-        <code>Gclog</code> 或者 fzf 的 <code>;c</code>，有时直接使用 VSCode。
-      </li>
-    </ol>
+<h2>参考</h2>
 
-    <p>后记，这里尝试了下 neovim 然后替换了 zsh 为 fish。</p>
+<ol>
+	<li><a href="https://github.com/1-WEEK/dotfiles/blob/master/.vimrc">老辜 vim 配置</a>｜<a href="https://gist.github.com/benawad/b768f5a5bbd92c8baabd363b7e79786f">benawad nvim 配置</a>｜<a href="https://github.com/PLDaily/pldaily-vim">瑾源 vim 配置</a>｜<a href="https://github.com/craftzdog/dotfiles-public">crazydog nvim 配置</a></li>
+	<li><a href="https://stackoverflow.com/a/68754789/10190407">Aliasing vim to nvim</a></li>
+	<li><a href="https://github.com/github/copilot.vim">copilot.vim 自动补全代码</a></li>
+	<li><a href="https://blog.inkdrop.app/how-to-set-up-neovim-0-5-modern-plugins-lsp-treesitter-etc-542c3d9c9887">How to set up Neovim 0.5 + Modern plugins (LSP, Treesitter, Fuzzy finder, etc)</a></li>
+	<li><a href="https://stackoverflow.com/a/7103261/10190407">如何 override 自定义主题</a></li>
+	<li><a href="https://github.com/neovim/neovim/issues/5683">cannot copy unicode characters</a></li>
+	<li><a href="https://medium.com/@Aenon/vim-swap-backup-undo-git-2bf353caa02f">vim swap backup files</a></li>
+	<li><a href="https://nickjanetakis.com/blog/using-tmux-sessions-windows-panes-and-vim-buffers-together">using-tmux-sessions-windows-panes-and-vim-buffers-together</a></li>
+	<li><a href="https://unix.stackexchange.com/a/125137"> ln -s with a path relative to pwd</a></li>
+	<li><a href="https://github.com/cancng/fonts">一些常用开发字体</a></li>
+	<li><a href="https://vimtricks.com/p/what-is-set-hidden/">vim set hidden</a></li>
+</ol>
 
-    <h2>参考</h2>
-
-    <ol>
-      <li>
-        <a
-          href="https://gist.github.com/benawad/b768f5a5bbd92c8baabd363b7e79786f"
-          >benawad/init.vim</a
-        >｜<a href="https://github.com/PLDaily/pldaily-vim">pldaily-vim</a>｜<a
-          href="https://github.com/craftzdog/dotfiles-public"
-          >dotfiles-public</a
-        >
-      </li>
-      <li>
-        <a href="https://stackoverflow.com/a/68754789/10190407"
-          >Aliasing vim to nvim</a
-        >
-      </li>
-      <li>
-        <a href="https://github.com/github/copilot.vim"
-          >copilot.vim 自动补全代码</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://blog.inkdrop.app/how-to-set-up-neovim-0-5-modern-plugins-lsp-treesitter-etc-542c3d9c9887"
-          >How to set up Neovim 0.5 + Modern plugins (LSP, Treesitter, Fuzzy
-          finder, etc)</a
-        >
-      </li>
-      <li>
-        <a href="https://stackoverflow.com/a/7103261/10190407"
-          >如何 override 自定义主题</a
-        >
-      </li>
-      <li>
-        <a href="https://github.com/neovim/neovim/issues/5683"
-          >cannot copy unicode characters</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://medium.com/@Aenon/vim-swap-backup-undo-git-2bf353caa02f"
-          >vim swap backup files</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://nickjanetakis.com/blog/using-tmux-sessions-windows-panes-and-vim-buffers-together"
-          >using-tmux-sessions-windows-panes-and-vim-buffers-together</a
-        >
-      </li>
-      <li>
-        <a href="https://unix.stackexchange.com/a/125137">
-          ln -s with a path relative to pwd</a
-        >
-      </li>
-      <li><a href="https://github.com/cancng/fonts">一些常用开发字体</a></li>
-    </ol>
-  </body>
+</body>
 </html>
+
