@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,6 +76,7 @@
 	<li>默认的 tmux 分屏是分一半，你可以使用 <code>&lt;prefix&gt;</code> 配合 <code>l</code> <code>r</code> <code>u</code> <code>d</code> 来 resize。l 代表 left，其他同理。</li>
 	<li>临时格式化查看一个文件，可以通过 <code>te</code> 命令直接创建一个 vim buffer（tab）然后输入文件名带后缀，然后在 visual mode 选中所有行之后使用 coc 的 prettier 命令 <code>&lt;leader&gt; fp</code> 来格式化。</li>
 	<li>全替。这个难度稍微高一点，需要学习下 vim 的<a href="https://vimhelp.org/pattern.txt.html#pattern">正则</a>。单文件替换的话可以使用 <code>%s/old/new/gc</code> 来替换，这里的 <code>/c</code> flag 用来替换前做一次确认。项目纬度的全局文件替换的话，可以使用 <code>:vimgrep old *</code> 来进行全局搜索，匹配的文件会被加载到 quickfix list 里去，可以使用 <code>:copen</code> 进行列表查看，真正替换的时候，使用 <code>:cfdo %s/old/new/gc</code> 进行替换，替换完成后真正写入 buffer 需要使用 <code>:cfdo update</code> 进行替换（方法来自 <strong>Practical Vim</strong> 这本书的 Tip 97），单文件替换的话，感觉一般使用 coc 插件的 <code>&lt;leader&gt;rn</code> 进行重命名就行了。vim 里 exact match 的话，可以看下<a href="https://stackoverflow.com/a/22147787/10190407">这里</a>，<code>\&lt;stringtofind\&gt;</code>，将要搜索的放到两个转移后的箭头里面即可，这里的 <code>\&lt;</code> 表示 match 开头，<code>\&gt;</code> 表示 match 结尾。</li>
+	<li>删除多行末尾的 <strong>;</strong> 分号，在 VSCode 里可以使用 multi-cursor，在 Vim 里可以使用 vim 的 macro，首先使用进入 normal mode，输入 <code>q</code> 开始录制 macro，然后键入 <code>a</code> 来指定 register 为 register a，然后我们先输入 <code>$x</code> 跳到行末对单行的 <strong>;</strong> 进行 fix，然后使用 <code>q</code> 完成对单行 fix 的命令录制，然后进入 visual mode 选中还需要进行 fix 的行，然后输入 <code>:normal @a</code> replay register a 里录制的 macro，它会对每一行进行 fix，每一行之间的 fix 都是独立的，也就是某一行 fix 报错了，也不会影响到其他行的 fix，也被称为 parallel fix。还有一种是 serial fix，也就是某一行 fix 报错了，接下来的行不会继续 fix，你直接使用 <code>count@a</code> 即可，如果有 22 行要 fix 的话，那么使用 <code>22@a</code>。（方法来自 <strong>Practical Vim</strong> 的 macro 章节）。</li>
 </ol>
 
 <h2>其他</h2>
