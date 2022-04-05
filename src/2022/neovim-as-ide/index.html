@@ -88,6 +88,7 @@
 	<li>Iterm2 可以设置字体 ligatures，目前使用 Monolisa 字体。</li>
 	<li>可以在系统里设置键位 repeat 为最大，delay 最大减一，提高移动速度。</li>
 	<li>Coc.nvim 安装出问题，可以切到 <code>cd ~/.local/share/nvim/plugged/coc.nvim</code> 这个目录下，然后 <code>npm i</code>。</li>
+	<li>进入 tmux 后使用 zsh，输入 ls 会变成 lss，排查发现原来是它的 zsh-autosuggestions 的插件的问题。。。，然后删除键还会变成空格键，最后在 zsh 配置里加了 <code>TERM=&quot;xterm&quot;</code> 两个问题都好了。</li>
 </ol>
 
 <h2>TODO</h2>
