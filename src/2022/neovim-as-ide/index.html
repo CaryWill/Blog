@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,6 +73,9 @@
 	<li>你可以使用 <code>:Gclog</code> 来查看 commits 的改动，或者使用 fzf 的 <code>;c</code> 命令来查看 commits 的改动（<code>;c</code> 是自己设置的快捷键）。</li>
 	<li>FzF 里使用 <code>:Lines</code> 等也支持 rg 的匹配符。</li>
 	<li>你还可以使用 <code>:Colors</code> 来切换一次性的主题。</li>
+	<li>默认的 tmux 分屏是分一半，你可以使用 <code>&lt;prefix&gt;</code> 配合 <code>l</code> <code>r</code> <code>u</code> <code>d</code> 来 resize。l 代表 left，其他同理。</li>
+	<li>临时格式化查看一个文件，可以通过 <code>te</code> 命令直接创建一个 vim buffer（tab）然后输入文件名带后缀，然后在 visual mode 选中所有行之后使用 coc 的 prettier 命令 <code>&lt;leader&gt; fp</code> 来格式化。</li>
+	<li>全替。这个难度稍微高一点，需要学习下 vim 的<a href="https://vimhelp.org/pattern.txt.html#pattern">正则</a>。单文件替换的话可以使用 <code>%s/old/new/gc</code> 来替换，这里的 <code>/c</code> flag 用来替换前做一次确认。项目纬度的全局文件替换的话，可以使用 <code>:vimgrep old *</code> 来进行全局搜索，匹配的文件会被加载到 quickfix list 里去，可以使用 <code>:copen</code> 进行列表查看，真正替换的时候，使用 <code>:cfdo %s/old/new/gc</code> 进行替换，替换完成后真正写入 buffer 需要使用 <code>:cfdo update</code> 进行替换（方法来自 <strong>Practical Vim</strong> 这本书的 Tip 97），单文件替换的话，感觉一般使用 coc 插件的 <code>&lt;leader&gt;rn</code> 进行重命名就行了。vim 里 exact match 的话，可以看下<a href="https://stackoverflow.com/a/22147787/10190407">这里</a>，<code>\&lt;stringtofind\&gt;</code>，将要搜索的放到两个转移后的箭头里面即可，这里的 <code>\&lt;</code> 表示 match 开头，<code>\&gt;</code> 表示 match 结尾。</li>
 </ol>
 
 <h2>其他</h2>
@@ -85,14 +88,12 @@
 	<li>Iterm2 可以设置字体 ligatures，目前使用 Monolisa 字体。</li>
 	<li>可以在系统里设置键位 repeat 为最大，delay 最大减一，提高移动速度。</li>
 	<li>Coc.nvim 安装出问题，可以切到 <code>cd ~/.local/share/nvim/plugged/coc.nvim</code> 这个目录下，然后 <code>npm i</code>。</li>
-	<li>安装完 fish shell 后找不到 nvm 了，安装 fisher <code>curl -sL https://git.io/fisher | source &amp;&amp; fisher install jorgebucaran/fisher</code>，然后 <code>fisher install edc/bass</code> 就行了，参考<a href="https://dev.to/carstenbehrens/how-to-fix-unknown-command-nvm-on-linux-2kc4">这里</a>。</li>
 </ol>
 
 <h2>TODO</h2>
 
 <ol>
 	<li>Git merge。感觉还是可视化的比较快，目前用 VSCode 解决冲突，不知道以后有没有更好的办法。</li>
-	<li>如何逐个 find and replace。文件纬度的话，可以使用 <code>%s/old/new/gc</code> 命令，但是项目纬度呢？(其实想想全替的场景应该挺少的，一般直接 refactor）</li>
 	<li>如何查看某个文件的历史版本的变更呢? 目前有时候使用 <code>Gclog</code> 或者 fzf 的 <code>;c</code>，有时直接使用 VSCode。</li>
 </ol>
 
