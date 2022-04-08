@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +13,7 @@
 
 <figure><img src="DraggedImage.png"/></figure>
 
-<p>想起第一次看到同事在用 Vim 的时候，还是第一家公司看到<strong>一周</strong>在用的时候，第二次看到直接使用 Vim 作为前端 IDE 的时候是看到瑾源大哥在用的时候（看到的时候感觉十分的震撼）。</p>
+<p>想起第一次看到同事在用 Vim 的时候，还是第一家公司看到<strong>一周</strong>在用的时候，第二次看到直接使用 Vim 作为前端 IDE 的时候是看到瑾源在用的时候（看到的时候感觉十分的震撼，因为自己 VSCode 配上 VSCode 的 vim 插件就相当不错了，基本能满足日常开发了，从没想过还能直接上 Vim 作为 IDE</p>
 
 <p>在今年 1 月 16 号写完 <strong> VIM setup as an IDE</strong> 这篇文章后，使用 Vim 作为前端 IDE 开发的时候，还是觉得有点不顺，于是配置好的 3 天后基本就放弃了，主要是那时候几个问题导致的，</p>
 
@@ -79,20 +79,27 @@
 	<li>删除多行末尾的 <strong>;</strong> 分号，在 VSCode 里可以使用 multi-cursor，在 Vim 里可以使用 vim 的 macro，首先使用进入 normal mode，输入 <code>q</code> 开始录制 macro，然后键入 <code>a</code> 来指定 register 为 register a，然后我们先输入 <code>$x</code> 跳到行末对单行的 <strong>;</strong> 进行 fix，然后使用 <code>q</code> 完成对单行 fix 的命令录制，然后进入 visual mode 选中还需要进行 fix 的行，然后输入 <code>:normal @a</code> replay register a 里录制的 macro，它会对每一行进行 fix，每一行之间的 fix 都是独立的，也就是某一行 fix 报错了，也不会影响到其他行的 fix，也被称为 parallel fix。还有一种是 serial fix，也就是某一行 fix 报错了，接下来的行不会继续 fix，你直接使用 <code>count@a</code> 即可，如果有 22 行要 fix 的话，那么使用 <code>22@a</code>。（方法来自 <strong>Practical Vim</strong> 的 macro 章节）。在 Vim 里 multi-cursor 其实真的不需要，可以看下<a href="https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db">这篇文章</a>，这里的 visual block 模式和 multi-cursor 就很像，我们可以使用 visual block mode 来实现下，首先使用 <code>ctrl-v</code> 在当前光标下进入 visual mode，然后你可以使用 hjkl 来进行多行选中，多选一行相当于多添加了一个光标，然后使用 j 方向键选中所有的 <strong>;</strong>，然后使用 <code>x</code> 删除 <strong>;</strong>，这样所有的 <strong>;</strong> 就会被删除了。如果你想要插入字符的话，只有在你退出插入模式进入 normal mode 的时候，单行的 change 才会反应到多行上面。- 2022.04.05</li>
 	<li>对于 vim 里不熟的命令可以使用 <code>:help command</code> 来查看命令，比如，<code>:help ~</code> 来查看 <code>~</code> 的使用方法。- 2022.04.06</li>
 	<li>在 insert mode 的时候使用 <code>ctrl-w</code> 来替换删除键。- 2022.04.06</li>
-	<li>删除全部的 console.log，还是发现了全替的使用场景。首先使用 <code>;r</code> 输入 <strong>console.log(</strong> 来搜索所有的 console.log，然后使用 fzf 的 <code>ctrl-a</code> 全选，然后使用 fzf 的 <code>ctrl-q</code> 将所选全部 load 到 vim 的quickfix list 中去，这样我们就可以全替了，但是在全替之前我们得对这个 quickfix list 做一次筛选，因为有的 console.log 是跨了几行的，我们可以使用 vim 内置的 Cfilter 插件对 quickfix list 做一次筛选，使用 <code>:Cfilter console.log(.*);</code> （并使用了正则）来过滤，过滤完了使用 <code>cdo s/console.log(.*);//c</code> 进行确认式替换单个 quickfix entry，最后替换完成后使用 <code>cdo update</code> 即可写入所有的 vim buffer。最后使用 <code>;r</code> 手动替换剩下的几个即可。（备注：可了解下 <code>:cdo</code>, <code>:cfdo</code>, 以及 quickfix list），对了你还可以使用 <code>:copen</code> 来查看 quickfix 列表。(还有一种思路可以试一下 multi-line match）- 2022.04.06</li>
+	<li>删除全部的 console.log，还是发现了全替的使用场景。首先使用 <code>;r</code> 输入 <strong>console.log(</strong> 来搜索所有的 console.log，然后使用 fzf 的 <code>ctrl-a</code> 全选，然后使用 fzf 的 <code>ctrl-q</code> 将所选全部 load 到 vim 的quickfix list 中去，这样我们就可以全替了，但是在全替之前我们得对这个 quickfix list 做一次筛选，因为有的 console.log 是跨了几行的，我们可以使用 vim 内置的 Cfilter 插件对 quickfix list 做一次筛选，使用 <code>:Cfilter /console\.log(.*);/</code> （并使用了正则）来过滤，过滤完了使用 <code>cdo s/console\.log(.*);//c</code> 进行确认式替换单个 quickfix entry，最后替换完成后使用 <code>cdo update</code> 即可写入所有的 vim buffer。最后使用 <code>;r</code> 手动替换剩下的几个即可。（备注：可了解下 <code>:cdo</code>, <code>:cfdo</code>, 以及 quickfix list），对了你还可以使用 <code>:copen</code> 来查看 quickfix 列表。(还有一种思路可以试一下 multi-line match）- 2022.04.06</li>
+	<li>删除全部的 console.log 方法二，不使用 Rg（ripgrep），还是使用 vimgrep，这里的难点其实就是不搜索 <code>.gitignore</code> 里 ignore 的文件即可。可以看下这个解决<a href="https://stackoverflow.com/a/59544056/10190407">方案</a>，可以使用 <code>:vimgrep /console\.log(.*);/g `git ls-files`</code> 来将 console.log 加入到 quickfix list 去，省去了上面的 filter 的步骤。最后再使用 rg 来处理剩下的几个多行的 console.log。为了方便在 vimrc 里加了个自定义命令 <code>command -nargs=1 Gvimgrep vimgrep /&lt;args&gt;/g `git ls-files` | copen</code>, 可以使用 <code>Gvimgrep</code> 直接进行搜索，比如，<code>:Gvimgrep console\.log(.*);</code> （其实替换的这一步的话也可以使用 register 来 dd 一下）- 2022.04.06</li>
 </ol>
 
 <h2>其他</h2>
 
 <ol>
 	<li>Defx 使用报错的话，可以在安装完依赖后，跑下 <code>:UpdateRemotePlugins</code> 命令，并且它使用的是 python3。</li>
-	<li>中文 yank 乱码。在 .vimrc 里加入 <code>lang zh_C`.UTF-8</code>。</li>
+	<li>中文 yank 乱码。在 zshrc 里加了行 <code>export LANG=&quot;UTF-8&quot;</code>并且在 vim 配置里加入了 <code>lang en_US.UTF-8</code>。</li>
 	<li>Coc 插件不正当删除后报错。类似 <code>[coc.nvim] Unable to load global extension at /Users/cary/.config/coc/extensions/node_modules/coc-cssmodules: package.json not found</code>，可以删除 <code>~/.config/coc</code> 文件夹后重新进入 vim 自动安装 coc 插件，参考了下<a href="https://github.com/neoclide/coc.nvim/issues/1941#issuecomment-637682527">这里</a>。</li>
 	<li> Github 的代码补全插件配置完成需要跑下 <code>:Copilot setup</code>。</li>
 	<li>Iterm2 可以设置字体 ligatures，目前使用 Monolisa 字体。</li>
 	<li>可以在系统里设置键位 repeat 为最大，delay 最大减一，提高移动速度。</li>
 	<li>Coc.nvim 安装出问题，可以切到 <code>cd ~/.local/share/nvim/plugged/coc.nvim</code> 这个目录下，然后 <code>npm i</code>。</li>
 	<li>进入 tmux 后使用 zsh，输入 ls 会变成 lss，排查发现原来是它的 zsh-autosuggestions 的插件的问题。。。，然后删除键还会变成空格键，最后在 zsh 配置里加了 <code>TERM=&quot;xterm&quot;</code> 两个问题都好了。</li>
+</ol>
+
+<ol start="9">
+	<li>可以使用 <code>:hi</code> 命令查看 vim 的配色，从而进行自定义。</li>
+	<li>Vim 在进入 visual mode 的时候，选择的时候光标的颜色和选择的高亮颜色不一致很突兀，可以在 iterm 里改下 Cursor 和 cursor text 两个属性。还有光标的高度和选择的字符的高度不完全一致，发现可以设置 iterm text 里的行高。（n/n 设置为了 100 目前， v/i 也设置为了 100 当前字体下）</li>
+	<li>改了 vim 配置之后可以使用 <code>:source ~/.vimrc</code> 进行配置的重新加载。</li>
 </ol>
 
 <h2>TODO</h2>
@@ -123,6 +130,9 @@
 	<li><a href="https://linuxize.com/post/vim-find-replace/">find and replace</a></li>
 	<li><a href="https://teukka.tech/vimcandothat.html">Cfilter</a></li>
 	<li><a href="https://www.reddit.com/r/vim/comments/f9izlt/the_cfilter_plugin/">Cfilter vim YouTube</a></li>
+	<li><a href="http://vimcasts.org/blog/2013/03/combining-vimgrep-with-git-ls-files/">Combining :vimgrep with git ls-files</a></li>
+	<li><a href="https://stackoverflow.com/a/59544056/10190407">How to exclude file patterns in vimgrep? With autocmd vimgrep with git ls-files</a></li>
+	<li><a href="https://devhints.io/vimscript">vimscript cheatsheet</a></li>
 </ol>
 
 </body>
