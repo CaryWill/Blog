@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -83,6 +83,38 @@
 	<li>删除全部的 console.log 方法二，不使用 Rg（ripgrep），还是使用 vimgrep，这里的难点其实就是不搜索 <code>.gitignore</code> 里 ignore 的文件即可。可以看下这个解决<a href="https://stackoverflow.com/a/59544056/10190407">方案</a>，可以使用 <code>:vimgrep /console\.log(.*);/g `git ls-files`</code> 来将 console.log 加入到 quickfix list 去，省去了上面的 filter 的步骤。最后再使用 rg 来处理剩下的几个多行的 console.log。为了方便在 vimrc 里加了个自定义命令 <code>command -nargs=1 Gvimgrep vimgrep /&lt;args&gt;/g `git ls-files` | copen</code>, 可以使用 <code>Gvimgrep</code> 直接进行搜索，比如，<code>:Gvimgrep console\.log(.*);</code> （其实替换的这一步的话也可以使用 register 来 dd 一下）- 2022.04.06</li>
 </ol>
 
+<h2>Vim 相关</h2>
+
+<p>Vim 中主要的操作是，<strong>operator</strong>+<strong>motion</strong>/<strong>text object</strong> 配合 count。</p>
+
+<p>motion 和 text object 差不多，但是 motion 是单向的，而 text object 是双向的。举个例子，motion <code>w</code> 是跳到下一个 word，是向右的，而 text object <code>iw</code> 是表示当前光标所在的单词，是双向的表示一个范围，和 operator 配合起来，举个例子，<code>dw</code> 删除直到下一个单词，而 <code>diw</code> 是删除当前的单词，下面是一些常用的 operator，motion 和 text object，</p>
+
+<ul>
+	<li>比较常用的 operator: <code>c</code>, <code>d</code>, <code>y</code>,<code>gu</code>,<code>gU</code></li>
+	<li>比较常用的 motion: <code>h</code>,<code>j</code>,<code>k</code>,<code>l</code>,<code>0</code>,<code>$</code>,<code>f</code>,<code>F</code>,<code>t</code>,<code>T</code>,<code>;</code>,<code>,</code>,<code>w</code>,<code>e</code>,<code>ge</code></li>
+	<li>比较常用的 text object: <code>aw</code>, <code>iw</code>,<code>at</code>,<code>a/i`&#39;&quot;{&lt;[(</code>。(a for around, i for inner)</li>
+</ul>
+
+<p>上面的 operator+motion 模式是对于 normal mode 来说的，在 visual mode 中的话，是 motion+operator 模式，比如 <code>vegU</code>。</p>
+
+<ol>
+	<li>之前不是很熟悉 operator 的时候都是使用 <code>VegU</code> 先进入 visual mode 然后使用 motion <code>e</code> 配合 <code>gU</code> 进行大写转换，现在发现可以直接使用 <code>gU</code> operator，比如，<code>gU</code> 配上 <code>e</code> motion，也就是 <code>gUe</code> 来完成。</li>
+	<li>Vim 里有 sessions，tabs，windows 的概念，Tmux 也有 sessions，windows（tabs），panes（splits） 的概念，这三个概念都是一一对应的， sessions 对 sessions，tabs 对 windows，windows 对 panes。目前的工作流中，使用了 vim 的 tabs 和 windows 以及 tmux 的 sessions 和 panes。vim 的 tabs 用来看不同的文件，有需要的话会进行分屏也就是 windows 的概念，因为开发过程中需要跑开发服务器放在后台，所以会使用 tmux 的 panes 来进行上下分屏在下面开一个 terminal，然后使用 tmux 的 sessions 来进行不同项目的管理。</li>
+	<li>Vim 也可以直接调出 termnial 使用 <code>:termnial</code> 的命令就可以了，然后使用 <code>i</code> 来和 terminal 进行交互，使用 <code>ctrl-\ ctrl-n</code> 来回到 vim 编辑器。但是这个没有 tmux 方便。</li>
+	<li><code>?</code> 是反方向搜索，相对于，<code>/</code>。</li>
+	<li>Register。用来进行复杂的操作，可以录制一堆 operator+motion，然后 replay。使用 <code>q</code> 开始煮呗录制，选择 a-z 中的 26 一个字母进行录制（也就是选择 register），录制完毕敲击 <code>q</code> 结束录制。使用 <code>@</code> 加上你选的字母就行 replay（serial 的，如果对多个文件进行回放的时候报错的话，1个文件报错那么就不会继续了），所以你也可以使用 <code>:normal @a</code> 进行 replay（parallel 的，一个文件报错不会影响其他文件的 replay）。</li>
+	<li>插入模式下使用 CTRL-O 可以使用一次 normal mode 的命令，使用完成自动切换为插入模式。</li>
+	<li><code>ctrl-z</code> 可以将当前进程放入后台，使用 <code>fg&lt;Enter&gt;</code> 可以重新加载当前进程。</li>
+	<li>vim command line mode 下可以使用 <code>&lt;C-d&gt;</code> 来调出备选项，以及使用 <code>&lt;Tab&gt;</code> 来进行补全。</li>
+	<li>使用 <code>:!</code> 可以执行 shell 等的外部程序命令，比如 <code>:!ls</code>。</li>
+	<li><code>%</code> 可以用来 navigate 匹配的括号和 html 标签等。</li>
+	<li> 替换。<code>s</code> 替换光标所在行，<code>%s</code> 替换光标所在文件。</li>
+	<li><code>K</code> 可以查看命令文档，<code>:help yourcommandtosearch</code> 速查命令。</li>
+	<li>Marks。可以使用 <code>|``|`</code> 或者 <code>&#39;</code> 进行 mark 的跳转，可以使用 <code>:marks</code> 来查看所有的标记。<code>&#39;0</code> 可以跳转到最新的一次变更。(不怎么常用，一般使用默认的 Marks，比如 <code>ctrl-o</code> 和 <code>ctrl-i</code> 命令来跳转到默认的一些 marks 标记。</li>
+	<li>Buffers。可以使用 <code>:ls</code> 查看所有的 buffer。</li>
+	<li>Undotree。可以使用 <code>:undolist</code> 来查看当前文件的 change list。- 2022.04.07</li>
+</ol>
+
 <h2>其他</h2>
 
 <ol>
@@ -133,6 +165,16 @@
 	<li><a href="http://vimcasts.org/blog/2013/03/combining-vimgrep-with-git-ls-files/">Combining :vimgrep with git ls-files</a></li>
 	<li><a href="https://stackoverflow.com/a/59544056/10190407">How to exclude file patterns in vimgrep? With autocmd vimgrep with git ls-files</a></li>
 	<li><a href="https://devhints.io/vimscript">vimscript cheatsheet</a></li>
+	<li><a href="http://yannesposito.com/Scratch/en/blog/Learn-Vim-Progressively/">Learn-Vim-Progressively</a> </li>
+	<li><a href="http://benmccormick.org/learning-vim-in-2014/">Learning Vim in 2013</a></li>
+	<li><a href="http://vimcasts.org/">Vimcasts</a></li>
+	<li><a href="http://derekwyatt.org/vim/tutorials/">Vim Video-Tutorials by Derek Wyatt</a></li>
+	<li><a href="%20http://learnvimscriptthehardway.stevelosh.com/">Learn Vimscript the Hard Way</a></li>
+	<li><a href="http://www.moolenaar.net/habits.html">7 Habits of Effective Text Editing</a></li>
+	<li><a href="%20https://github.com/mhinz/vim-galore">vim-galore</a></li>
+	<li><a href="https://neovim.io/doc/user/map.html#mapping">neovim help file</a></li>
+	<li><a href="https://neovim.io/doc/user/map.html#mapping">vim help file</a></li>
+	<li><a href="https://thoughtbot.com/blog/a-tmux-crash-course">A tmux Crash Course</a></li>
 </ol>
 
 </body>
