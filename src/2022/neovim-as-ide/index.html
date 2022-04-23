@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,11 +53,9 @@
 	<li>Indent。进入 Vim visual mode 然后，使用 <code>&lt;</code> 或者 <code>&gt;</code> 然后可以配合 <code>.</code> repeat 键。</li>
 	<li>在 nerdtree 里创建文件。使用 <code>m</code> 唤起操作菜单。</li>
 	<li>Git unstage。<code>:G</code> 然后使用 <code>u</code> 就可以 unstage 一个文件。</li>
-	<li>将搜索的文件新开 tab。使用 <code>;f</code> 来搜索项目文件，<code>ctrl-p</code> 和 <code>ctrl-n</code> 上下移动文件，对于选中的文件可以使用 <code>ctrl-u</code> 来新开 tab。</li>
+	<li>将搜索的文件新开 tab。使用 <code>;f</code> 来搜索项目文件，<code>ctrl-p</code> 和 <code>ctrl-n</code> 上下移动文件，对于选中的文件可以使用 <code>ctrl-u</code> 和 <code>ctrl-d</code>来滚动查看内容，使用 <code>ctrl-t</code> 来在新的 tab 打开。</li>
 	<li>全局文件内容全局搜索。<code>;r</code> 来使用fzf vim 进行全局搜索。</li>
 	<li>Git commit 前看下文件改动。使用 <code>:G</code> 查看所有变动的文件，然后可以使用 <code>ctrl-n</code> 或者 <code>ctrl-p</code> 来将光标上下移动，然后使用直接敲击 <code>dv</code> 命令就可以以分屏的方式查看当前光标所在行（文件）的 diff 了，其他的一些快捷键可以参考下官方<a href="https://github.com/tpope/vim-fugitive/blob/master/doc/fugitive.txt">文档</a>。可以使用 <code>te</code> 回车来新建一个 vim tab 进行 diff review。</li>
-	<li>系统异常了文件丢失了怎么办？可以去 <code>/tmp</code> 目录下找对应的 <code>.swp</code> 文件进行恢复。</li>
-	<li>vim 里 <code>ctrl-d</code> 不会翻页怎么办，而是会删除。这里是 Mac 系统设置了大小写键绑定成了 control 键，开了 karabiner 会有这个问题，需要在 karabiner 里也将 大小写键绑定成了 control 键。（Tips: 可以通过 karabiner-eventviewer 排查问题）</li>
 	<li>使用 tmux 同时开发多个项目，可以使用 tmux session，每一个 sessioin 作为管理一个项目。使用 <code>tmux</code> 命令会默认创建一个 session，你也可以使用 <code>tmux new -s mysession</code> 来创建命名后的 session。</li>
 	<li>运行后台服务，比如 wds。可以使用 tmux window，可以使用 <code>&lt;prefix&gt; c</code> 来创建一个 window，用来跑服务。但是目前我比较喜欢类似 VSCode 里的 terminal 的布局，所以我会使用 <code>&lt;prefix&gt; &quot;</code> 在屏幕下方创建一个 tmux pane，然后使用 <code>&lt;prefix&gt; l</code> 移动到上面的 pane，然后使用 <code>&lt;prefix&gt; z</code> 来全屏上面的 pane，这样下面的 pane 就会自动 minimized 了，<code>prefix</code> 我定义为了 <code>ctrl+space</code>，然后你也可以使用 tmux window 临时打开一些项目。</li>
 	<li>折叠。可以使用 <code>zc</code> 和 <code>zo</code> 来进行 fold 和 unfold，这里配置了 <code>set foldmethod=indent</code> 是根据缩进来进行 fold 的，所以相同的缩进的行会被 fold，还是很方便的。而且缩进后会变成一行，你使用 vim 方向键上下移动而会将其视作一行，而不会移到该行自动展开，非常 nice！</li>
@@ -81,7 +79,7 @@
 	<li>在 insert mode 的时候使用 <code>ctrl-w</code> 来替换删除键。- 2022.04.06</li>
 	<li>删除全部的 console.log，还是发现了全替的使用场景。首先使用 <code>;r</code> 输入 <strong>console.log(</strong> 来搜索所有的 console.log，然后使用 fzf 的 <code>ctrl-a</code> 全选，然后使用 fzf 的 <code>ctrl-q</code> 将所选全部 load 到 vim 的quickfix list 中去，这样我们就可以全替了，但是在全替之前我们得对这个 quickfix list 做一次筛选，因为有的 console.log 是跨了几行的，我们可以使用 vim 内置的 Cfilter 插件对 quickfix list 做一次筛选，使用 <code>:Cfilter /console\.log(.*);/</code> （并使用了正则）来过滤，过滤完了使用 <code>cdo s/console\.log(.*);//c</code> 进行确认式替换单个 quickfix entry，最后替换完成后使用 <code>cdo update</code> 即可写入所有的 vim buffer。最后使用 <code>;r</code> 手动替换剩下的几个即可。（备注：可了解下 <code>:cdo</code>, <code>:cfdo</code>, 以及 quickfix list），对了你还可以使用 <code>:copen</code> 来查看 quickfix 列表。(还有一种思路可以试一下 multi-line match）- 2022.04.06</li>
 	<li>删除全部的 console.log 方法二，不使用 Rg（ripgrep），还是使用 vimgrep，这里的难点其实就是不搜索 <code>.gitignore</code> 里 ignore 的文件即可。可以看下这个解决<a href="https://stackoverflow.com/a/59544056/10190407">方案</a>，可以使用 <code>:vimgrep /console\.log(.*);/g `git ls-files`</code> 来将 console.log 加入到 quickfix list 去，省去了上面的 filter 的步骤。最后再使用 rg 来处理剩下的几个多行的 console.log。为了方便在 vimrc 里加了个自定义命令 <code>command -nargs=1 Gvimgrep vimgrep /&lt;args&gt;/g `git ls-files` | copen</code>, 可以使用 <code>Gvimgrep</code> 直接进行搜索，比如，<code>:Gvimgrep console\.log(.*);</code> （其实替换的这一步的话也可以使用 register 来 dd 一下）- 2022.04.06</li>
-	<li>Tmux 可以使用 <code>prefix [</code> 进入查看模式，可以使用 空格键 开始选择，然后使用 回车键完成选择退出查看模式，然后就可以直接粘贴了。</li>
+	<li>Tmux 可以使用 <code>prefix [</code> 进入查看模式，可以使用 空格键 开始选择，然后使用 回车键完成选择退出查看模式，然后就可以直接粘贴了。- 2022.04.06</li>
 </ol>
 
 <ol start="35">
@@ -90,6 +88,12 @@
 	<li>可以使用 marks 来做标记来查看标记的源码。</li>
 	<li><code>&lt;C-w&gt;T</code> 可以将 vim split 移到新的 tab。</li>
 	<li>不知道上次改了哪里可以使用 <code>:marks</code>，<code>:buffers</code> 或者使用 <code>:G</code> 然后打开变更文件然后使用 <code>&lt;C-w&gt;T</code> 在新的 tab 打开然后使用 <code>&lt;Shift&gt;-h</code> 切换到之前的 tab 然后 <code>tq</code> 关掉该 tab。</li>
+	<li>离开项目后重新回到之前的那个地方使用 marker <code>&#39;0</code> 或者 <code>`0</code> 回到之前的地方。 - 2022.04.18</li>
+	<li>Git blame 可以使用 <code>:Git blame</code>。可以自定义一些 <a href="https://www.reddit.com/r/vim/comments/21f4gm/comment/cgcwh5d/?utm_source=share&amp;utm_medium=web2x&amp;context=3">mapping</a>，链接里的一些 API 可能比较旧了，比如 <code>Gblame</code> 重命名为了 <code>Git blame</code>。- 2022.04.18</li>
+	<li>临时想打开一个文件夹，直接拖到 iterm2 就行了，这样就直接切换了路径，然后用 vim 打开就行了。 - 2022.04.21</li>
+	<li>发现有的时候会出现割裂状态栏，然后直接刷新 tmux 配置就行了。</li>
+	<li>tmux rename a window <code>&lt;prefix&gt;,</code>，tmux 切换到 last window <code>&lt;prefix&gt;&lt;prefix&gt;</code>。 - 2022.04.21</li>
+	<li>使用 vim 分屏的 terminal 代替 tmux 分屏的 terminal 功能增加 toggle terminal 的功能，toggle 不再使用 tmux zoom 全屏来实现了，十分的便捷，来自 <a href="https://www.reddit.com/r/vim/comments/8n5bzs/comment/dzt3fix/?utm_source=share&amp;utm_medium=web2x&amp;context=3">reddit</a> 上的这篇文章。 - 2022.04.21</li>
 </ol>
 
 <h2>Vim 相关</h2>
@@ -107,7 +111,7 @@
 <p>上面的 operator+motion 模式是对于 normal mode 来说的，在 visual mode 中的话，是 motion+operator 模式，比如 <code>vegU</code>。</p>
 
 <ol>
-	<li>之前不是很熟悉 operator 的时候都是使用 <code>VegU</code> 先进入 visual mode 然后使用 motion <code>e</code> 配合 <code>gU</code> 进行大写转换，现在发现可以直接使用 <code>gU</code> operator，比如，<code>gU</code> 配上 <code>e</code> motion，也就是 <code>gUe</code> 来完成。</li>
+	<li>之前不是很熟悉 operator 的时候都是使用 <code>VegU</code> 先进入 visual mode 然后使用 motion <code>e</code> 配合 <code>gU</code> 进行大写转换，现在发现可以直接使用 <code>gU</code> operator，比如sdfadfls，<code>gU</code> 配上 <code>e</code> motion，也就是 <code>gUe</code> 来完成。</li>
 	<li>Vim 里有 sessions，tabs，windows 的概念，Tmux 也有 sessions，windows（tabs），panes（splits） 的概念，这三个概念都是一一对应的， sessions 对 sessions，tabs 对 windows，windows 对 panes。目前的工作流中，使用了 vim 的 tabs 和 windows 以及 tmux 的 sessions 和 panes。vim 的 tabs 用来看不同的文件，有需要的话会进行分屏也就是 windows 的概念，因为开发过程中需要跑开发服务器放在后台，所以会使用 tmux 的 panes 来进行上下分屏在下面开一个 terminal，然后使用 tmux 的 sessions 来进行不同项目的管理。</li>
 	<li>Vim 也可以直接调出 termnial 使用 <code>:termnial</code> 的命令就可以了，然后使用 <code>i</code> 来和 terminal 进行交互，使用 <code>ctrl-\ ctrl-n</code> 来回到 vim 编辑器。但是这个没有 tmux 方便。</li>
 	<li><code>?</code> 是反方向搜索，相对于，<code>/</code>。</li>
@@ -119,14 +123,15 @@
 	<li><code>%</code> 可以用来 navigate 匹配的括号和 html 标签等。</li>
 	<li> 替换。<code>s</code> 替换光标所在行，<code>%s</code> 替换光标所在文件。</li>
 	<li><code>K</code> 可以查看命令文档，<code>:help yourcommandtosearch</code> 速查命令。</li>
-	<li>Marks。可以使用 <code>|``|`</code> 或者 <code>&#39;</code> 进行 mark 的跳转，可以使用 <code>:marks</code> 来查看所有的标记。<code>&#39;0</code> 可以跳转到最新的一次变更。(不怎么常用，一般使用默认的 Marks，比如 <code>ctrl-o</code> 和 <code>ctrl-i</code> 命令来跳转到默认的一些 marks 标记。</li>
+	<li>Marks。可以使用 <code>`</code> 或者 <code>&#39;</code> 进行 mark 的跳转，可以使用 <code>:marks</code> 来查看所有的标记。<code>&#39;0</code> 可以跳转到最新的一次变更。(不怎么常用，一般使用默认的 Marks，比如 <code>ctrl-o</code> 和 <code>ctrl-i</code> 命令来跳转到默认的一些 marks 标记。</li>
 	<li>Buffers。可以使用 <code>:ls</code> 查看所有的 buffer，有 + 号的说明改动了。</li>
 	<li>Undotree。可以使用 <code>:undolist</code> 来查看当前文件的 change list。- 2022.04.07</li>
 	<li>插入模式里删除键可以使用 &lt;ctrl-h&gt; 来替代删除键（backspace），因为我觉的删除键有点远啊（不过一开始可能会有点不习惯，对了很多软件里我发现这个快捷键也是可以用来替代删除操作的），normal mode 可以使用 x 来代替。(你可以使用 <code>:h CTRL-h</code> 来查看 help）。向后删除可以使用 <code>ctrl-d</code>。- 2022.04.10</li>
 	<li>ESC 键 可以使用 <code>ctrl-[</code> 来替代，这个也是 vim 默认的 mapping。</li>
 	<li>在 split 后的命令行里进行 git commit 的时候，如果 eslint 报错了，然后屏幕又十分的窄，可以使用 <code>&lt;ctrl&gt;-z</code> 来 toggle 进行全屏查看，使用 <code>&lt;prefix&gt;-[</code> 进行滚动查看。- 2022.04.10</li>
-	<li>Git conflict 可以用 <code>:G</code> 打开 git status，然后你的 conflict 文件会在 unstaged group 下面，一样使用 <code>dv</code> 就可以打开三方 diff 的模式了。 <strong> &lt;&lt;&lt;&lt;&lt;&lt;&lt;</strong> 表示 HEAD 的 current change，而 <strong>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</strong> 表示 incoming change，解决完一个 conflict marker 标记冲突后，可以使用 <code>&lt;leader&gt;fc</code> 来搜索下一个 conflict marker，之后使用 <code>n</code> 或者 <code>N</code> 来移动即可。（<code>&lt;leader&gt;fc</code> 是我的 mapping，用来快速搜索 git conflict marker，<code>map &lt;leader&gt;fc /\v^[&lt;\|=&gt;]{7}( .*\|$)&lt;CR&gt;</code> ）- 2022.04.14</li>
+	<li>Git conflict 可以用 <code>:G</code> 打开 git status，然后你的 conflict 文件会在 unstaged group 下面，一样使用 <code>dv</code> 就可以打开三方 diff 的模式了。 <strong> &lt;&lt;&lt;&lt;&lt;&lt;&lt;</strong> 表示 HEAD 的 current change，而 <strong>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</strong> 表示 incoming change，解决完一个 <a href="https://stackoverflow.com/a/7901901">conflict marker</a> 标记冲突后，可以使用 <code>&lt;leader&gt;fc</code> 来搜索下一个 conflict marker，之后使用 <code>n</code> 或者 <code>N</code> 来移动即可。（<code>&lt;leader&gt;fc</code> 是我的 mapping，用来快速搜索 git conflict marker，<code>map &lt;leader&gt;fc /\v^[&lt;\|=&gt;]{7}( .*\|$)&lt;CR&gt;</code> ）（还有就是可以使用 <code>&lt;ctrl&gt;-w _</code> 来最大化高度全屏查看，然后使用 <code>&lt;ctrl&gt;-w =</code> 恢复原来的样子（各个 split 一样高）- 2022.04.14</li>
 	<li>Vim 里可以使用 fugitive 这个插件，在当前打开的 buffer（文件下）输入 <code>:0Gllog</code> 就可以将该文件所有的 revision 版本加入到 vim 的 location list 里去，你可以回车选择 location list 里的一项然后使用 <code>dv</code> 命令来查看该 commit 和上一个 commit 的 diff，也就是引入的 change。（或者 <code>:0Gclog</code> 也行，只不过会加入到 quickfix list 中去而不是 location list）- <a href="https://github.com/tpope/vim-fugitive/blob/master/doc/fugitive.txt">来源</a> - 2022.04.15</li>
+	<li>Vi 自带的主题也挺好看的其实。</li>
 </ol>
 
 <h2>其他</h2>
@@ -149,11 +154,17 @@
 	<li>升级到了 nvim7，有了 global status bar。</li>
 	<li>Vim 打开后有 padding/margin，其实是 iterm2 的，可以在 <strong>Appearance</strong> 里的 <strong>Panes</strong> 的 <strong>Side margins</strong> 和 <strong>Top &amp; Bottom margins</strong> 都设置为 0 就可以了。</li>
 	<li><code>&lt;ctrl&gt;-i</code> 不生效了，发现原来是我改了 <code>&lt;Tab&gt;</code> 的 mapping，这两个是同一个 东西，所以我改了 tab 的 mapping， <code>&lt;ctrl&gt;-i</code> 也就不生效了。</li>
+	<li>Tmux 开起来之后使用 vim 的时候 nerdtree 的 / 这个会高亮，解决办法在 tmux 的配置里开启 256 色。- 2022.04.19</li>
+	<li>使用 <code>e</code> 进行移动的时候觉得有点卡，然后发现，<code>w</code> 却没事，想到了原来是 e 做了 mapping，我将 <code>e[</code> 做了个 mapping，导致，使用 e 的时候就会需要等待。</li>
+	<li>vim 里 <code>ctrl-d</code> 不会翻页怎么办，而是会删除。这里是 Mac 系统设置了大小写键绑定成了 control 键，开了 karabiner 会有这个问题，需要在 karabiner 里也将 大小写键绑定成了 control 键。（Tips: 可以通过 karabiner-eventviewer 排查问题）</li>
+	<li>系统异常了文件丢失了怎么办？可以去 <code>/tmp</code> 目录下找对应的 <code>.swp</code> 文件进行恢复。</li>
 </ol>
 
 <h2>TODO</h2>
 
-<p>暂无</p>
+<ol>
+	<li>Debugger</li>
+</ol>
 
 <h2>参考</h2>
 
