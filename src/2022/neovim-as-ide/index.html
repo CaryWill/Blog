@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,7 +59,7 @@
 	<li>使用 tmux 同时开发多个项目，可以使用 tmux session，每一个 sessioin 作为管理一个项目。使用 <code>tmux</code> 命令会默认创建一个 session，你也可以使用 <code>tmux new -s mysession</code> 来创建命名后的 session。</li>
 	<li>运行后台服务，比如 wds。可以使用 tmux window，可以使用 <code>&lt;prefix&gt; c</code> 来创建一个 window，用来跑服务。但是目前我比较喜欢类似 VSCode 里的 terminal 的布局，所以我会使用 <code>&lt;prefix&gt; &quot;</code> 在屏幕下方创建一个 tmux pane，然后使用 <code>&lt;prefix&gt; l</code> 移动到上面的 pane，然后使用 <code>&lt;prefix&gt; z</code> 来全屏上面的 pane，这样下面的 pane 就会自动 minimized 了，<code>prefix</code> 我定义为了 <code>ctrl+space</code>，然后你也可以使用 tmux window 临时打开一些项目。</li>
 	<li>折叠。可以使用 <code>zc</code> 和 <code>zo</code> 来进行 fold 和 unfold，这里配置了 <code>set foldmethod=indent</code> 是根据缩进来进行 fold 的，所以相同的缩进的行会被 fold，还是很方便的。而且缩进后会变成一行，你使用 vim 方向键上下移动而会将其视作一行，而不会移到该行自动展开，非常 nice！</li>
-	<li>打开 nerdtree，快速定位到当前打开文件所在的位置，使用 <code>&lt;localleader&gt;e</code> 就行了。我将 <code>&lt;localleader&gt;</code> 和 <code>&lt;leader&gt;</code> 都设置为了 <code>&lt;space&gt;</code>。</li>
+	<li>打开 nerdtree，快速定位到当前打开文件所在的位置，使用 <code>&lt;localleader&gt;e</code> 就行了。我将 <code>&lt;localleader&gt;</code> 和 <code>&lt;leader&gt;</code> 分别设置为了 <code>,</code> 和 <code>&lt;space&gt;</code>。</li>
 	<li>Vim pane 之间的移动可以使用 <code>ctrl-hjkl</code>，Tmux pane 之间的移动可以使用 <code>&lt;prefix&gt;-hjkl</code> 或者 <code>&lt;prefix&gt;-&lt;Tab&gt;</code>，Vim 的 tabs 功能可以使用 <code>&lt;Shift&gt;-h</code> 或者 <code>&lt;Shift&gt;-l</code> 键进行切换。</li>
 	<li>重命名 tmux window。使用 <code>&lt;prefix&gt; ,</code>。</li>
 	<li>刷新 nerdtree，使用 <code>r</code>，toggle 使用 <code>ctrl-e</code>。</li>
@@ -76,10 +76,10 @@
 	<li>全替。这个难度稍微高一点，需要学习下 vim 的<a href="https://vimhelp.org/pattern.txt.html#pattern">正则</a>。单文件替换的话可以使用 <code>%s/old/new/gc</code> 来替换，这里的 <code>/c</code> flag 用来替换前做一次确认。项目纬度的全局文件替换的话，可以使用 <code>:vimgrep old *</code> 来进行全局搜索，匹配的文件会被加载到 quickfix list 里去，可以使用 <code>:copen</code> 进行列表查看，真正替换的时候，使用 <code>:cfdo %s/old/new/gc</code> 进行替换，替换完成后真正写入 buffer 需要使用 <code>:cfdo update</code> 进行替换（方法来自 <strong>Practical Vim</strong> 这本书的 Tip 97），单文件替换的话，感觉一般使用 coc 插件的 <code>&lt;leader&gt;rn</code> 进行重命名就行了。vim 里 exact match 的话，可以看下<a href="https://stackoverflow.com/a/22147787/10190407">这里</a>，<code>\&lt;stringtofind\&gt;</code>，将要搜索的放到两个转移后的箭头里面即可，这里的 <code>\&lt;</code> 表示 match 开头，<code>\&gt;</code> 表示 match 结尾。- 2022.04.05</li>
 	<li>删除多行末尾的 <strong>;</strong> 分号，在 VSCode 里可以使用 multi-cursor，在 Vim 里可以使用 vim 的 macro，首先使用进入 normal mode，输入 <code>q</code> 开始录制 macro，然后键入 <code>a</code> 来指定 register 为 register a，然后我们先输入 <code>$x</code> 跳到行末对单行的 <strong>;</strong> 进行 fix，然后使用 <code>q</code> 完成对单行 fix 的命令录制，然后进入 visual mode 选中还需要进行 fix 的行，然后输入 <code>:normal @a</code> replay register a 里录制的 macro，它会对每一行进行 fix，每一行之间的 fix 都是独立的，也就是某一行 fix 报错了，也不会影响到其他行的 fix，也被称为 parallel fix。还有一种是 serial fix，也就是某一行 fix 报错了，接下来的行不会继续 fix，你直接使用 <code>count@a</code> 即可，如果有 22 行要 fix 的话，那么使用 <code>22@a</code>。（方法来自 <strong>Practical Vim</strong> 的 macro 章节）。在 Vim 里 multi-cursor 其实真的不需要，可以看下<a href="https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db">这篇文章</a>，这里的 visual block 模式和 multi-cursor 就很像，我们可以使用 visual block mode 来实现下，首先使用 <code>ctrl-v</code> 在当前光标下进入 visual mode，然后你可以使用 hjkl 来进行多行选中，多选一行相当于多添加了一个光标，然后使用 j 方向键选中所有的 <strong>;</strong>，然后使用 <code>x</code> 删除 <strong>;</strong>，这样所有的 <strong>;</strong> 就会被删除了。如果你想要插入字符的话，只有在你退出插入模式进入 normal mode 的时候，单行的 change 才会反应到多行上面。- 2022.04.05</li>
 	<li>对于 vim 里不熟的命令可以使用 <code>:help command</code> 来查看命令，比如，<code>:help ~</code> 来查看 <code>~</code> 的使用方法。- 2022.04.06</li>
-	<li>在 insert mode 的时候使用 <code>ctrl-w</code> 来替换删除键。- 2022.04.06</li>
+	<li>在 insert mode 的时候使用 <code>ctrl-w</code> 来替代删除键。- 2022.04.06</li>
 	<li>删除全部的 console.log，还是发现了全替的使用场景。首先使用 <code>;r</code> 输入 <strong>console.log(</strong> 来搜索所有的 console.log，然后使用 fzf 的 <code>ctrl-a</code> 全选，然后使用 fzf 的 <code>ctrl-q</code> 将所选全部 load 到 vim 的quickfix list 中去，这样我们就可以全替了，但是在全替之前我们得对这个 quickfix list 做一次筛选，因为有的 console.log 是跨了几行的，我们可以使用 vim 内置的 Cfilter 插件对 quickfix list 做一次筛选，使用 <code>:Cfilter /console\.log(.*);/</code> （并使用了正则）来过滤，过滤完了使用 <code>cdo s/console\.log(.*);//c</code> 进行确认式替换单个 quickfix entry，最后替换完成后使用 <code>cdo update</code> 即可写入所有的 vim buffer。最后使用 <code>;r</code> 手动替换剩下的几个即可。（备注：可了解下 <code>:cdo</code>, <code>:cfdo</code>, 以及 quickfix list），对了你还可以使用 <code>:copen</code> 来查看 quickfix 列表。(还有一种思路可以试一下 multi-line match）- 2022.04.06</li>
 	<li>删除全部的 console.log 方法二，不使用 Rg（ripgrep），还是使用 vimgrep，这里的难点其实就是不搜索 <code>.gitignore</code> 里 ignore 的文件即可。可以看下这个解决<a href="https://stackoverflow.com/a/59544056/10190407">方案</a>，可以使用 <code>:vimgrep /console\.log(.*);/g `git ls-files`</code> 来将 console.log 加入到 quickfix list 去，省去了上面的 filter 的步骤。最后再使用 rg 来处理剩下的几个多行的 console.log。为了方便在 vimrc 里加了个自定义命令 <code>command -nargs=1 Gvimgrep vimgrep /&lt;args&gt;/g `git ls-files` | copen</code>, 可以使用 <code>Gvimgrep</code> 直接进行搜索，比如，<code>:Gvimgrep console\.log(.*);</code> （其实替换的这一步的话也可以使用 register 来 dd 一下）- 2022.04.06</li>
-	<li>Tmux 可以使用 <code>prefix [</code> 进入查看模式，可以使用 空格键 开始选择，然后使用 回车键完成选择退出查看模式，然后就可以直接粘贴了。- 2022.04.06</li>
+	<li>Tmux 可以使用 <code>prefix [</code> 进入查看模式，可以使用 空格键 开始选择，然后使用 回车键完成选择退出查看模式，然后就可以直接粘贴了。- 2022.04.06kj</li>
 </ol>
 
 <ol start="35">
@@ -94,6 +94,9 @@
 	<li>发现有的时候会出现割裂状态栏，然后直接刷新 tmux 配置就行了。</li>
 	<li>tmux rename a window <code>&lt;prefix&gt;,</code>，tmux 切换到 last window <code>&lt;prefix&gt;&lt;prefix&gt;</code>。 - 2022.04.21</li>
 	<li>使用 vim 分屏的 terminal 代替 tmux 分屏的 terminal 功能增加 toggle terminal 的功能，toggle 不再使用 tmux zoom 全屏来实现了，十分的便捷，来自 <a href="https://www.reddit.com/r/vim/comments/8n5bzs/comment/dzt3fix/?utm_source=share&amp;utm_medium=web2x&amp;context=3">reddit</a> 上的这篇文章。 - 2022.04.21</li>
+	<li>Vim 内置的 terminal 的滚动，首先使用 <code>&lt;c-\&gt;&lt;c-n&gt;</code> 来切换到 normal mode，然后就可以使用 vim 的 <code>&lt;c-b&gt;</code> 等正常滚动了。 - 2022.04.24</li>
+	<li>使用 visual mode 配合 <code>s/old/new</code> 来进行范围性替换。</li>
+	<li>可以使用 <code>:source $MYVIMRC</code> 命令来 reload nvim 的配置 ，参考 <a href="https://dev.to/reobin/reload-init-vim-without-restarting-neovim-1h82">这里</a>，顺便加了个快捷键 <code>&lt;leader&gt;r</code>，和 tmux 的 reload 配置快捷键有点像，<code>&lt;prefix&gt;r</code>，顺便加了个编辑 nvim 配置的快捷键 <code>&lt;leader&gt;e</code>，如果我们还想改其他的配置的话，可以在使用 <code>,e</code> 调出目录。- 2022.04.26</li>
 </ol>
 
 <h2>Vim 相关</h2>
@@ -111,7 +114,7 @@
 <p>上面的 operator+motion 模式是对于 normal mode 来说的，在 visual mode 中的话，是 motion+operator 模式，比如 <code>vegU</code>。</p>
 
 <ol>
-	<li>之前不是很熟悉 operator 的时候都是使用 <code>VegU</code> 先进入 visual mode 然后使用 motion <code>e</code> 配合 <code>gU</code> 进行大写转换，现在发现可以直接使用 <code>gU</code> operator，比如sdfadfls，<code>gU</code> 配上 <code>e</code> motion，也就是 <code>gUe</code> 来完成。</li>
+	<li>之前不是很熟悉 operator 的时候都是使用 <code>VegU</code> 先进入 visual mode 然后使用 motion <code>e</code> 配合 <code>gU</code> 进行大写转换，现在发现可以直接使用 <code>gU</code> operator，比如，<code>gU</code> 配上 <code>e</code> motion，也就是 <code>gUe</code> 来完成。</li>
 	<li>Vim 里有 sessions，tabs，windows 的概念，Tmux 也有 sessions，windows（tabs），panes（splits） 的概念，这三个概念都是一一对应的， sessions 对 sessions，tabs 对 windows，windows 对 panes。目前的工作流中，使用了 vim 的 tabs 和 windows 以及 tmux 的 sessions 和 panes。vim 的 tabs 用来看不同的文件，有需要的话会进行分屏也就是 windows 的概念，因为开发过程中需要跑开发服务器放在后台，所以会使用 tmux 的 panes 来进行上下分屏在下面开一个 terminal，然后使用 tmux 的 sessions 来进行不同项目的管理。</li>
 	<li>Vim 也可以直接调出 termnial 使用 <code>:termnial</code> 的命令就可以了，然后使用 <code>i</code> 来和 terminal 进行交互，使用 <code>ctrl-\ ctrl-n</code> 来回到 vim 编辑器。但是这个没有 tmux 方便。</li>
 	<li><code>?</code> 是反方向搜索，相对于，<code>/</code>。</li>
@@ -144,7 +147,7 @@
 	<li>Iterm2 可以设置字体 ligatures，目前使用 Monolisa 字体。</li>
 	<li>可以在系统里设置键位 repeat 为最大，delay 最大减一，提高移动速度。</li>
 	<li>Coc.nvim 安装出问题，可以切到 <code>cd ~/.local/share/nvim/plugged/coc.nvim</code> 这个目录下，然后 <code>npm i</code>。</li>
-	<li>进入 tmux 后使用 zsh，输入 ls 会变成 lss，排查发现原来是它的 zsh-autosuggestions 的插件的问题。。。，然后删除键还会变成空格键，最后在 zsh 配置里加了 <code>TERM=&quot;xterm&quot;</code> 两个问题都好了。</li>
+	<li>进入 tmux 后使用 zsh，输入 ls 会变成 lss，排查发现原来是它的 zsh-autosuggestions 的插件的问题。。。，然后删除键还会变成空格键，最后在 zsh 配置里加了 <code>TERM=&quot;xterm&quot;</code> 两个问题都好了。。。（看来这个才是根因）</li>
 </ol>
 
 <ol start="9">
