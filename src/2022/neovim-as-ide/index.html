@@ -1,4 +1,4 @@
-<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -118,7 +118,7 @@
 	<li>Vim 里有 sessions，tabs，windows 的概念，Tmux 也有 sessions，windows（tabs），panes（splits） 的概念，这三个概念都是一一对应的， sessions 对 sessions，tabs 对 windows，windows 对 panes。目前的工作流中，使用了 vim 的 tabs 和 windows 以及 tmux 的 sessions 和 panes。vim 的 tabs 用来看不同的文件，有需要的话会进行分屏也就是 windows 的概念，因为开发过程中需要跑开发服务器放在后台，所以会使用 tmux 的 panes 来进行上下分屏在下面开一个 terminal，然后使用 tmux 的 sessions 来进行不同项目的管理。</li>
 	<li>Vim 也可以直接调出 termnial 使用 <code>:termnial</code> 的命令就可以了，然后使用 <code>i</code> 来和 terminal 进行交互，使用 <code>ctrl-\ ctrl-n</code> 来回到 vim 编辑器。但是这个没有 tmux 方便。</li>
 	<li><code>?</code> 是反方向搜索，相对于，<code>/</code>。</li>
-	<li>Register。用来进行复杂的操作，可以录制一堆 operator+motion，然后 replay。使用 <code>q</code> 开始煮呗录制，选择 a-z 中的 26 一个字母进行录制（也就是选择 register），录制完毕敲击 <code>q</code> 结束录制。使用 <code>@</code> 加上你选的字母就行 replay（serial 的，如果对多个文件进行回放的时候报错的话，1个文件报错那么就不会继续了），所以你也可以使用 <code>:normal @a</code> 进行 replay（parallel 的，一个文件报错不会影响其他文件的 replay）。</li>
+	<li>Macros。用来进行复杂的操作，可以录制一堆 operator+motion，然后 replay。使用 <code>q</code> 开始煮呗录制，选择 a-z 中的 26 一个字母进行录制，录制完毕敲击 <code>q</code> 结束录制。使用 <code>@</code> 加上你选的字母就行 replay（serial 的，如果对多个文件进行回放的时候报错的话，1个文件报错那么就不会继续了），所以你也可以使用 <code>:normal @a</code> 进行 replay（parallel 的，一个文件报错不会影响其他文件的 replay）。</li>
 	<li>插入模式下使用 CTRL-O 可以使用一次 normal mode 的命令，使用完成自动切换为插入模式。</li>
 	<li><code>ctrl-z</code> 可以将当前进程放入后台，使用 <code>fg&lt;Enter&gt;</code> 可以重新加载当前进程。</li>
 	<li>vim command line mode 下可以使用 <code>&lt;C-d&gt;</code> 来调出备选项，以及使用 <code>&lt;Tab&gt;</code> 来进行补全。</li>
