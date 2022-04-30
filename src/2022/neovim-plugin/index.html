@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>NeoVim 插件篇</title>
+	</head>
+<body>
+<h1>NeoVim 插件篇</h1>
+
+<p><strong>2022.04.26</strong></p>
+
+<h2>主题</h2>
+
+<p>iterm2 和 Vim 都是使用的是 <a href="https://github.com/rhysd/vim-color-spring-night">spring-night</a> 的主题，字体使用的是 <a href="https://www.monolisa.dev">Monolisa</a> 可以在<a href="https://www.monolisa.dev/buy/661578">官网</a>获取试用字体，这里还用了 Neovim 7.0 版本的 global status line 特性。</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<h2>文件系统</h2>
+
+<p>使用老牌插件 nerdtree 实现文件系统的管理。</p>
+
+<ol>
+	<li>使用 <code>m</code> 唤起操作菜单，实现对文件系统的增删改查。</li>
+	<li>使用 <code>r</code> 来刷新菜单。</li>
+	<li>使用 <code>&lt;C-e&gt;</code> 来 toggle 菜单。</li>
+	<li>使用 <code>,e</code> 打开菜单同时定位到当前文件所在位置。</li>
+</ol>
+
+<h2>移动</h2>
+
+<p>你可以使用 <code>ss</code> 以及 <code>sv</code> 进行 vim 的分屏，使用 <code>&lt;prefix-%&gt;</code> 以及 <code>&lt;prefix-&quot;&gt;</code> 进行 tmux 的分屏。</p>
+
+<ol>
+	<li>Vim splits 之间的移动可以使用 <code>&lt;C-hjkl&gt;</code>。</li>
+	<li>Tmux splits 之间的移动可以使用 <code>&lt;prefix-hjkl&gt;</code> 或者 <code>&lt;prefix-Tab&gt;</code>。</li>
+	<li>Vim Tabs 之间的移动可以使用 <code>&lt;Shift-h&gt;</code> 或者 <code>&lt;Shift-l&gt;</code>。</li>
+	<li>Tmux Tabs 之间的移动可以使用 <code>&lt;prefix-p&gt;</code>, <code>&lt;prefix-number&gt;</code> 等。</li>
+	<li><code>%</code> 可以用在匹配的括号和 html 标签等之间移动。</li>
+	<li><code>&lt;C-w-T&gt;</code> 可以将 vim split 移到新的 tab。</li>
+	<li>使用 <code>&lt;prefix-z&gt;</code> 可以 toggle 一个 tmux splits 的全屏。</li>
+</ol>
+
+<h2>文件/文本 搜索/替换 </h2>
+
+<p>使用了 <a href="https://github.com/nvim-telescope/telescope.nvim#default-mappings">Telescope</a> 插件替换了 FZF 插件来搜索文件。Telescope 的搜索默认和 Vim 的 ignorecase 加上 smartcase 选项一样。</p>
+
+<ol>
+	<li>使用 <code>;f</code> 进行文件的搜索。<code>&lt;C-p&gt;</code> 和 <code>&lt;C-n&gt;</code> 上下移动文件，对于选中的文件可以使用 <code>&lt;C-u&gt;</code> 和 <code>&lt;C-d&gt;</code> 来滚动查看内容，使用 <code>&lt;C-t&gt;</code> 来在新的 tab 打开。</li>
+	<li>使用 <code>;r</code> 进行文件内容的搜索。</li>
+	<li>Tmux 可以使用 <code>&lt;prefix-[&gt;</code> 进入查看模式，使用 <code>&lt;Space&gt;</code> 开始选择，之后使用 <code>&lt;CR&gt;</code> 完成选择并退出查看模式，然后就可以直接粘贴了。在查看模式里可以使用 <code>/</code> 进行搜索。</li>
+	<li>全替
+
+		<ul>
+			<li>单文件
+
+				<ol>
+					<li>使用 COC 插件的 <code>&lt;leader-rn&gt;</code> 来重命名变量名（symbol）。</li>
+					<li>使用 <code>:%s/old/new/gc</code> 来进行无语义的替换，flag c 是用来替换的时候确认每次替换的行为。</li>
+					<li>使用 visual mode 配合 <code>s/old/new</code> 来进行范围性替换。</li>
+					<li>使用 <code>&lt;C-v&gt;</code> 进入 visual block mode 用来解决纵向的替换（类似<a href="https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db">多光标</a>模式，删除表格的列会很方便）。</li>
+				</ol></li>
+			<li>多文件
+
+				<ol>
+					<li>使用 <code>;r</code> 进行关键词搜索，使用 <code>&lt;C-q&gt;</code> 将所有的匹配发送到 Vim 的 quickfix list 中，使用 <code>:cdo</code> <a href="https://gist.github.com/Integralist/8d01300efcd2006c69e8b9492c0eada8">命令</a>进行 per entry 的替换，或者使用 <code>:cfdo</code> 进行 per file 的替换，替换完成使用 <code>:cdo update</code> 或者 <code>:cfdo update</code> 进行 buffer 的写入。 <code>:cdo</code> 后面跟着的命令可以是简单的 <code>s/old/new/</code> 或者使用 macro（宏）的复杂命令（例如使用 <code>norm @a</code>）。 </li>
+				</ol></li>
+		</ul></li>
+</ol>
+
+<h2>注解</h2>
+
+<p>使用 <a href="https://github.com/preservim/nerdcommenter#default-mappings">nerdcommenter</a> 插件。</p>
+
+<ol>
+	<li><code>&lt;leader&gt;cu</code> 可以进行取消注解。</li>
+	<li>JSX 的可以使用 <code>&lt;leader&gt;cm</code> 命令进行注解，插件会使用配置的 <em> leftAlt</em> 和 <em>rightAlt</em> 指定的格式。 </li>
+	<li>正常的注解使用 <code>&lt;leader&gt;ci</code> 进行 toggle 注解，插件会使用配置的 <em>left</em> 和 <em>right</em> 指定的格式。</li>
+</ol>
+
+<h2>Git </h2>
+
+<p>使用 <a href="https://github.com/tpope/vim-fugitive">fugitive</a> 这个插件，取名也很有意思，就是说这个插件太牛逼了而应该被禁止，所以取名为逃亡者(fugitive)。</p>
+
+<p>我们可以使用 <code>:G</code> 命令查看 git 的状态，相当于 <code>git status</code>，一般我会使用 <code>te</code> 新建一个 vim buffer，然后使用 <code>:G</code>，commit 完成之后使用 <code>tq</code> 关闭当前的 buffer。</p>
+
+<ol>
+	<li>使用 <code>:G</code>后，对列表项使用 <code>a</code> 进行 stage，<code>u</code> 进行 unstage，<code>X</code> 进行 resotre。</li>
+	<li>使用直接敲击 <code>dv</code> 命令就可以以分屏的方式查看 <code>:G</code> 里的列表项的 diff 变更。</li>
+	<li>使用 <code>gb</code> 来查看 git blame，使用 <code>gq</code> 来关闭 git blame。</li>
+	<li>使用<code>:0Gllog</code> 或者 <code>:0Gclog</code> 来查看当前 buffer 的历史版本，你可以配合 <code>dv</code> 来和上一个 commit 进行 diff。</li>
+	<li>Git 冲突。使用 <code>dv</code> 后使用 <code>&lt;C-w-_&gt;</code> 全屏，然后使用 <code>&lt;leader-fx&gt;</code> 来找到 git 冲突的标记，然后解决一个冲突后，使用 <code>n</code> 继续搜索下一个冲突标记。都解决完了使用 <code>;t</code> 调出底部的命令行进行 git commit。</li>
+</ol>
+
+<h2>其他</h2>
+
+<ol>
+	<li>使用 <code>&lt;prefix-c&gt;</code> 命令创建一个 tmux tab 运行后台服务，比如 webpack 服务器。</li>
+	<li>使用 COC 的 <code>gr</code> 命令跳转到引入该组件的地方，使用 <code>gd</code> 来查看组件定义，查看完想要跳转回原来的地方可以使用 <code>&lt;C-i&gt;</code>。</li>
+	<li>使用 <code>&lt;C-h&gt;</code> 删除光标前面的字母，使用 <code>&lt;C-d&gt;</code> 删除光标后面的字母。 </li>
+	<li><code>zc</code> 关闭折叠，<code>zo</code> 打开折叠和当前光标所在位置行有相同缩进的行（ 使用 <code>zR</code> 和 <code>zM</code> 关闭或打开所有折叠）。</li>
+	<li>进入 Vim visual mode 然后，使用 <code>&lt;</code> 或者 <code>&gt;</code> 然后可以配合 <code>.</code> repeat 键。</li>
+	<li>使用 <code>K</code> 或者 <code>:h</code> 来查看定义。比如，查看 <code>&lt;M</code> 或者 <code>:h copilot</code> 的定义。</li>
+	<li>使用 tmux 来管理多个项目，使用 <code>&lt;prefix-s&gt;</code> 来查看 session 列表。</li>
+	<li>Vim command line mode 下可使用 <code>&lt;C-d&gt;</code> 来调出备选命令，以及使用 <code>&lt;Tab&gt;</code> 来进行补全，当然 iterm2 也可以使用 <code>&lt;C-d&gt;</code> 和 <code>&lt;Tab&gt;</code>。</li>
+	<li>可以使用 <code>&lt;C-[&gt;</code> 来替代 vim 的 ESC 键。</li>
+	<li>使用 <code>&lt;C-\&gt;&lt;C-n&gt;</code> 可以切换到 vim 集成的 terminal 的 normal mode，使用 <code>i</code> 进入 terminal 的 insert mode。</li>
+	<li>浏览器也有 Vim 插件。</li>
+</ol>
+
+<hr />
+
+<p>写在最后，对 Vim 感兴趣的朋友一定不要错过 《Practical vim》这本书，里面讲了很多实用的 Vim 操作。</p>
+
+<h2>TODO</h2>
+
+<ol>
+	<li>Debugger</li>
+	<li>SSH</li>
+</ol>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://www.macworld.co.uk/how-to/option-key-mac-3462401/">how-to/option-key-mac-3462401/</a></li>
+</ol>
+
+</body>
+</html>
+
