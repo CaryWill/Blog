@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "Neovim 插件篇",
+        desc: "Neovim 插件篇",
+        date: "Apr 26, 2022",
+        href: "/src/2022/neovim-plugin/index.html",
+      },
+      {
         title: "Vim as IDE 2.0",
         desc: "再次使用 Vim 作为 IDE",
         date: "Apr 03, 2022",
