@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "JSONP 是怎么解决跨域问题的？",
+        desc: "来看看 JSONP 的原理以及出现背景",
+        date: "May 25, 2022",
+        href: "/src/2022/jsonp/index.html",
+      },
+      {
         title: "Neovim 插件篇",
         desc: "Neovim 插件篇",
         date: "Apr 26, 2022",
