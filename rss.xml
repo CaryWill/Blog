@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>JSONP 是怎么解决跨域问题的？</title>
+    <link>/src/2022/jsonp/index.html</link>
+    <description>来看看 JSONP 的原理以及出现背景</description>
+    <pubDate>Wed May 25 2022 00:00:00 GMT+0800 (GMT+08:00)</pubDate>
+    <lastBuildDate>Wed May 25 2022 00:00:00 GMT+0800 (GMT+08:00)</lastBuildDate>
+  </item><item>
     <title>Neovim 插件篇</title>
     <link>/src/2022/neovim-plugin/index.html</link>
     <description>Neovim 插件篇</description>
