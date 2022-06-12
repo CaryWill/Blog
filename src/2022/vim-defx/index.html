@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>如何用 vimscript 实现打开 defx 目录树的同时自动展开所有父节点</title>
+	</head>
+<body>
+<h1>如何用 vimscript 实现打开 defx 目录树的同时自动展开所有父节点</h1>
+
+<p><strong>2022.06.12</strong></p>
+
+<p>因为老牌的 nerdtree 打开 <code>node_modules</code> 目录太慢了，于是我换到了 defx，但是发现 defx 在打开目录的时候并不会自动展开父级目录，看了文档也没有十分合适的 API，于是想着能不能自己提个 PR，但是发现源码用 python 写的，不是很熟，想着能不能用 vimscript 写，结果发现可以！！！ 不过有点 hack 罢了。<em>
+</em></p>
+
+<p>主要的想法其实是，既然 defx 提供 open 某个节点的功能，那么我在当前 buffer 下打开目录书的时候，利用当前 buffer 的文件路径，自己手动 open 所有父级节点不就行了吗？</p>
+
+<p>但是我又发现 open 节点的功能是不接受文件路径作为参数的，机智的我想，那么我先利用 vim 的搜索功能 <code>/</code> 进行节点的定位，然后再用 open 节点的功能不就行了？</p>
+
+<p>代码<a href="https://github.com/CaryWill/dotfiles/blob/master/.config/nvim/after/plugin/defx.rc.vim">在此</a>，</p>
+
+<pre><code class="code-highlighted code-vimscript"><span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-keyword">s:</span><span class="syntax-all syntax-parameter">defx_win</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>
+<span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-keyword">s:</span><span class="syntax-all syntax-entity">searchNode</span>()
+ <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-constant">list</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-entity">split</span>(<span class="syntax-all syntax-entity">expand</span>(<span class="syntax-all syntax-string">&#39;%:p&#39;</span>), <span class="syntax-all syntax-string">&#39;/&#39;</span>)
+ <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-constant">index</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span>
+ <span class="syntax-all syntax-keyword">let</span> length <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-entity">len</span>(<span class="syntax-all syntax-constant">list</span>)
+
+ <span class="syntax-all syntax-keyword">if</span> <span class="syntax-all syntax-entity">win_gotoid</span>(<span class="syntax-all syntax-keyword">s:</span><span class="syntax-all syntax-parameter">defx_win</span>)
+   <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-keyword">s:</span><span class="syntax-all syntax-parameter">defx_win</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">0</span> 
+   <span class="syntax-all syntax-constant">hide</span> 
+ <span class="syntax-all syntax-keyword">else</span> 
+   Defx <span class="syntax-all syntax-keyword">-</span>resume
+   <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-keyword">s:</span><span class="syntax-all syntax-parameter">defx_win</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-entity">win_getid</span>()
+   <span class="syntax-all syntax-keyword">let</span> paths <span class="syntax-all syntax-keyword">=</span> []
+
+   <span class="syntax-all syntax-keyword">for</span> <span class="syntax-all syntax-constant">p</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-entity">reverse</span>(<span class="syntax-all syntax-constant">list</span>) 
+      <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-constant">index</span> <span class="syntax-all syntax-keyword">+=</span> <span class="syntax-all syntax-constant">1</span>
+      <span class="syntax-all syntax-keyword">let</span> currentDirFullPath <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&#39;/&#39;</span> .. <span class="syntax-all syntax-entity">join</span>(<span class="syntax-all syntax-entity">reverse</span>(<span class="syntax-all syntax-constant">list</span>[<span class="syntax-all syntax-constant">index</span>:length<span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-constant">1</span>]), <span class="syntax-all syntax-string">&#39;/&#39;</span>)
+<span class="syntax-all syntax-comment">      &quot; .git as root dir</span>
+      <span class="syntax-all syntax-keyword">let</span> gitDir <span class="syntax-all syntax-keyword">=</span> currentDirFullPath .. <span class="syntax-all syntax-string">&#39;/.git&#39;</span> 
+      <span class="syntax-all syntax-keyword">if</span> <span class="syntax-all syntax-constant">index</span> <span class="syntax-all syntax-keyword">==</span> <span class="syntax-all syntax-constant">1</span>
+        <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-constant">dir</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">p</span>
+        <span class="syntax-all syntax-constant">call</span> <span class="syntax-all syntax-entity">add</span>(paths, <span class="syntax-all syntax-constant">dir</span>)
+      <span class="syntax-all syntax-keyword">else</span> 
+        <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-constant">dir</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">p</span> .. <span class="syntax-all syntax-string">&#39;\/&#39;</span>
+        <span class="syntax-all syntax-constant">call</span> <span class="syntax-all syntax-entity">add</span>(paths, <span class="syntax-all syntax-constant">dir</span>)
+      <span class="syntax-all syntax-keyword">endif</span>
+      <span class="syntax-all syntax-keyword">if</span> <span class="syntax-all syntax-entity">isdirectory</span>(gitDir)
+        <span class="syntax-all syntax-constant">break</span>
+      <span class="syntax-all syntax-keyword">else</span>
+        <span class="syntax-all syntax-constant">continue</span>
+      <span class="syntax-all syntax-keyword">endif</span>
+   <span class="syntax-all syntax-keyword">endfor</span>
+
+   <span class="syntax-all syntax-keyword">for</span> <span class="syntax-all syntax-constant">p</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-entity">reverse</span>(paths)
+      <span class="syntax-all syntax-constant">silent</span> <span class="syntax-all syntax-constant">execute</span> <span class="syntax-all syntax-string">&quot;/&quot;</span> .. <span class="syntax-all syntax-constant">p</span>
+      <span class="syntax-all syntax-constant">normal</span> open_tree
+   <span class="syntax-all syntax-keyword">endfor</span>
+ <span class="syntax-all syntax-keyword">endif</span>
+<span class="syntax-all syntax-keyword">endfunction</span>
+
+<span class="syntax-all syntax-constant">autocmd</span> <span class="syntax-all syntax-constant">FileType</span> defx <span class="syntax-all syntax-constant">call</span> <span class="syntax-all syntax-keyword">s:</span><span class="syntax-all syntax-entity">defx_my_settings</span>()
+<span class="syntax-all syntax-keyword">function!</span> <span class="syntax-all syntax-keyword">s:</span><span class="syntax-all syntax-entity">defx_my_settings</span>() <span class="syntax-all syntax-keyword">abort</span>
+    <span class="syntax-all syntax-constant">setlocal</span> <span class="syntax-all syntax-constant">nonumber</span>
+	<span class="syntax-all syntax-constant">nnoremap</span> <span class="syntax-all syntax-constant">&lt;silent&gt;&lt;buffer&gt;&lt;expr&gt;</span> open_tree
+    <span class="syntax-all syntax-constant">\	</span><span class="syntax-all syntax-entity">defx#do_action</span>(<span class="syntax-all syntax-string">&#39;open_tree&#39;</span>)
+<span class="syntax-all syntax-keyword">endfunction</span></code></pre>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://neovim.io/doc/user/usr_41.html">Vimscript doc</a></li>
+	<li><a href="https://github.com/Shougo/defx.nvim">defx repo</a></li>
+</ol>
+
+</body>
+</html>
+

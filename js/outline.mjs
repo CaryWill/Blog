@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "如何用 vimscript 实现打开 defx 目录树的同时自动展开所有父节点",
+        desc: "可以说非常 hack 了",
+        date: "June 12, 2022",
+        href: "/src/2022/vim-defx/index.html",
+      },
+      {
         title: "JSONP 是怎么解决跨域问题的？",
         desc: "来看看 JSONP 的原理以及出现背景",
         date: "May 25, 2022",
