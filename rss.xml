@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>如何用 vimscript 实现打开 defx 目录树的同时自动展开所有父节点</title>
+    <link>/src/2022/vim-defx/index.html</link>
+    <description>可以说非常 hack 了</description>
+    <pubDate>Sun Jun 12 2022 00:00:00 GMT+0800 (GMT+08:00)</pubDate>
+    <lastBuildDate>Sun Jun 12 2022 00:00:00 GMT+0800 (GMT+08:00)</lastBuildDate>
+  </item><item>
     <title>JSONP 是怎么解决跨域问题的？</title>
     <link>/src/2022/jsonp/index.html</link>
     <description>来看看 JSONP 的原理以及出现背景</description>
