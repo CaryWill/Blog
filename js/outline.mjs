@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "记录一次因为 useEffect 导致的白屏问题",
+        desc: "useEffect",
+        date: "July 30, 2022",
+        href: "/src/2022/useEffect-white-page/index.html",
+      },
+      {
         title: "如何用 vimscript 实现打开 defx 目录树的同时自动展开所有父节点",
         desc: "可以说非常 hack 了",
         date: "June 12, 2022",
