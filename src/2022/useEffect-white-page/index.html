@@ -1,0 +1,30 @@
+<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>记录一次因为 useEffect 导致的白屏问题</title>
+	</head>
+<body>
+<h1>记录一次因为 useEffect 导致的白屏问题</h1>
+
+<p><strong>2022.07.21</strong></p>
+
+<p>场景：我有一个侧栏菜单，点击会加载某个组件，点击 A 菜单项 组件1 可以正常加载，点击 B 菜单项后切换回 A 菜单，A1 组件重新渲染然后白屏了。</p>
+
+<figure><img src="Image%207-22-22,%209-12%20AM.png" alt="报错"/><figcaption>报错</figcaption></figure>
+
+<p>我看这个报错有点不是很明显，于是一开始想到的是先将线上的 react 和 react-dom 版本代理成对应的开发版本（development），来看下能不能打印出来更详细的错误，但是看上去没有效果。</p>
+
+<p>然后仔细看了下报错，看到了 lastEffect 又看到了 <strong>n is not a function</strong> 又想起之前帮别人排查问题的时候通过代理 react 版本发现是 useEffect 里使用了 async 关键词，一连串的就让我感觉可能也是这个问题，结果发现真的是这个问题。</p>
+
+<p>然后坐下来想，为啥 useEffect 的第一个入参不能是带 async 关键词的函数，我虽然用了 async 关键词，但是我的函数也返回了 <strong>undefined</strong>，应该就不会报什么 <strong>n is not a function</strong> 的错了。然后一想，async 会默认返回个 promise 啊，豁然开朗。</p>
+
+<p>所以第二次渲染的时候，因为第一次 render 的时候 useEffect 返回的是一个 promise 而不是 undefined，这样 react 在第二次执行 useEffect 的时候先执行上次 useEffect 的 cleanup 函数如果有的话，显然有，我们的 async 函数返回了个 promise，然后 promise 被当成函数进行了调用，也就有了我们开头看到的 <strong>n is not a function</strong> 的报错了。</p>
+
+<p>破案。</p>
+
+</body>
+</html>
+
