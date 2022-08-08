@@ -1,8 +1,9 @@
-如何新增一片文章
+## 如何新增一片文章
 
-将 Ulysses 中导出的 html 文件直接复制到 src 文件夹下面，比如 2021 文件夹，css 文件夹可以删掉没什么用。
-
-gp 前先 npm run build 来转换 tiff 图片
+1. Ulysses 导出到 src 下面的文件夹下，比如 2022
+2. 修改 outline.mjs
+3. npm run build （注意 node 版本需要 16）
+4. git commit & git push （push 完会自动部署到 Netlify）
 
 ## NOTE
 
