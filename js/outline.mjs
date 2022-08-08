@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "为什么 React 的 setState 是异步的？",
+        desc: "来重新看下这个老问题",
+        date: "Aug 08, 2022",
+        href: "/src/2022/react-setstate/index.html",
+      },
+      {
         title: "记录一次因为 useEffect 导致的白屏问题",
         desc: "useEffect",
         date: "July 30, 2022",

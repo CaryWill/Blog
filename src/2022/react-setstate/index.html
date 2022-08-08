@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>React 的 setState 为什么是 async 的？</title>
+	</head>
+<body>
+<h1>React 的 setState 为什么是 async 的？</h1>
+
+<p><strong>2022.08.08</strong></p>
+
+<p>因为设计成同步的话，会有一些问题，Dan 在这个 <a href="https://github.com/facebook/react/issues/11527#issuecomment-360199710">RFC</a> 里举的一个例子，假设我们在调用 setState 后 state 变量的值直接被更新了，但是实际上我们的 reconciliation 还是在进行的，这样的话，下面的例子就成立了，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 点击组件后触发的 onClick 事件会执行下面这些代码
+</span><span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-comment">// 0
+</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">setState</span>({ <span class="syntax-all syntax-string">value</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">1</span> });
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-comment">// 1
+</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">setState</span>({ <span class="syntax-all syntax-string">value</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span> <span class="syntax-all syntax-keyword">+</span> <span class="syntax-all syntax-constant">1</span> });
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">state</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-comment">// 2
+</span></code></pre>
+
+<p>但是，当我们将这个 state 提升到父组件，子组件之前的 state 就变成了 props，这样就会有下面的结果了，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">// 点击组件后触发的 onClick 事件会执行下面这些代码
+</span><span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-comment">// 0
+</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">onIncrement</span>();
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-comment">// 0
+</span><span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">onIncrement</span>();
+<span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">props</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">value</span>) <span class="syntax-all syntax-comment">// 0
+</span></code></pre>
+
+<p>原因其实就是 props 是只有在重新渲染的时候才会更新的，所以即便我们调用 </p>
+
+<p><code>this.props.onIncrement()</code> 的时候虽然触发了 state 的值的改变，但是其实我们的 reconciliation 还在进行中，reconciliation 结束了才会触发我们的子组件的渲染，所以在下次渲染前我们的 <code>this.props.value</code> 还是 0。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://github.com/facebook/react/issues/11527#issuecomment-360199710">RFClarification: why is setState asynchronous? #11527</a></li>
+	<li><a href="https://reactjs.org/docs/faq-state.html#why-is-setstate-giving-me-the-wrong-value">Why is setState giving me the wrong value?</a></li>
+</ol>
+
+</body>
+</html>
+
