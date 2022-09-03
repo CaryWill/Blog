@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "如何使用 npm link 来提升开发效率",
+        desc: "npm link",
+        date: "Sep 03, 2022",
+        href: "/src/2022/npm-link/index.html",
+      },
+      {
         title: "为什么 React 的 setState 是异步的？",
         desc: "来重新看下这个老问题",
         date: "Aug 08, 2022",

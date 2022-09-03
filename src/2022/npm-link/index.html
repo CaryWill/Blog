@@ -1,0 +1,56 @@
+<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>如何使用 npm link 来提升开发效率</title>
+	</head>
+<body>
+<h1>如何使用 npm link 来提升开发效率</h1>
+
+<p><strong>2022.09.03</strong></p>
+
+<p>试想一种场景，我们有一个 monorepo，里面有 a，b 两个包，a 包引用了 b 包，你在 a 里面启动了本地开发服务器准备开发，但是你要修改 b 里面的东西，除非你在 b 包里改了东西，然后每次改完要测试发包，然后 a 升级 b 包的版本，重启服务器，这样你才能在 a 包里看到 b 里引入的变更。</p>
+
+<p>整个链路有点繁琐了，<code>npm link</code> 命令就是为了解决这种情况而出现的。</p>
+
+<p>还是上面的场景，我们只需要将 a 里面的 <code>node_modules</code> 里的 b 包指向我们本地的 b 包的文件夹（b 包的源码库），就能解决这个问题了。</p>
+
+<p>来面来实操下，</p>
+
+<p>先克隆下测试用的 demo 包，然后安装依赖，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">git</span> <span class="syntax-all syntax-parameter">clone</span> <span class="syntax-all syntax-parameter">git</span>@<span class="syntax-all syntax-tag">github</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">com</span>:<span class="syntax-all syntax-parameter">CaryWill</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">demo</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">npm</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">link</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">parent</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">git</span>
+<span class="syntax-all syntax-parameter">npm</span> <span class="syntax-all syntax-parameter">i</span></code></pre>
+
+<p>它里面依赖了个 <code>@carywill/demo-npm-link</code> 包，这个就是我们要替换成本地的包，首先下载 <code>@carywill/demo-npm-link</code> 这个包的源码，然后进入到这个包所在的目录，然后使用 <code>npm link</code> 在全局的 <code>node_modules</code> 里创建了个同名的软链接指向我们当前这个目录，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">git</span> <span class="syntax-all syntax-parameter">clone</span> <span class="syntax-all syntax-parameter">git</span>@<span class="syntax-all syntax-tag">github</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">com</span>:<span class="syntax-all syntax-parameter">CaryWill</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">demo</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">npm</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">link</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">git</span>
+<span class="syntax-all syntax-parameter">cd</span> <span class="syntax-all syntax-parameter">demo</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">npm</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">link</span>
+<span class="syntax-all syntax-parameter">npm</span> <span class="syntax-all syntax-parameter">link</span></code></pre>
+
+<p>来确认下，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">npm</span> <span class="syntax-all syntax-parameter">prefix</span> <span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">g</span> <span class="syntax-all syntax-comment">// /Users/cary/.nvm/versions/node/v16.15.1
+</span><span class="syntax-all syntax-parameter">cd</span> <span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">Users</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">cary</span><span class="syntax-all syntax-keyword">/.</span><span class="syntax-all syntax-parameter">nvm</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">versions</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">node</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">v16</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">15.1</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">lib</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">node_modules</span>
+<span class="syntax-all syntax-parameter">cd</span> @<span class="syntax-all syntax-tag">carywill</span> <span class="syntax-all syntax-comment">// 这个是我们的 @carywill/demo-npm-link 的 scope
+</span><span class="syntax-all syntax-parameter">ls</span> <span class="syntax-all syntax-comment">// 你会发现有一个名为 demo-npm-link 的软链接
+</span></code></pre>
+
+<p>然后回到 <code>demo-npm-link-parent</code> 目录，使用 <code>npm link @carywill/demo-npm-link</code> 将 <code>node_modules</code> 里的 <code>@carywill/demo-npm-link</code> 替换成我们上一步的软链接，然后回到 <code>demo-npm-link</code> 目录（不是 <code>node_modules</code> 下面的那个，而是 <code>git clone</code> 下来的那个），对 <code>index.js</code> 文件做一些修改，然后回到 <code>demo-npm-link-parent</code> 目录，重启开发服务器 <code>npm run dev</code>，然后你就可以看到页面上的变更了。</p>
+
+<p>如果你想使用 link 前的版本，那么重新执行下 <code>npm i</code> 的命令即可，</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://vitejs.dev/guide/dep-pre-bundling.html#monorepos-and-linked-dependencies">monorepos-and-linked-dependencies-vite</a></li>
+	<li><a href="https://docs.npmjs.com/creating-and-publishing-scoped-public-packages">Creating and publishing scoped public packages</a></li>
+	<li><a href="https://vitejs.dev/guide/#trying-vite-online">Scaffolding Your First Vite Project</a></li>
+	<li><a href="https://docs.npmjs.com/cli/v8/commands/npm-link">npm-link-npm</a></li>
+</ol>
+
+</body>
+</html>
+

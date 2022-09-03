@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>如何使用 npm link 来提升开发效率</title>
+    <link>/src/2022/npm-link/index.html</link>
+    <description>npm link</description>
+    <pubDate>Sat Sep 03 2022 00:00:00 GMT+0800 (China Standard Time)</pubDate>
+    <lastBuildDate>Sat Sep 03 2022 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
+  </item><item>
     <title>为什么 React 的 setState 是异步的？</title>
     <link>/src/2022/react-setstate/index.html</link>
     <description>来重新看下这个老问题</description>
