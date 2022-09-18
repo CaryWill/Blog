@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>LSP 是什么？</title>
+	</head>
+<body>
+<h1>LSP 是什么？</h1>
+
+<p><strong>2022.09.18</strong></p>
+
+<p>自己 coding 使用的编辑器是 Neovim，然后我知道 neovim 集成了 LSP，但是不是很明白 LSP 的作用是什么，为什么会出现，于是今天想来看下。</p>
+
+<p>然后我看了下<a href="https://microsoft.github.io/language-server-protocol/overviews/lsp/overview/">规范</a>，发现还挺好理解的，</p>
+
+<p>首先 Coding 工具有很多，像 VSCode，Neovim，Idea 等等，它们都可以用来写前端代码，它们都提供 <em> go to definition</em> 的功能，就假设这个功能是三方开发者提供的，那么意味着，你要用它们提供的插件开发语言来编写插件来实现 <em> go to definition</em> 的功能。</p>
+
+<p>假设让你同时开发上面三个 Coding 工具的插件，都提供 <em> go to definition</em>，假设是一个 js 项目，那么对于同一个 js 文件，对于不同的 coding 工具，你计算<strong>当前 symbol 的 definition</strong>所在位置的一些信息的代码块是否就可以抽离成一个函数，这样在写一个插件的时候，后面其他的 coding 工具就可以复用这段逻辑了，所以一个概念就出来了 language server，它可以被用来提供这个抽离出来的函数。</p>
+
+<p>但是即便我们将这段逻辑抽离了出来，但是它还是和这个 coding 工具提供的插件开发语言还是强绑定的，没办法复用逻辑。所以我们还需要一个规范，比方说开发工具说要进行 <em> go to definition</em> 的操作了，那么 language server 怎么知道要执行什么它那边的什么函数进行计算呢，所以需要有个规范也就是 LSP，比如，LSP 里 <code>textDocument/definition</code> 这个字符串表示的就是 <em> go to definition</em> 的功能，这样当 language server 接收到这个字符串的时候，就知道要调用什么函数来进行 symobl 的 definition 所在的位置信息了。</p>
+
+<p>具体以什么形式进行交流呢，LSP 利用了 json 这种通用的数据结构，通过 json rpc 来进行双向的通信。</p>
+
+<figure><img src="language-server.png" alt="https://microsoft.github.io/language-server-protocol/overviews/lsp/overview/"/><figcaption>https://microsoft.github.io/language-server-protocol/overviews/lsp/overview/</figcaption></figure>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://microsoft.github.io/language-server-protocol/overviews/lsp/overview/">What is the Language Server Protocol?</a></li>
+	<li><a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/">Language Server Protocol Specification</a></li>
+	<li><a href="https://neovim.io/doc/user/lsp.html">Nvim documentation: lsp</a></li>
+	<li><a href="https://www.jsonrpc.org/specification#notification">JSON-RPC 2.0 Specification</a></li>
+</ol>
+
+</body>
+</html>
+

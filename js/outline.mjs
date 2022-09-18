@@ -3,9 +3,15 @@ export const outline = [
   {
     2022: [
       {
+        title: "LSP 是什么？",
+        desc: "LSP 为什么会出现？",
+        date: "Sep 18, 2022",
+        href: "/src/2022/LSP/index.html",
+      },
+      {
         title: "后端改了graphql schema的话，前端需要做什么？",
         desc: "graphql 101",
-        date: "Sep 18, 2022",
+        date: "Sep 17, 2022",
         href: "/src/2022/graphql-schema/index.html",
       },
       {
