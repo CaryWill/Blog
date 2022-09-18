@@ -1,0 +1,282 @@
+<link href="/css/style.css" rel="stylesheet" /><link href="/Blog/css/style.css" rel="stylesheet" /><script src="/assets/post.js" defer></script><script src="/build/post.js" defer></script><script src="/Blog/build/post.js" defer></script><!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>后端改了graphql schema的话，前端需要做什么？</title>
+	</head>
+<body>
+<h1>后端改了graphql schema的话，前端需要做什么？</h1>
+
+<p><strong>2022.09.18</strong></p>
+
+<p>因为项目中有使用 graphql，但是整个流程比较的繁琐看起来，要在页面 A 上先配置需要后端返回的字段，然后将 schema 复制到本地，然后跑 cli 帮你生成基于上面的 schema 生成直接可以调用的接口函数等等。。。这些操作其实就是为了帮我们自动生成一个前端的 graphql 的 schema 而已。</p>
+
+<p>但是由于链路很长，然后对于 graphql 不熟，经常有的一个疑惑就是，后端改了 schema 的某个字段类型，比如从 <code>Int</code> 改成了 <code>String</code>，为什么前端也要改 schema，按照 rest API 的思路，前端应该不要改什么才对，后端将我们给的字段进行类型转换不就行了，所以抽了个时间打算将 graphql 学习下，看下为什么会这样。</p>
+
+<h2>接口</h2>
+
+<p>首先和 http 的 rest API 一样，我们需要请求一条接口，比如 <code>https://www.google.com/rect?width=3&amp;height=5</code> 的接口，在 graphql 里，可能就要变成，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-variable">fetch</span>(<span class="syntax-all syntax-string">&#39;/graphql&#39;</span>, {
+  <span class="syntax-all syntax-string">method</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;POST&#39;</span>,
+  <span class="syntax-all syntax-string">headers</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">&#39;Content-Type&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+    <span class="syntax-all syntax-string">&#39;Accept&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+  },
+  <span class="syntax-all syntax-string">body</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">JSON</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stringify</span>({<span class="syntax-all syntax-string">query</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;{ rect(width: 3, height: 4) { width }}&#39;</span>})
+})
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">r</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">r</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">json</span>())
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">data</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;data returned:&#39;</span>, <span class="syntax-all syntax-parameter">data</span>));</code></pre>
+
+<p>这里的 <code>/graphql</code> 是后端的 graphql 服务器设置的统一接口路径，然后服务器根据你传的入参再去找你要调用的接口，这里我们将 graphql 的 schema <code>{query: &#39;{ rect(width: 3, height: 4) { width }}&#39;}</code> 给到了后端，后端根据你给的 <code>query</code> 对象里的 <code>rect</code> key 字段来调用后端定义好的 <code>rect</code> 接口并将 <code>width: 3, height: 4</code> 作为入参，最终会返回给你一个 json 对象，里面只包含了我们指定的 <code>{ width }</code> 字段。</p>
+
+<p>有很多疑问是吧，我们再来看下后端的逻辑。</p>
+
+<h2>后端如何处理 graphql 请求</h2>
+
+<p>我们以 nodejs 实现的 graphql 为例，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">express</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">require</span>(<span class="syntax-all syntax-string">&#39;express&#39;</span>);
+<span class="syntax-all syntax-keyword">var</span> { <span class="syntax-all syntax-parameter">graphqlHTTP</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">require</span>(<span class="syntax-all syntax-string">&#39;express-graphql&#39;</span>);
+<span class="syntax-all syntax-keyword">var</span> { <span class="syntax-all syntax-parameter">buildSchema</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">require</span>(<span class="syntax-all syntax-string">&#39;graphql&#39;</span>);
+
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">schema</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">buildSchema</span>(<span class="syntax-all syntax-string">`</span>
+<span class="syntax-all syntax-string">  # 后端决定要暴露哪些字段给前端 </span>
+<span class="syntax-all syntax-string">  type Rect {</span>
+<span class="syntax-all syntax-string">    width: Int</span>
+<span class="syntax-all syntax-string">    height: Int</span>
+<span class="syntax-all syntax-string">  }</span>
+<span class="syntax-all syntax-string">  type Query {</span>
+<span class="syntax-all syntax-string">    rect(width: Int, height: Int): Rect</span>
+<span class="syntax-all syntax-string">  }</span>
+<span class="syntax-all syntax-string">`</span>);
+
+<span class="syntax-all syntax-keyword">class</span> <span class="syntax-all syntax-entity">Rect</span> {
+  <span class="syntax-all syntax-entity">constructor</span>(<span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span>, <span class="syntax-all syntax-parameter">name</span>) {
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">width</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">width</span> <span class="syntax-all syntax-keyword">||</span> <span class="syntax-all syntax-constant">5</span>;
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">height</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">height</span> <span class="syntax-all syntax-keyword">||</span> <span class="syntax-all syntax-constant">6</span>;
+    <span class="syntax-all syntax-constant">this</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">name</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">name</span>;
+  }
+}
+
+<span class="syntax-all syntax-comment">// The root provides a resolver function for each API endpoint
+</span><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-constant">root</span> <span class="syntax-all syntax-keyword">=</span> {
+  <span class="syntax-all syntax-entity">rect</span>: ({<span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span>}) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Rect</span>(<span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span>);
+  }
+};
+
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">app</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">express</span>();
+<span class="syntax-all syntax-parameter">app</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">use</span>(<span class="syntax-all syntax-string">&#39;/graphql&#39;</span>, <span class="syntax-all syntax-variable">graphqlHTTP</span>({
+  <span class="syntax-all syntax-string">schema</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">schema</span>,
+  <span class="syntax-all syntax-string">rootValue</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">root</span>,
+  <span class="syntax-all syntax-string">graphiql</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">true</span>,
+}));</code></pre>
+
+<p>还是上面说的，首先一个请求过来，这里统一的接口名是 <code>/graphql</code>，然后进入到 root 函数，它根据你给的 <code>query rect {...}</code> 字段，发现你要路由到 <code>rect</code> 接口，然后 root 变量里对应的函数就被执行了，根据我们传过来的 schema, <code>{query: &#39;{ rect(width: 3, height: 4) { width }}&#39;</code>，<code>3</code> 和 <code>4</code> 会作为入参给到我们的 <code>rect</code> 的 <code>resolver</code> 函数，也就是 root 对象里下面的这个，</p>
+
+<pre><code class="code-highlighted code-js">({<span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span>}) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-variable">Rect</span>(<span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span>);
+ }</code></pre>
+
+<p>然后要返回数据了，根据我们传过来的入参，<code>query rect</code> 我们找到后端定义的 schema，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">schema</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-variable">buildSchema</span>(<span class="syntax-all syntax-string">`</span>
+<span class="syntax-all syntax-string">  # 后端决定要暴露哪些字段给前端 </span>
+<span class="syntax-all syntax-string">  type Rect {</span>
+<span class="syntax-all syntax-string">    width: Int</span>
+<span class="syntax-all syntax-string">    height: Int</span>
+<span class="syntax-all syntax-string">  }</span>
+<span class="syntax-all syntax-string">  type Query {</span>
+<span class="syntax-all syntax-string">    rect(width: Int, height: Int): Rect</span>
+<span class="syntax-all syntax-string">  }</span>
+<span class="syntax-all syntax-string">`</span>); </code></pre>
+
+<p>找到 <code>type Query</code> 对象里对应的路由字段也就是 <code>rect</code>，如果 <code>root</code> 变量里 <code>rect</code> 接收到的入参 <code>width: 3, height: 4</code> 的类型，和 <code>type Query</code> 里的<code>rect</code> 保持了一致的话，那类型检查就通过了，如果传的是 <code>width: 3, height: &quot;4&quot;</code> 那么就会报错了，<code>&quot;Int cannot represent non-integer value: \&quot;4\&quot;&quot;</code>，然后我们要求后端返回的一个对象，只包含了 <code>{ width }</code> 字段，再回到后端定义的 schema，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-constant">type</span> <span class="syntax-all syntax-parameter">Query</span> {
+    <span class="syntax-all syntax-parameter">rect</span>(<span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">Int</span>, <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">Int</span>)<span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">Rect</span>
+}</code></pre>
+
+<p>这里 <code>rect</code> query 返回的是 <code>Rect</code> 字段，可以看到它里面定义了两个字段，一个 <code>width</code> 一个 <code>height</code>，如果我们要求的 <code>{ width }</code> 字段在 <code>Rect</code> type 里不存在的话，也就是如果我们将其改为， </p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-constant">type</span> <span class="syntax-all syntax-parameter">Rect</span> {
+    <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">Int</span>
+  }</code></pre>
+
+<p>那么就会出现 <code>&quot;Cannot query field \&quot;width\&quot; on type \&quot;Rect\&quot;.&quot;</code> 这样的报错。</p>
+
+<p>如果一切顺利，那么后端就会返回给前端那么个对象，</p>
+
+<pre><code class="code-highlighted code-js">{<span class="syntax-all syntax-string">&quot;data&quot;</span>:{<span class="syntax-all syntax-string">&quot;rect&quot;</span>:{<span class="syntax-all syntax-string">&quot;width&quot;</span>:<span class="syntax-all syntax-constant">3</span>,<span class="syntax-all syntax-string">&quot;height&quot;</span>:<span class="syntax-all syntax-string">&quot;4&quot;</span>}}}</code></pre>
+
+<h2>后端修改 schema 会发生什么</h2>
+
+<p>那么再回过头来看下，如果后端要改字段类型，那么前端需要做出什么样的改变呢？假如后端将 <code>height</code> 改成了 <code>String</code> 类型，</p>
+
+<pre><code class="code-highlighted code-js">  <span class="syntax-all syntax-constant">type</span> <span class="syntax-all syntax-parameter">Rect</span> {
+    <span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">Int</span>
+    <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">String</span> 
+  }
+  <span class="syntax-all syntax-parameter">type</span> <span class="syntax-all syntax-parameter">Query</span> {
+    <span class="syntax-all syntax-parameter">rect</span>(<span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">Int</span>, <span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-constant">String</span>)<span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">Rect</span>
+  }</code></pre>
+
+<p>那么，前端在发送请求的时候，<code>JSON.stringify({query: &#39;{ rect(width: 3, height: &quot;4&quot;) { width }}&#39;})</code> 将之前的 <code>4</code> 改成 <code>&quot;4&quot;</code> 就行了。</p>
+
+<h2>复用 schema</h2>
+
+<p>当然在实践中不会像下面这样写，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-variable">fetch</span>(<span class="syntax-all syntax-string">&#39;/graphql&#39;</span>, {
+  <span class="syntax-all syntax-string">method</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;POST&#39;</span>,
+  <span class="syntax-all syntax-string">headers</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">&#39;Content-Type&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+    <span class="syntax-all syntax-string">&#39;Accept&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+  },
+  <span class="syntax-all syntax-string">body</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">JSON</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stringify</span>({<span class="syntax-all syntax-string">query</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;{ rect(width: 3, height: &quot;4&quot;) { width }}&#39;</span>})
+})
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">r</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">r</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">json</span>())
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">data</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;data returned:&#39;</span>, <span class="syntax-all syntax-parameter">data</span>));</code></pre>
+
+<p>这样写的话，我们每次改变 <code>width</code> 的值话，都需要手写一个 <code>{query: &#39;{ rect(width: 3, height: &quot;4&quot;) { width }}&#39;}</code> shcema，将里面的 3 改成其他的值。</p>
+
+<p>当然你立马就会想到，利用模版字符串不就行了？</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">width</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">3</span>;
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">height</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;6&quot;</span>;
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">query</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`{rect(width: </span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">width</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">, height: </span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">height</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">) {</span>
+<span class="syntax-all syntax-string">    width,</span>
+<span class="syntax-all syntax-string">    height</span>
+<span class="syntax-all syntax-string">  }}`</span>;
+<span class="syntax-all syntax-variable">fetch</span>(<span class="syntax-all syntax-string">&#39;/graphql&#39;</span>, {
+  <span class="syntax-all syntax-string">method</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;POST&#39;</span>,
+  <span class="syntax-all syntax-string">headers</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">&#39;Content-Type&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+    <span class="syntax-all syntax-string">&#39;Accept&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+  },
+  <span class="syntax-all syntax-string">body</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">JSON</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stringify</span>({<span class="syntax-all syntax-parameter">query</span>})
+})
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">r</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">r</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">json</span>())
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">data</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;data returned:&#39;</span>, <span class="syntax-all syntax-parameter">data</span>));</code></pre>
+
+<p>但是有一个问题，因为我们的 <code>height</code> 在后端已经定义为了 <code>String</code> 类型，上面这种写法还是不对，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">query</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`{rect(width: 3, height: 6) {</span>
+<span class="syntax-all syntax-string">    width,</span>
+<span class="syntax-all syntax-string">    height</span>
+<span class="syntax-all syntax-string">  }}`</span>;</code></pre>
+
+<p><code>height</code> 在模版字符串里还是 6，少了两个引号，除非你这样写，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">width</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">3</span>;
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">height</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">6</span><span class="syntax-all syntax-escape">\&quot;</span><span class="syntax-all syntax-string">&quot;</span>;</code></pre>
+
+<p>但是这样写起来就很奇怪了。</p>
+
+<p>为了应对这种问题，graphql 引入了 <code>variables</code> 字段，以及 <code>operation</code> 的概念，我们上面前端定义的 schema 的写法其实是简写，</p>
+
+<pre><code class="code-highlighted code-js">{<span class="syntax-all syntax-string">query</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;{ rect(width: 3, height: &quot;4&quot;) { width }}&#39;</span>}</code></pre>
+
+<p>我们引入 <code>operation</code> 的概念后可以将其改写成，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">query</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`query Rect {</span>
+<span class="syntax-all syntax-string">  rect(width: 3, height: &quot;6&quot;) {</span>
+<span class="syntax-all syntax-string">    width</span>
+<span class="syntax-all syntax-string">  }</span>
+<span class="syntax-all syntax-string">}`</span>;</code></pre>
+
+<p>这里的 <code>Rect</code> 是 graphql 里所谓的 <a href="https://graphql.org/learn/queries/#operation-name">operation name</a>，这个你取什么都可以，一般会取的有意义一些，我们暂时将我们要发送的接口的名字的首字母大写作为 operation name 吧。</p>
+
+<p>然后回到之前的问题上面，下面这种写法就解决了上面使用 js 里模版字符串没有带上引号的问题，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">width</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">3</span>;
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">height</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">&quot;6&quot;</span>;
+<span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">query</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`query Rect($width: Int!, $height: String) {</span>
+<span class="syntax-all syntax-string">  rect(width: $width, height: $height) {</span>
+<span class="syntax-all syntax-string">    width,</span>
+<span class="syntax-all syntax-string">    height</span>
+<span class="syntax-all syntax-string">  }</span>
+<span class="syntax-all syntax-string">}`</span>;
+<span class="syntax-all syntax-variable">fetch</span>(<span class="syntax-all syntax-string">&#39;/graphql&#39;</span>, {
+  <span class="syntax-all syntax-string">method</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;POST&#39;</span>,
+  <span class="syntax-all syntax-string">headers</span><span class="syntax-all syntax-constant">:</span> {
+    <span class="syntax-all syntax-string">&#39;Content-Type&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+    <span class="syntax-all syntax-string">&#39;Accept&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+  },
+  <span class="syntax-all syntax-string">body</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">JSON</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stringify</span>({
+    <span class="syntax-all syntax-parameter">query</span>,
+    <span class="syntax-all syntax-string">variables</span><span class="syntax-all syntax-constant">:</span> { <span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span> },
+  })
+})
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">r</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">r</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">json</span>())
+  <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">data</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;data returned:&#39;</span>, <span class="syntax-all syntax-parameter">data</span>));</code></pre>
+
+<p>下面来详细看下，首先看下我们定义的 <code>query</code> 字段，你会发现和使用 js 的模版字符串很像，只不过， <code>${height}</code> 变成了 <code>$height</code>，然后在 <code>fetch</code> 请求里的 body 里，多了个 <code>variables</code> 字段，懂了吧，</p>
+
+<p>其实就是我们上面的接口给到后端后，后端拿着 <code>variables</code> 字段，然后将其灌入到我们 <code>query</code> 里，处理完成之后最终后端其实就能拿到这样的结果，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">query</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`{</span>
+<span class="syntax-all syntax-string">  rect(width: 3, height: &quot;6&quot;) {</span>
+<span class="syntax-all syntax-string">    width,</span>
+<span class="syntax-all syntax-string">    height</span>
+<span class="syntax-all syntax-string">  }</span>
+<span class="syntax-all syntax-string">}`</span>;</code></pre>
+
+<p>和我们一开始直接写死的效果是一样的，但是我们就获得了一个可以重复利用的 <code>query</code> schema 了。</p>
+
+<p>现在我们再来重构下，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">getRect</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">query</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`query Rect($width: Int!, $height: String) {</span>
+<span class="syntax-all syntax-string">    rect(width: $width, height: $height) {</span>
+<span class="syntax-all syntax-string">      width,</span>
+<span class="syntax-all syntax-string">      height</span>
+<span class="syntax-all syntax-string">    }</span>
+<span class="syntax-all syntax-string">  }`</span>;
+  <span class="syntax-all syntax-variable">fetch</span>(<span class="syntax-all syntax-string">&#39;/graphql&#39;</span>, {
+    <span class="syntax-all syntax-string">method</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;POST&#39;</span>,
+    <span class="syntax-all syntax-string">headers</span><span class="syntax-all syntax-constant">:</span> {
+      <span class="syntax-all syntax-string">&#39;Content-Type&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+      <span class="syntax-all syntax-string">&#39;Accept&#39;</span>: <span class="syntax-all syntax-string">&#39;application/json&#39;</span>,
+    },
+    <span class="syntax-all syntax-string">body</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-constant">JSON</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">stringify</span>({
+      <span class="syntax-all syntax-parameter">query</span>,
+      <span class="syntax-all syntax-string">variables</span><span class="syntax-all syntax-constant">:</span> { <span class="syntax-all syntax-parameter">width</span>, <span class="syntax-all syntax-parameter">height</span> },
+    })
+  })
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">r</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-parameter">r</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">json</span>())
+    <span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">then</span>(<span class="syntax-all syntax-parameter">data</span> <span class="syntax-all syntax-keyword">=&gt;</span> <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;data returned:&#39;</span>, <span class="syntax-all syntax-parameter">data</span>));
+}</code></pre>
+
+<p>然后现在当我们的 <code>height</code> 或者 <code>width</code> 改变的时候，我们就可以这样调用了，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-variable">getRect</span>(<span class="syntax-all syntax-constant">3</span>,<span class="syntax-all syntax-string">&quot;4&quot;</span>)
+<span class="syntax-all syntax-variable">getRect</span>(<span class="syntax-all syntax-constant">10</span>, <span class="syntax-all syntax-string">&quot;10&quot;</span>)</code></pre>
+
+<p>那么再回我们一开始提的问题上，”后端改了graphql schema的话，前端需要做什么？”，如果是这种抽离了 <code>schema</code> 的情况下，我们其实只要改下 <code>schema</code> 里的字段类型即可，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">var</span> <span class="syntax-all syntax-parameter">query</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`query Rect($width: Int!, $height: String) {</span>
+<span class="syntax-all syntax-string">    rect(width: $width, height: $height) {</span>
+<span class="syntax-all syntax-string">      width,</span>
+<span class="syntax-all syntax-string">      height</span>
+<span class="syntax-all syntax-string">    }</span>
+<span class="syntax-all syntax-string">  }`</span>;</code></pre>
+
+<p>将 <code>query Rect($width: Int!, $height: String)</code> 里本来是 <code>$height: Int</code> 的改成 <code>$height: String</code> 即可，以及 <code>variables</code> 变量里 <code>height</code> 值改为字符串即可，比如 <code>&quot;6&quot;</code>。</p>
+
+<p>同理 mutation 也是这样，测试源码在<a href="https://github.com/CaryWill/graphql101">这里</a>。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://graphql.org/learn/queries/">https://graphql.org/learn/queries/</a></li>
+	<li><a href="https://graphql.org/learn/queries/#mutations">https://graphql.org/learn/queries/#mutations</a></li>
+	<li><a href="https://graphql.org/graphql-js/mutations-and-input-types/">https://graphql.org/graphql-js/mutations-and-input-types/</a></li>
+</ol>
+
+</body>
+</html>
+

@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "后端改了graphql schema的话，前端需要做什么？",
+        desc: "graphql 101",
+        date: "Sep 18, 2022",
+        href: "/src/2022/graphql-schema/index.html",
+      },
+      {
         title: "如何使用 npm link 来提升开发效率",
         desc: "npm link",
         date: "Sep 03, 2022",
