@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Remote Plugin for Neovim</title>
+	</head>
+<body>
+<h1>Remote Plugin for Neovim</h1>
+
+<p><strong>2022.09.24</strong></p>
+
+<p>你可以用其他任何语言为 Neovim 开发插件，我听到这个的时候觉得很不可思议，到底是怎么做到的，Neovim 的插件，不对，任何 IDE 的插件都应该有对应的开发语言吧，怎么做到用别的语言开发的？</p>
+
+<p>抱着这个疑惑我开始调查了，发现原理其实很简单，插件只提供服务不就行了吗，就像前端和后端，插件这里充当后端的角色，当 Neovim 要比如格式化一个 buffer 的时候，你只需要将 buffer 的内容（比如）给到插件，插件调用自己写的某个函数将其格式化，然后将格式化的内容再发给 Neovim 不就可以了吗，Neovim 再调用自己的 API 来处理 UI 相关的操作。</p>
+
+<p>当插件让 Neovim 新创建一个 buffer 呢？同样，Neovim 在启动的时候会创建一个默认的 RPC 地址用来监听，当插件通过 RPC 向 Neovim 发送消息后，Neovim 进行解析，然后创建一个 buffer 来进行 UI 相关的操作。（至于什么是 RPC 呢，我们下面会讲）</p>
+
+<p>觉得很妙。</p>
+
+<p><strong>RPC</strong> 的全称就是 <strong>Remote procedure call</strong>，其实也很好理解，还是 Neovim 和它的插件的例子，我们要格式化的时候，我们要调用一个函数来进行格式化，这个函数可以是 Neovim 这个宿主自己定义的函数，也可以是我们为其开发的插件里面定义的函数，我们发个（call）请求到远程（Remote）的插件里，然后调用插件里面定义的函数（procedure），然后返回到 Neovim 进行 UI 的更新。</p>
+
+<p>下面再来具体讲下如何用 nodejs 来进行一个 remote plugin 的插件开发，</p>
+
+<p>在 Neovim 初始化的时候会<a href="https://neovim.io/doc/user/api.html#RPC">默认</a>创建一个 RPC Socket，你可以在使用 <code>nvim</code> 创建一个 Neovim 实例后，输入，<code>:echo serverlist()</code> 来查看 Neovim 监听的地址。</p>
+
+<p>为了方便，我们直接在 <code>~/.config/nvim/rplugin</code> 目录下创建一个 <code>node</code> 文件夹，然后在里面创建一个 <code>index.js</code> 文件，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">onBufWrite</span>() {
+  <span class="syntax-all syntax-constant">console</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">log</span>(<span class="syntax-all syntax-string">&#39;Buffer written!&#39;</span>);
+}
+
+<span class="syntax-all syntax-constant">module</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">exports</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">plugin</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">function</span> <span class="syntax-all syntax-entity">setLine</span>() {
+    <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">line</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">env</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">NVIM</span>;
+    <span class="syntax-all syntax-parameter">plugin</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">nvim</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">setLine</span>(<span class="syntax-all syntax-parameter">line</span>);
+  }
+  <span class="syntax-all syntax-parameter">plugin</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerCommand</span>(<span class="syntax-all syntax-string">&#39;SetMyLine&#39;</span>, [<span class="syntax-all syntax-parameter">plugin</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">nvim</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">buffer</span>, <span class="syntax-all syntax-parameter">setLine</span>]);
+  <span class="syntax-all syntax-parameter">plugin</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">registerAutocmd</span>(<span class="syntax-all syntax-string">&#39;BufWritePre&#39;</span>, <span class="syntax-all syntax-parameter">onBufWrite</span>, { <span class="syntax-all syntax-string">pattern</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&#39;*&#39;</span> });
+};</code></pre>
+
+<p>这样一个简单的插件就开发完成了，然后你需要执行 <code>:UpdateRemotePlugins</code> 命令，来生成这些 remote plugin 的 manifest，你可以在 <code>~/.local/share/nvim/rplugin.vim</code> 这里看到，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-string">&quot; node plugins</span><span class="syntax-all syntax-error">
+</span><span class="syntax-all syntax-parameter">call</span> <span class="syntax-all syntax-parameter">remote</span>#<span class="syntax-all syntax-parameter">host</span>#<span class="syntax-all syntax-variable">RegisterPlugin</span>(<span class="syntax-all syntax-string">&#39;node&#39;</span>, <span class="syntax-all syntax-string">&#39;/Users/cary/workspace/github/dotfiles/.config/nvim/rplugin/node/index.js&#39;</span>, [
+      \ {<span class="syntax-all syntax-string">&#39;sync&#39;</span>: <span class="syntax-all syntax-string">v</span><span class="syntax-all syntax-constant">:false</span>, <span class="syntax-all syntax-string">&#39;name&#39;</span>: <span class="syntax-all syntax-string">&#39;BufWritePre&#39;</span>, <span class="syntax-all syntax-string">&#39;type&#39;</span>: <span class="syntax-all syntax-string">&#39;autocmd&#39;</span>, <span class="syntax-all syntax-string">&#39;opts&#39;</span>: {<span class="syntax-all syntax-string">&#39;pattern&#39;</span>: <span class="syntax-all syntax-string">&#39;*&#39;</span>}},
+      \ {<span class="syntax-all syntax-string">&#39;sync&#39;</span>: <span class="syntax-all syntax-string">v</span><span class="syntax-all syntax-constant">:null</span>, <span class="syntax-all syntax-string">&#39;name&#39;</span>: <span class="syntax-all syntax-string">&#39;SetMyLine&#39;</span>, <span class="syntax-all syntax-string">&#39;type&#39;</span>: <span class="syntax-all syntax-string">&#39;command&#39;</span>, <span class="syntax-all syntax-string">&#39;opts&#39;</span>: {}},
+     \ ])</code></pre>
+
+<p>诶，但是这里我们还没看到 RPC 通信的部分，我们只看到了 <code>plugin.registerCommand(&#39;SetMyLine&#39;, [plugin.nvim.buffer, setLine]);</code>，当我们执行 <code>:SetMyLine</code> 的时候，就会进行 RPC 通信了，当然偏底层的创建 Socket 等和 Neovim 进行通信的这些模版我们每次写一个插件都要重新写的话就太浪费时间了，所以 Neovim 官方将这些通信的部分做了封装，发了个叫 <code>neovim</code> 的 npm 包，也就是所谓的 host，我们开发的插件利用的是这个 host 提供的能力来快速开发一个 remote plugin。</p>
+
+<p>我们使用 <code>npm install -g neovim</code> 安装了个 nodejs 的 host 用来进行 RPC 通信。</p>
+
+<p>然后我们用 Neovim 创建一个 buffer 然后使用 <code>: SetMyLine</code> 命令就可以看到效果了，到此一个插件的开发就完成了。</p>
+
+<hr />
+
+<p>我们再来做个测试，如果我们将这个 host 卸载掉会怎么样，然后执行 <code>:UpdateRemotePlugins</code> 命令，发现报了 <code>Cannot find the &quot;neovim&quot; node package</code> 错，难道 <code>neovim</code> 包是必须的吗？但是肯定也有其他的 nodejs 的 Neovim 的 RPC host 才对吧？</p>
+
+<p>然后我看到了这个 Neovim 的 <a href="https://github.com/neovim/neovim/commit/0093c25dd3795972b953f9914cc33fc38c5d9dbc#diff-018fa779b1311e6b13c3ddcde812aecb5db4e7fc6ca91d2c524b0c6bdfdf2fd9">PR</a>，然后我全局搜了下，发现 <code>node-client</code> 这个之前克隆下来的包里的 <code>package.json</code> 里面有，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-string">&quot;bin&quot;</span>: {
+  <span class="syntax-all syntax-string">&quot;neovim-node-host&quot;</span>: <span class="syntax-all syntax-string">&quot;./bin/cli.js&quot;</span>
+},</code></pre>
+
+<p>然后再搜了下这个 PR 对应的<a href="https://github.com/neovim/neovim/blob/master/runtime/doc/provider.txt">文档</a>发现，如果你要使用 nodejs 开发 Neovim 的插件的话，它会去 <code>npm root -g</code> 里找 <code>neovim-node-host</code> 二进制可执行文件，而这个文件是我们在 <code>npm install -g neovim</code> 的时候安装上去的，然后你在 <a href="https://www.npmjs.com/package/neovim">npmjs</a> 上找一下就会发现，<code>node-client</code> 发包用的包名就是 <code>neovim</code>，这样也就解释的通了，<code>package.json</code> 里面指定的 <code>bin</code> 字段，在你安装这个 npm 包的时候会自动被链接到全局的 <code>bin</code> 文件所在的目录了，这样 Neovim 就可以直接通过 <code>neovim-node-host</code> 跑这个命令来启动一个 RPC host 了。（<code>npm install -g neovim</code> 安装完后，你就可以在命令行里直接输入 <code>neovim-node-host</code> 了，你可以直接测试下）</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>那么不使用这个 host 也可以开发吗？理论上应该是可以的，但是具体怎么操作我还要研究下，就在这挖个坑吧 ：3</p>
+
+<p>想起，之前使用 Neovim 的时候使用的一个自动补全的一个插件 <a href="https://github.com/neoclide/coc.nvim">Conquer of Completion</a> 也是用 nodejs 写的，然后去看了下去看了下它的 <code>package.json</code> 文件，结果发现它引用了 <code>@chemzqm/neovim</code> 这个包，而这个包是我们 <code>npm install -g neovim</code> 里的 <code>neovim</code> 这个包的 fork，但是它没有在全局装，所以后面还得再看看。</p>
+
+<p>另外可以<a href="https://neovim.io/doc/user/starting.html">使用</a> <code>echo $NVIM_LOG_FILE</code> 命令查看 Neovim 的 log 日志地址。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://en.m.wikipedia.org/wiki/Request%E2%80%93response">Request–response</a></li>
+	<li><a href="https://en.m.wikipedia.org/wiki/Remote_procedure_call">Remote procedure call</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol">Hypertext Transfer Protocol</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Communication_protocol">Communication protocol</a></li>
+	<li><a href="https://github.com/roxma/vim-hug-neovim-rpc">Vim-hug-neovim-rpc</a></li>
+	<li><a href="https://neovim.io/doc/user/starting.html#--embed">How Neovim started</a></li>
+	<li><a href="https://stackoverflow.com/questions/40943639/how-can-i-write-a-neovim-plugin-with-javascript/41705357#41705357">How to write a simple nodejs neovim plugin</a></li>
+	<li><a href="https://neovim.io/doc/user/remote_plugin.html">Neovim remote-plugin-hosts</a></li>
+	<li><a href="https://oli.me.uk/extending-neovim-with-any-language-mostly-clojure/">Extending Neovim with any language (mostly Clojure)</a></li>
+	<li><a href="https://github.com/neovim/node-client">neovim rpc node host</a></li>
+	<li><a href="https://neovim.io/doc/user/usr_05.html#plugin">How to add a plugin to neovim</a></li>
+	<li><a href="https://neovim.io/doc/user/builtin.html#rpcrequest()">Neovim rpcrequest() built-in api</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Inter-process_communication">Inter-process communication</a></li>
+	<li><a href="https://en.wikipedia.org/wiki/Network_socket">What is a socket?</a></li>
+	<li><a href="https://docs.npmjs.com/cli/v8/configuring-npm/package-json">package.json 里 bin 字段的作用</a></li>
+	<li><a href="https://github.com/neovim/neovim/blob/master/runtime/doc/provider.txt">Neovim runtime providers for remote plugin</a></li>
+	<li><a href="https://github.com/neovim/node-client/issues/55">Neovim npm package not loaded properly</a></li>
+	<li><a href="https://zhuanlan.zhihu.com/p/65524706?utm_id=0">Neovim remote plugin 背景</a></li>
+	<li><a href="https://zhuanlan.zhihu.com/p/40696208?utm_id=0">解析 neovim 的 remote plugin 机制</a></li>
+	<li><a href="https://neovim.io/doc/user/channel.html#channel-stdio">RPC IO channel Neovim</a></li>
+</ol>
+
+</body>
+</html>
+
