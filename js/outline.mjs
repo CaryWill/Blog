@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "Remote Plugin for Neovim",
+        desc: "你可以用任何开发语言为 Neovim 开发插件！",
+        date: "Sep 24, 2022",
+        href: "/src/2022/RemotePlugin4Neovim/index.html",
+      },
+      {
         title: "LSP 是什么？",
         desc: "LSP 为什么会出现？",
         date: "Sep 18, 2022",
