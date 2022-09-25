@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>iframe 里的弹窗展示在最外层</title>
+	</head>
+<body>
+<h1>iframe 里的弹窗展示在最外层</h1>
+
+<p><strong>2022.09.25</strong></p>
+
+<p>我们的项目是基于前端微应用的架构，每一个微应用都用 iframe 做了隔离，在实践中有一种场景也比较常见，就是像是弹窗啊，toast 啊这种页面全局展示的，就会被限制在 iframe 里面，导致页面看上去不协调，这里看到一种写法，感觉很妙，来分享下，</p>
+
+<p>首先因为 same-origin 的策略，iframe 如果和外层页面是不同源的话，那么 iframe 是没有权限读取外层页面的一切操作的，防止外层页面信息泄漏，但是，有一种情况例外，当 iframe 不是通过 <code>src</code> 属性加载的，而是通过 <code>srcdoc</code> 属性加载的，那么就可以操作外层页面了，也就是可以进行跨域操作了，其实想想也正常，毕竟 <code>srcdoc</code> 的值也只能是你自己加的了，所以肯定安全，这样我们就可以将弹窗渲染到 <code>window.parent.xxx</code> 上面去了。</p>
+
+<p>但是下面要讲的这种方式感觉有点取巧，就是虽然可以进行跨域访问外层页面了，那么第一个反应，比如是 antd 的 Modal，那么就会想到使用 <code>getContainer</code> 这个 API，而不会想到，我们直接调用外层页面上定义 antd 的 <code>Modal</code> 不就行了吗？</p>
+
+<p>是不是很妙，听懂的掌声 👏</p>
+
+<p>整个源码就是下面这一块，可以在这里看 <a href="https://codesandbox.io/s/portal-antd-uy3ix7?file=/index.html">demo</a>，</p>
+
+<pre><code class="code-highlighted code-js">&lt;<span class="syntax-all syntax-tag">body</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">src</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;https://requirejs.org/docs/release/2.3.6/minified/require.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">link</span>
+    <span class="syntax-all syntax-entity">rel</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;stylesheet&quot;</span>
+    <span class="syntax-all syntax-entity">href</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;https://cdnjs.cloudflare.com/ajax/libs/antd/4.23.2/antd.min.css&quot;</span>
+  /&gt;
+  &lt;<span class="syntax-all syntax-tag">script</span>&gt;
+    requirejs.config({
+      <span class="syntax-all syntax-parameter">paths</span><span class="syntax-all syntax-keyword">:</span> {
+        <span class="syntax-all syntax-string">antd</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-string">&quot;https://cdnjs.cloudflare.com/ajax/libs/antd/4.23.2/antd.min&quot;</span>,
+        <span class="syntax-all syntax-string">react</span><span class="syntax-all syntax-constant">:</span>
+          <span class="syntax-all syntax-string">&quot;https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min&quot;</span>,
+        <span class="syntax-all syntax-string">&quot;react-dom&quot;</span>:
+          <span class="syntax-all syntax-string">&quot;https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min&quot;</span>,
+        <span class="syntax-all syntax-string">moment</span><span class="syntax-all syntax-constant">:</span>
+          <span class="syntax-all syntax-string">&quot;https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min&quot;</span>,
+      },
+    });
+  &lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">script</span>&gt;
+    globalThis.requirejs(
+      [&quot;react&quot;, &quot;react-dom&quot;, &quot;antd&quot;],
+      (react, reactDom, antd) =&gt; {
+        <span class="syntax-all syntax-parameter">antd</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">message</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">success</span>(<span class="syntax-all syntax-string">&quot;from root window&quot;</span>);
+      }
+    );
+  &lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">iframe</span>
+    <span class="syntax-all syntax-entity">srcdoc</span><span class="syntax-all syntax-keyword">=</span><span class="syntax-all syntax-string">&quot;
+</span><span class="syntax-all syntax-string">    &lt;script src=&#39;https://requirejs.org/docs/release/2.3.6/minified/require.js&#39;&gt;&lt;/script&gt;
+</span><span class="syntax-all syntax-string">    &lt;link
+</span><span class="syntax-all syntax-string">      rel=&#39;stylesheet&#39;
+</span><span class="syntax-all syntax-string">      href=&#39;https://cdnjs.cloudflare.com/ajax/libs/antd/4.23.2/antd.min.css&#39;
+</span><span class="syntax-all syntax-string">    /&gt;
+</span><span class="syntax-all syntax-string">    &lt;body&gt;
+</span><span class="syntax-all syntax-string">    &lt;script&gt;
+</span><span class="syntax-all syntax-string">      globalThis.requirejs.config({
+</span><span class="syntax-all syntax-string">        paths: {
+</span><span class="syntax-all syntax-string">          antd: &#39;https://cdnjs.cloudflare.com/ajax/libs/antd/4.23.2/antd.min&#39;,
+</span><span class="syntax-all syntax-string">          react:
+</span><span class="syntax-all syntax-string">            &#39;https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min&#39;,
+</span><span class="syntax-all syntax-string">          &#39;react-dom&#39;:
+</span><span class="syntax-all syntax-string">            &#39;https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min&#39;,
+</span><span class="syntax-all syntax-string">          moment:
+</span><span class="syntax-all syntax-string">            &#39;https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min&#39;,
+</span><span class="syntax-all syntax-string">        },
+</span><span class="syntax-all syntax-string">      });
+</span><span class="syntax-all syntax-string">      globalThis.parent.requirejs(
+</span><span class="syntax-all syntax-string">        [&#39;antd&#39;],
+</span><span class="syntax-all syntax-string">        (antd) =&gt; {
+</span><span class="syntax-all syntax-string">          globalThis.define(&#39;PAntd&#39;, antd)
+</span><span class="syntax-all syntax-string">        }
+</span><span class="syntax-all syntax-string">      );
+</span><span class="syntax-all syntax-string">      setTimeout(() =&gt; {
+</span><span class="syntax-all syntax-string">        globalThis.require([&#39;PAntd&#39;], pantd =&gt; {
+</span><span class="syntax-all syntax-string">           pantd.message.success(&#39;from inner iframe&#39;);
+</span><span class="syntax-all syntax-string">        })
+</span><span class="syntax-all syntax-string">        globalThis.require([&#39;antd&#39;], antd =&gt; {
+</span><span class="syntax-all syntax-string">           antd.message.success(&#39;from inner iframe&#39;);
+</span><span class="syntax-all syntax-string">        })
+</span><span class="syntax-all syntax-string">      }, 1000)
+</span><span class="syntax-all syntax-string">    &lt;/script&gt;
+</span><span class="syntax-all syntax-string">    &lt;/body&gt;
+</span><span class="syntax-all syntax-string">    &quot;</span>
+  /&gt;
+&lt;/<span class="syntax-all syntax-tag">body</span>&gt;</code></pre>
+
+<p>核心代码是这块，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">globalThis</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">parent</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">requirejs</span>(
+        [<span class="syntax-all syntax-string">&#39;antd&#39;</span>],
+        (<span class="syntax-all syntax-parameter">antd</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+          <span class="syntax-all syntax-parameter">globalThis</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">define</span>(<span class="syntax-all syntax-string">&#39;PAntd&#39;</span>, <span class="syntax-all syntax-parameter">antd</span>)
+        }
+      );</code></pre>
+
+<p>一开始我没看懂，后面发现，<code>globalThis.parent.requirejs</code> 这个是外层的内面，这样在第一个入参是 <code>[&#39;antd&#39;]</code> 的时候，它只会解析成从外层页面定义好的 <code>antd</code> 模块，然后我们再在 iframe 里使用 <code>globalThis.define</code> 定一个模块，指向外层的 antd 模块，这样我们只需要使用 <code>import { Modal } from &#39;PAntd&#39;</code> 就能实现在外层页面弹窗了，是不是很妙啊，不用写一堆的 <code>getContainer</code> 了。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://javascript.info/cross-window-communication">cross-window-communication</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/domain">document.domain setter deprecated</a></li>
+	<li><a href="https://stackoverflow.com/a/41800811">iframe src vs srcdoc</a></li>
+</ol>
+
+</body>
+</html>
+
