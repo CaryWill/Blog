@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>Remote Plugin for Neovim</title>
+    <link>/src/2022/RemotePlugin4Neovim/index.html</link>
+    <description>你可以用任何开发语言为 Neovim 开发插件！</description>
+    <pubDate>Sat Sep 24 2022 00:00:00 GMT+0800 (China Standard Time)</pubDate>
+    <lastBuildDate>Sat Sep 24 2022 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
+  </item><item>
     <title>LSP 是什么？</title>
     <link>/src/2022/LSP/index.html</link>
     <description>LSP 为什么会出现？</description>
