@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "Build colour-scheme for Neovim",
+        desc: "所见即所得的配色插件开发",
+        date: "Oct 02, 2022",
+        href: "/src/2022/build-neovim-colorscheme/index.html",
+      },
+      {
         title: "iframe 里的弹窗展示在最外层",
         desc: "iframe srcdoc",
         date: "Sep 25, 2022",

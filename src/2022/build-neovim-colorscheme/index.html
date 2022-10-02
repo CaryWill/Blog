@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Build colour-scheme for Neovim</title>
+	</head>
+<body>
+<h1>Build colour-scheme for Neovim</h1>
+
+<p><strong>2022.10.02</strong></p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<p>发现很多时候该高亮的地方没有高亮起来，于是准备重新配置下，但是之前自己对于颜色的调试十分的麻烦（不是很了解 neovim 插件的开发流程），不是所见即所得的那种，你需要关掉 neovim 的实例然后重新开起来，后面学习了 lua 之后，发现只需要将 <code>package.loaded.yourmodule</code> 设置为 <code>nil</code> 然后重新 <code>require(yourmodule)</code> 即可，这些都是看了 <code>nord.nvim</code> 这个仓库发现的，想着别人是怎么做的学习下。</p>
+
+<p>首先克隆 <code>git@github.com:CaryWill/jellybeans.nvim.git</code> 这个是我 fork <a href="https://github.com/shaunsingh/nord.nvim">nord.nvim</a> 的仓库，你们可以下载下来，然后使用 <code>colorscheme jellybeans</code> 即可使用。</p>
+
+<p>你安装的插件会安装在 <code>/Users/cary/.local/share/nvim/plugged/jellybeans.nvim</code> 这个目录下面，其实你执行 <code>:PlugInstall</code> 的时候就是将我们的 git 仓库克隆到了这个目录下， 来看下目录结构，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">.</span>
+├── <span class="syntax-all syntax-constant">LICENSE</span>
+├── <span class="syntax-all syntax-constant">README</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">md</span>
+├── <span class="syntax-all syntax-parameter">colors</span>
+│&nbsp;&nbsp; └── <span class="syntax-all syntax-parameter">jellybeans</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">vim</span>
+└── <span class="syntax-all syntax-parameter">lua</span>
+    ├── <span class="syntax-all syntax-parameter">jellybeans</span>
+    │&nbsp;&nbsp; ├── <span class="syntax-all syntax-parameter">init</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">lua</span>
+    │&nbsp;&nbsp; ├── <span class="syntax-all syntax-parameter">theme</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">lua</span>
+    │&nbsp;&nbsp; └── <span class="syntax-all syntax-parameter">util</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">lua</span>
+    └── <span class="syntax-all syntax-parameter">lualine</span>
+        └── <span class="syntax-all syntax-parameter">themes</span>
+            └── <span class="syntax-all syntax-parameter">jellybeans</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">lua</span></code></pre>
+
+<p>我们 <code>lua</code> 目录下有一个 <code>jellybeans</code> 目录，这样我们就定义了一个 <code>jellybeans</code> 的模块，我们在 <code>colors</code> 的目录下创建了一个 <code>jellybeans.vim</code> 文件，当我们执行 <code>:colorscheme jellybeans</code> 的时候，这个文件会被执行，里面会加载我们定义的这些语法高亮。</p>
+
+<p>还遇到个问题，就是高亮里面定义的 <code>italic</code> 不生效了，变得很奇怪，结果发现自己的 tmux 配置有问题，添加下面的到你的 tmux 配置即可，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">set</span> <span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">g</span> <span class="syntax-all syntax-keyword">default-</span><span class="syntax-all syntax-parameter">terminal</span> <span class="syntax-all syntax-string">&quot;tmux-256color&quot;</span>
+<span class="syntax-all syntax-parameter">set</span> <span class="syntax-all syntax-keyword">-as</span> <span class="syntax-all syntax-parameter">terminal</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">overrides</span> <span class="syntax-all syntax-string">&#39;,xterm*:sitm=\E[3m&#39;</span></code></pre>
+
+<p>后面调试起来就很方便了，每次修改完只需要按 <code>&lt;leader&gt;r</code> 快捷键即可刷新 <code>init.vim</code> 同时会重新加载我们的 <code>runtime ./colors.vim</code> 也就是执行了 <code>colorscheme jellybeans</code> 也就是 null 掉我们定义的 jellybeans 模块，然后重新加载，修改的样式也就会立即生效了。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://www.reddit.com/r/neovim/comments/mjaxjn/how_to_force_reload_all_required_scripts_in_lua/">How to force reload all required scripts in lua config? : neovim</a></li>
+	<li><a href="https://github.com/shaunsingh/nord.nvim">shaunsingh/nord.nvim</a></li>
+	<li><a href="https://www.youtube.com/watch?v=qJ51AvN_ZXI">What does colorscheme command do in vim?</a></li>
+	<li><a href="https://github.com/metalelf0/jellybeans-nvim">jellybeans-nvim</a></li>
+	<li><a href="https://github.com/tmux/tmux/issues/1202#issuecomment-353015389">Tmux 2.6 italic not working...</a></li>
+</ol>
+
+</body>
+</html>
+
