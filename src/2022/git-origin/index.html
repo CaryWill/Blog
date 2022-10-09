@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>什么是 git origin？</title>
+	</head>
+<body>
+<h1>什么是 git origin？</h1>
+
+<p><strong>2022.10.09</strong></p>
+
+<p>在我的仓库里使用 <code>git branch -a</code> 的时候，看到了很多的分支，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">*</span> <span class="syntax-all syntax-parameter">daily</span>
+  <span class="syntax-all syntax-parameter">lua</span>
+  <span class="syntax-all syntax-parameter">master</span>
+  <span class="syntax-all syntax-parameter">remotes</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">origin</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-constant">HEAD</span> <span class="syntax-all syntax-keyword">-&gt;</span> <span class="syntax-all syntax-parameter">origin</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">master</span>
+  <span class="syntax-all syntax-parameter">remotes</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">origin</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">daily</span>
+  <span class="syntax-all syntax-parameter">remotes</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">origin</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">master</span>
+  <span class="syntax-all syntax-parameter">remotes</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">origin</span><span class="syntax-all syntax-keyword">/</span><span class="syntax-all syntax-parameter">vim</span></code></pre>
+
+<p>可能是由于没有仔细思考过，今天看着 <code>origin</code> 这个关键词感到尤其的陌生，于是准备看一下这个知识点。</p>
+
+<p>想象一下，你通过 <code>git clone git@github.com:CaryWill/dotfiles.git</code> 克隆下来一个仓库的时候，你想要 push，或者 pull 的时候，会发生什么呢？</p>
+
+<p>如果只是本地进行版本管理的话，使用 <code>git init</code> 进行版本管理初始化，然后使用 <code>git commit</code> 创建 commit，但是如果你的仓库并不是本地的，而是存在远程服务器上的怎么办呢？</p>
+
+<p>你需要一个地址指向我们的远程仓库，而 <code>git push</code> 就相当于向这个地址（你可以理解为一条接口）发送了一个请求，请求里面包含了这几次的 commit 数据，当前所在的分支，请求完成后远程仓库的数据就和本地的保持一致了，如果有别人想要克隆你的远程仓库的话，使用 <code>git pull</code> 就可以拉取该分支来同步的数据了，也就可以进行多人协同开发了，而这个地址我们就称为 <strong>origin</strong>。</p>
+
+<h2>如何切换到远程分支</h2>
+
+<p>比如我想要 <code>checkout</code> 到 <code>remotes/origin/vim</code> 这个分支上，你可以使用 <code>git switch vim</code> 来进行分支的切换，执行这个命令的时候，首先会去看你本地有没有叫 <code>vim</code> 的分支，如果没有的话，会去看有没有一个叫 <code>remotes/origin/vim</code> 的远程分支，有的话会帮你创建一个该远程分支的 copy 并追踪该远程分支，这样再你 <code>git push</code> 的时候就可以提交到这个远程分支上了，而不是其他的远程分支上了。</p>
+
+<p>你可以使用 <code>man git-switch</code> 看到详细的解释，这里只说明了只有一个 remote 的情况，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">--</span><span class="syntax-all syntax-parameter">guess</span>, <span class="syntax-all syntax-keyword">--</span><span class="syntax-all syntax-parameter">no</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">guess</span>
+           <span class="syntax-all syntax-parameter">If</span> <span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">branch</span><span class="syntax-all syntax-keyword">&gt;</span> <span class="syntax-all syntax-parameter">is</span> <span class="syntax-all syntax-parameter">not</span> <span class="syntax-all syntax-parameter">found</span> <span class="syntax-all syntax-parameter">but</span> <span class="syntax-all syntax-parameter">there</span> <span class="syntax-all syntax-parameter">does</span> <span class="syntax-all syntax-parameter">exist</span> <span class="syntax-all syntax-parameter">a</span> <span class="syntax-all syntax-parameter">tracking</span> <span class="syntax-all syntax-parameter">branch</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-parameter">exactly</span> <span class="syntax-all syntax-parameter">one</span> <span class="syntax-all syntax-variable">remote</span> (<span class="syntax-all syntax-parameter">call</span> <span class="syntax-all syntax-parameter">it</span> <span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">remote</span><span class="syntax-all syntax-keyword">&gt;</span>) <span class="syntax-all syntax-keyword">with</span> <span class="syntax-all syntax-parameter">a</span> <span class="syntax-all syntax-parameter">matching</span> <span class="syntax-all syntax-parameter">name</span>, <span class="syntax-all syntax-parameter">treat</span> <span class="syntax-all syntax-keyword">as</span> <span class="syntax-all syntax-parameter">equivalent</span> <span class="syntax-all syntax-parameter">to</span>
+
+    <span class="syntax-all syntax-parameter">$</span> <span class="syntax-all syntax-parameter">git</span> <span class="syntax-all syntax-keyword">switch</span> -c &lt;branch&gt; --track &lt;remote&gt;/&lt;branch&gt;
+
+           If the branch exists in multiple remotes and one of them is named by the checkout.defaultRemote configuration variable, we’ll use that one for the purposes of
+           disambiguation, even if the &lt;branch&gt; isn’t unique across all remotes. Set it to e.g.  checkout.defaultRemote=origin to always checkout remote branches from there if &lt;branch&gt; is ambiguous but exists on the origin remote. See also checkout.defaultRemote in git-config(<span class="syntax-all syntax-constant">1</span>).
+
+           --guess is the default behavior. Use --no-guess to disable it.
+
+           The default behavior can be set via the checkout.guess configuration variable.</code></pre>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://stackoverflow.com/a/1783426">How do I check out a remote Git branch?</a></li>
+	<li><a href="https://www.git-tower.com/learn/git/glossary/origin">What is the origin in Git?</a></li>
+</ol>
+
+</body>
+</html>
+
