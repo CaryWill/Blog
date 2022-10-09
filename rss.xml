@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>什么是 git origin？</title>
+    <link>/src/2022/git-origin/index.html</link>
+    <description>origin?</description>
+    <pubDate>Sun Oct 09 2022 00:00:00 GMT+0800 (China Standard Time)</pubDate>
+    <lastBuildDate>Sun Oct 09 2022 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
+  </item><item>
     <title>Build colour-scheme for Neovim</title>
     <link>/src/2022/build-neovim-colorscheme/index.html</link>
     <description>所见即所得的配色插件开发</description>
