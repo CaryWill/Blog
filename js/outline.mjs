@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "什么是 git origin？",
+        desc: "origin?",
+        date: "Oct 09, 2022",
+        href: "/src/2022/git-origin/index.html",
+      },
+      {
         title: "Build colour-scheme for Neovim",
         desc: "所见即所得的配色插件开发",
         date: "Oct 02, 2022",
