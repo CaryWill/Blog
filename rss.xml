@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>vite vs wepback</title>
+    <link>/src/2022/vite-vs-webpack/index.html</link>
+    <description>why vite is fast?</description>
+    <pubDate>Wed Oct 12 2022 00:00:00 GMT+0800 (China Standard Time)</pubDate>
+    <lastBuildDate>Wed Oct 12 2022 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
+  </item><item>
     <title>什么是 git origin？</title>
     <link>/src/2022/git-origin/index.html</link>
     <description>origin?</description>
