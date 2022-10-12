@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "vite vs wepback",
+        desc: "why vite is fast?",
+        date: "Oct 12, 2022",
+        href: "/src/2022/vite-vs-webpack/index.html",
+      },
+      {
         title: "什么是 git origin？",
         desc: "origin?",
         date: "Oct 09, 2022",
