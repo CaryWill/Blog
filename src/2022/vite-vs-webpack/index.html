@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>Why Vite is Fast?</title>
+	</head>
+<body>
+<h1>Why Vite is Fast?</h1>
+
+<p><strong>2022.10.12</strong></p>
+
+<p>我在开发一些项目的时候，我发现 webpack 的 dev server 启动很慢，而 vite 很快就启动起来了，今天我们就来看下 vite 为什么启动那么快。</p>
+
+<p>传统的开发模式都是使用 webpack 一类的 bundler，将所有的文件从入口文件开始，打包（bundle）成一个文件，然后启动一个页面引用这个文件，这样的话，如果项目越大，打包所花的时间就会越多。</p>
+
+<figure><img src="DraggedImage.png" alt="https://vitejs.dev/guide/why.html"/><figcaption>https://vitejs.dev/guide/why.html</figcaption></figure>
+
+<p>而 vite 这种方式，也就是所谓的 <strong>unbundled development</strong>，它没有打包这个流程，只会对入口文件进行转译（transpile）将其转换成 ESM 模块，浏览器直接就可以用了，暂时不需要的文件就不用处理了，按需加载。</p>
+
+<figure><img src="DraggedImage-1.png" alt="https://vitejs.dev/guide/why.html"/><figcaption>https://vitejs.dev/guide/why.html</figcaption></figure>
+
+<p>那么浏览器在看到 <code>import ... from ...</code> 的时候会做什么？</p>
+
+<p>自己对 <code>import</code> 的语法只停留在了 amd/cjs 等的转译后的模块，在代码库里引入一个三方模块的时候会从 <code>node_modules</code> 里被引入，比如，<code>import React from &#39;react&#39;</code>，或者引入本地模块的时候通过，<code>import App from &#39;./App&#39;</code>，那么 vite 这种不经过打包直接使用浏览器的原生 ESM 的话，会怎么样呢？</p>
+
+<p>来看下 MDN 上的定义，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-constant">module</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">name</span>
+
+    <span class="syntax-all syntax-parameter">The</span> <span class="syntax-all syntax-constant">module</span> <span class="syntax-all syntax-parameter">to</span> <span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-keyword">from.</span> <span class="syntax-all syntax-parameter">The</span> <span class="syntax-all syntax-parameter">evaluation</span> <span class="syntax-all syntax-keyword">of</span> <span class="syntax-all syntax-parameter">the</span> <span class="syntax-all syntax-parameter">specifier</span> <span class="syntax-all syntax-parameter">is</span> <span class="syntax-all syntax-parameter">host</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">specified</span><span class="syntax-all syntax-keyword">.</span> <span class="syntax-all syntax-parameter">This</span> <span class="syntax-all syntax-parameter">is</span> <span class="syntax-all syntax-parameter">often</span> <span class="syntax-all syntax-parameter">a</span> <span class="syntax-all syntax-parameter">relative</span> <span class="syntax-all syntax-parameter">or</span> <span class="syntax-all syntax-parameter">absolute</span> <span class="syntax-all syntax-constant">URL</span> <span class="syntax-all syntax-parameter">to</span> <span class="syntax-all syntax-parameter">the </span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">js</span> <span class="syntax-all syntax-parameter">file</span> <span class="syntax-all syntax-parameter">containing</span> <span class="syntax-all syntax-parameter">the</span> <span class="syntax-all syntax-constant">module</span><span class="syntax-all syntax-keyword">.</span> <span class="syntax-all syntax-parameter">In</span> <span class="syntax-all syntax-parameter">Node</span>, <span class="syntax-all syntax-parameter">extension</span><span class="syntax-all syntax-keyword">-</span><span class="syntax-all syntax-parameter">less</span> <span class="syntax-all syntax-parameter">imports</span> <span class="syntax-all syntax-parameter">often</span> <span class="syntax-all syntax-parameter">refer</span> <span class="syntax-all syntax-parameter">to</span> <span class="syntax-all syntax-parameter">packages</span> <span class="syntax-all syntax-keyword">in</span> <span class="syntax-all syntax-parameter">node_modules</span><span class="syntax-all syntax-keyword">.</span> <span class="syntax-all syntax-parameter">Certain</span> <span class="syntax-all syntax-parameter">bundlers</span> <span class="syntax-all syntax-parameter">may</span> <span class="syntax-all syntax-parameter">permit</span> <span class="syntax-all syntax-parameter">importing</span> <span class="syntax-all syntax-parameter">files</span> <span class="syntax-all syntax-parameter">without</span> <span class="syntax-all syntax-parameter">extensions</span>; <span class="syntax-all syntax-parameter">check</span> <span class="syntax-all syntax-parameter">your</span> <span class="syntax-all syntax-parameter">environment</span><span class="syntax-all syntax-keyword">.</span> <span class="syntax-all syntax-parameter">Only</span> <span class="syntax-all syntax-parameter">single</span> <span class="syntax-all syntax-parameter">quoted</span> <span class="syntax-all syntax-parameter">and</span> <span class="syntax-all syntax-parameter">double</span> <span class="syntax-all syntax-parameter">quoted</span> <span class="syntax-all syntax-parameter">Strings</span> <span class="syntax-all syntax-parameter">are</span> <span class="syntax-all syntax-parameter">allowed</span><span class="syntax-all syntax-keyword">.</span></code></pre>
+
+<p>比如我们用 vite 脚手架起一个项目 <code>npm create vite@latest my-react-app -- --template react</code>，当我们使用 <code>npm run dev</code> 的时候浏览器会打开我们的本地开发页面，源码如下，</p>
+
+<pre><code class="code-highlighted code-html">&lt;!DOCTYPE html&gt;
+&lt;<span class="syntax-all syntax-tag">html</span> <span class="syntax-all syntax-entity">lang</span>=<span class="syntax-all syntax-string">&quot;en&quot;</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">head</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">meta</span> <span class="syntax-all syntax-entity">charset</span>=<span class="syntax-all syntax-string">&quot;UTF-8&quot;</span> /&gt;
+    &lt;<span class="syntax-all syntax-tag">link</span> <span class="syntax-all syntax-entity">rel</span>=<span class="syntax-all syntax-string">&quot;icon&quot;</span> <span class="syntax-all syntax-entity">type</span>=<span class="syntax-all syntax-string">&quot;image/svg+xml&quot;</span> <span class="syntax-all syntax-entity">href</span>=<span class="syntax-all syntax-string">&quot;/vite.svg&quot;</span> /&gt;
+    &lt;<span class="syntax-all syntax-tag">meta</span> <span class="syntax-all syntax-entity">name</span>=<span class="syntax-all syntax-string">&quot;viewport&quot;</span> <span class="syntax-all syntax-entity">content</span>=<span class="syntax-all syntax-string">&quot;width=device-width, initial-scale=1.0&quot;</span> /&gt;
+    &lt;<span class="syntax-all syntax-tag">title</span>&gt;Vite + React&lt;/<span class="syntax-all syntax-tag">title</span>&gt;
+  &lt;/<span class="syntax-all syntax-tag">head</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">body</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">id</span>=<span class="syntax-all syntax-string">&quot;root&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">type</span>=<span class="syntax-all syntax-string">&quot;module&quot;</span> <span class="syntax-all syntax-entity">src</span>=<span class="syntax-all syntax-string">&quot;/src/main.jsx&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+  &lt;/<span class="syntax-all syntax-tag">body</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">html</span>&gt;</code></pre>
+
+<p>然后浏览器加载我们的入口文件 <code>main.jsx</code>，浏览器会向我们的 vite 服务器发送一条请求 <code>http://localhost:5173/src/main.jsx?t=1665496658489</code>，而 <code>main.jsx</code> 的源代码长下面这样，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">React</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&#39;react&#39;</span>
+<span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">ReactDOM</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&#39;react-dom/client&#39;</span>
+<span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-parameter">App</span> <span class="syntax-all syntax-keyword">from</span> <span class="syntax-all syntax-string">&#39;./App&#39;</span>
+<span class="syntax-all syntax-keyword">import</span> <span class="syntax-all syntax-string">&#39;./index.css&#39;</span>
+
+<span class="syntax-all syntax-parameter">ReactDOM</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">createRoot</span>(<span class="syntax-all syntax-constant">document</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">getElementById</span>(<span class="syntax-all syntax-string">&#39;root&#39;</span>))<span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">render</span>(
+  &lt;<span class="syntax-all syntax-tag">React.StrictMode</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">App</span> /&gt;
+  &lt;/<span class="syntax-all syntax-tag">React.StrictMode</span>&gt;
+)</code></pre>
+
+<p>浏览器在解析 <code>import App from &#39;./App&#39;</code> 这一个 statement 的时候，会往 vite 服务器发送一条请求<code>http://localhost:5173/src/App.jsx</code> 来加载我们的 App 文件，至于后缀省略了 vite 服务器也能识别，我猜应该是做了什么处理，比如默认加载 <code>.js</code> 后缀的文件，其次 <code>.jsx</code> 等的逻辑。</p>
+
+<p>细心的小伙伴肯定也注意到了 <code>import React from &#39;react&#39;</code> 这个 statement，如果浏览器遇到这个会怎么样？本地开发我们知道这个模块会去 <code>node_modules</code> 里面读取，但是浏览器会怎么做呢？</p>
+
+<p>我将 <code>main.jsx</code> 改成 <code>main.js</code>，然后用 <code>http-server .</code> 代替 vite 来打开本地的 html 页面，html 页面源码如下，</p>
+
+<pre><code class="code-highlighted code-html">&lt;!DOCTYPE html&gt;
+&lt;<span class="syntax-all syntax-tag">html</span> <span class="syntax-all syntax-entity">lang</span>=<span class="syntax-all syntax-string">&quot;en&quot;</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">head</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">meta</span> <span class="syntax-all syntax-entity">charset</span>=<span class="syntax-all syntax-string">&quot;UTF-8&quot;</span> /&gt;
+    &lt;<span class="syntax-all syntax-tag">link</span> <span class="syntax-all syntax-entity">rel</span>=<span class="syntax-all syntax-string">&quot;icon&quot;</span> <span class="syntax-all syntax-entity">type</span>=<span class="syntax-all syntax-string">&quot;image/svg+xml&quot;</span> <span class="syntax-all syntax-entity">href</span>=<span class="syntax-all syntax-string">&quot;/vite.svg&quot;</span> /&gt;
+    &lt;<span class="syntax-all syntax-tag">meta</span> <span class="syntax-all syntax-entity">name</span>=<span class="syntax-all syntax-string">&quot;viewport&quot;</span> <span class="syntax-all syntax-entity">content</span>=<span class="syntax-all syntax-string">&quot;width=device-width, initial-scale=1.0&quot;</span> /&gt;
+    &lt;<span class="syntax-all syntax-tag">title</span>&gt;Vite + React&lt;/<span class="syntax-all syntax-tag">title</span>&gt;
+  &lt;/<span class="syntax-all syntax-tag">head</span>&gt;
+  &lt;<span class="syntax-all syntax-tag">body</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">div</span> <span class="syntax-all syntax-entity">id</span>=<span class="syntax-all syntax-string">&quot;root&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">div</span>&gt;
+    &lt;<span class="syntax-all syntax-tag">script</span> <span class="syntax-all syntax-entity">type</span>=<span class="syntax-all syntax-string">&quot;module&quot;</span> <span class="syntax-all syntax-entity">src</span>=<span class="syntax-all syntax-string">&quot;/src/main.js&quot;</span>&gt;&lt;/<span class="syntax-all syntax-tag">script</span>&gt;
+  &lt;/<span class="syntax-all syntax-tag">body</span>&gt;
+&lt;/<span class="syntax-all syntax-tag">html</span>&gt;</code></pre>
+
+<p>然后在 <code>main.js</code> 文件里只写一行 <code>import React from &#39;react&#39;</code>，然后浏览器就会错了，<code>TypeError: Module specifier, &#39;react&#39; does not start with &quot;/&quot;, &quot;./&quot;, or &quot;../&quot;</code>，就是说浏览器识别不了了。</p>
+
+<p>vite 的做法就是 pre-bundle，将这种全局模块转换成 ESM 模块，然后放到 <code>node_modules/.vite/deps</code> 目录里，然后将 <code>import React from &#39;react&#39;</code> 这种全局的模块引用转换成 <code>import __vite__cjsImport0_react from &quot;/node_modules/.vite/deps/react.js?v=b6122a24&quot;;</code> 这种浏览器能识别的，这样浏览器在遇到这个 statement 的时候就会发一条请求去 <code>node_modules/.vite/deps</code> 目录里读取 <code>react</code> 模块了。</p>
+
+<p>我们拿最初的例举例，浏览器在加载我们的入口文件 <code>main.jsx</code> 的时候，vite 服务器会将里面的全局模块全替换成 pre-bundled 模块，这样浏览器就可以继续发送请求到 vite 服务器加载其他这些模块了。</p>
+
+<p>这样我们打开页面的时候，我们向 vite 请求 <code>main.jsx</code> 文件的时候，接口返回的文件内容就长这样了，</p>
+
+<pre><code class="code-highlighted code-html">var _jsxFileName = &quot;/Users/cary/workspace/github/my-react-app/src/main.jsx&quot;;
+import __vite__cjsImport0_react from &quot;/node_modules/.vite/deps/react.js?v=b6122a24&quot;;
+const React = __vite__cjsImport0_react.__esModule ? __vite__cjsImport0_react.default : __vite__cjsImport0_react;
+import __vite__cjsImport1_reactDom_client from &quot;/node_modules/.vite/deps/react-dom_client.js?v=8f1bf833&quot;;
+const ReactDOM = __vite__cjsImport1_reactDom_client.__esModule ? __vite__cjsImport1_reactDom_client.default : __vite__cjsImport1_reactDom_client;
+import App from &quot;/src/App.jsx&quot;;
+import &quot;/src/index.css&quot;;
+import { jsxDEV as _jsxDEV } from &quot;/@id/__x00__react/jsx-dev-runtime&quot;;
+ReactDOM.createRoot(document.getElementById(&quot;root&quot;)).render(/* @__PURE__ */
+_jsxDEV(React.StrictMode, {
+    children: /* @__PURE__ */
+    _jsxDEV(App, {}, void 0, false, {
+        fileName: _jsxFileName,
+        lineNumber: 8,
+        columnNumber: 5
+    }, this)
+}, void 0, false, {
+    fileName: _jsxFileName,
+    lineNumber: 7,
+    columnNumber: 3
+}, this));</code></pre>
+
+<p>你会发现这些全局模块就都被转换成浏览器能识别的格式了，比如，<code>import __vite__cjsImport0_react from &quot;/node_modules/.vite/deps/react.js?v=b6122a24&quot;;</code>。</p>
+
+<p>高级。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://vitejs.dev/guide/dep-pre-bundling.html">https://vitejs.dev/guide/dep-pre-bundling.html</a></li>
+	<li><a href="https://vitejs.dev/guide/features.html">https://vitejs.dev/guide/features.html</a></li>
+	<li><a href="https://www.snowpack.dev/concepts/how-snowpack-works">how-snowpack-works</a></li>
+	<li><a href="https://www.snowpack.dev/posts/2020-05-26-snowpack-2-0-release/">how-snowpack-works-v2</a></li>
+	<li><a href="https://dev.to/yysun/a-dev-server-supports-esm-3cea">A Dev Server Supports ESM</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import">import MDN</a></li>
+</ol>
+
+</body>
+</html>
+
