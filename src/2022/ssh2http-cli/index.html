@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>代码上传 ssh/http 互转的小工具</title>
+	</head>
+<body>
+<h1>代码上传 ssh/http 互转的小工具</h1>
+
+<p><strong>2022.10.23</strong></p>
+
+<p>最近出差比较频繁，出差的时候需要将 ssh 协议改成 http 的才能上传代码，就导致每次输一堆的命令就很麻烦，然后还要输入账号密码，回到公司为了方便又会将 http 改回 ssh，所以用写了个 nodejs cli 工具 分享下，仓库地址在<a href="https://github.com/CaryWill/ssh2http">这里</a>，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-comment">#!/usr/bin/env node
+</span>
+<span class="syntax-all syntax-keyword">const</span> { <span class="syntax-all syntax-parameter">exec</span> } <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">require</span>(<span class="syntax-all syntax-string">&quot;node:child_process&quot;</span>);
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-constant">arguments</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">process</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-constant">argv</span>;
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">wrappedExec</span> <span class="syntax-all syntax-keyword">=</span> (<span class="syntax-all syntax-parameter">commands</span>, <span class="syntax-all syntax-parameter">options</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">return</span> <span class="syntax-all syntax-keyword">new</span> <span class="syntax-all syntax-constant">Promise</span>((<span class="syntax-all syntax-parameter">res</span>, <span class="syntax-all syntax-parameter">rej</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+    <span class="syntax-all syntax-variable">exec</span>(<span class="syntax-all syntax-parameter">commands</span>, <span class="syntax-all syntax-parameter">options</span>, (<span class="syntax-all syntax-parameter">error</span>, <span class="syntax-all syntax-parameter">stdout</span>) <span class="syntax-all syntax-keyword">=&gt;</span> {
+      <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">error</span>) {
+        <span class="syntax-all syntax-variable">rej</span>(<span class="syntax-all syntax-parameter">error</span>);
+      } <span class="syntax-all syntax-keyword">else</span> {
+        <span class="syntax-all syntax-variable">res</span>(<span class="syntax-all syntax-parameter">stdout</span>);
+      }
+    });
+  });
+};
+
+<span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-entity">main</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">async</span> () <span class="syntax-all syntax-keyword">=&gt;</span> {
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">url</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-keyword">await</span> <span class="syntax-all syntax-variable">wrappedExec</span>(<span class="syntax-all syntax-string">&quot;git config --get remote.origin.url&quot;</span>);
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">ssh</span>;
+  <span class="syntax-all syntax-keyword">let</span> <span class="syntax-all syntax-parameter">http</span>;
+  <span class="syntax-all syntax-comment">// flag
+</span>  <span class="syntax-all syntax-comment">// -s -&gt; git
+</span>  <span class="syntax-all syntax-comment">// -h -&gt; http
+</span>  <span class="syntax-all syntax-comment">// -hs -&gt; https
+</span>  <span class="syntax-all syntax-keyword">const</span> [, , <span class="syntax-all syntax-parameter">flag</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-constant">arguments</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">isSecure</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">flag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;-hs&quot;</span>;
+  <span class="syntax-all syntax-keyword">const</span> <span class="syntax-all syntax-parameter">protocol</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">isSecure</span> <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-string">&quot;https&quot;</span> : <span class="syntax-all syntax-string">&quot;http&quot;</span>;
+  <span class="syntax-all syntax-keyword">if</span> (<span class="syntax-all syntax-parameter">url</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">startsWith</span>(<span class="syntax-all syntax-string">&quot;git&quot;</span>)) {
+    <span class="syntax-all syntax-parameter">ssh</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">url</span>;
+    <span class="syntax-all syntax-keyword">const</span> [, , <span class="syntax-all syntax-parameter">host</span>, <span class="syntax-all syntax-parameter">group</span>, <span class="syntax-all syntax-parameter">repo</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">url</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">match</span>(<span class="syntax-all syntax-string">/(^git)@(.+):(.+)[/</span>](<span class="syntax-all syntax-keyword">.+</span>)<span class="syntax-all syntax-keyword">/</span>);
+    <span class="syntax-all syntax-parameter">http</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">protocol</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">://</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">host</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">/</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">group</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">/</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">repo</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">`</span>;
+  } <span class="syntax-all syntax-keyword">else</span> {
+    <span class="syntax-all syntax-parameter">http</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">url</span>;
+    <span class="syntax-all syntax-keyword">const</span> [, , <span class="syntax-all syntax-parameter">host</span>, <span class="syntax-all syntax-parameter">group</span>, <span class="syntax-all syntax-parameter">repo</span>] <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-parameter">url</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-variable">match</span>(
+<span class="syntax-all syntax-string">      /(^https?:[/</span>][<span class="syntax-all syntax-string">/])(.+)[/</span>](<span class="syntax-all syntax-keyword">.+</span>)[<span class="syntax-all syntax-string">/](.+)/</span>
+    );
+    <span class="syntax-all syntax-parameter">ssh</span> <span class="syntax-all syntax-keyword">=</span> <span class="syntax-all syntax-string">`git@</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">host</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">:</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">group</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">/</span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">repo</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">`</span>;
+  }
+  <span class="syntax-all syntax-keyword">await</span> <span class="syntax-all syntax-variable">wrappedExec</span>(<span class="syntax-all syntax-string">`git remote set-url origin </span><span class="syntax-all syntax-keyword">${</span><span class="syntax-all syntax-parameter">flag</span> <span class="syntax-all syntax-keyword">===</span> <span class="syntax-all syntax-string">&quot;-s&quot;</span> <span class="syntax-all syntax-keyword">?</span> <span class="syntax-all syntax-parameter">ssh</span> <span class="syntax-all syntax-keyword">:</span> <span class="syntax-all syntax-parameter">http</span><span class="syntax-all syntax-keyword">}</span><span class="syntax-all syntax-string">`</span>);
+};
+
+<span class="syntax-all syntax-variable">main</span>();</code></pre>
+
+<p>实现比较的简单，这里来讲下用上面的例子教大家如何写一个简单 node cli，首先在 <code>package.json</code> 里面加入，</p>
+
+<pre><code class="code-highlighted code-js">  <span class="syntax-all syntax-string">&quot;bin&quot;</span>: {
+    <span class="syntax-all syntax-string">&quot;ssh2http&quot;</span>: <span class="syntax-all syntax-string">&quot;index.js&quot;</span>
+  },</code></pre>
+
+<p>这样你的 npm 包在被安装的时候，你就可以使用 <code>ssh2http</code> 这个命令了，然后对应的 <code>index.js</code> 文件被执行，在 <code>index.js</code> 的文件头部加上 <code>#!/usr/bin/env node</code> 来告诉系统我们要使用 node 来执行 <code>index.js</code> 文件，然后在 <code>index.js</code> 里面我们使用了 <code>node:child_process</code> 来执行一些外部命令。</p>
+
+<p>本地开发的话，你将这个项目克隆下来后，使用 <code>npm link</code> 就可以将其安装到全局的 npm <code>node_modules</code> 里面了，然后你就可以直接使用 <code>ssh2http</code> 的命令了。</p>
+
+<p>这个 cli 提供了 3 种使用方式，</p>
+
+<p><code>ssh2http -h</code> 就是将 ssh 的转成 http。</p>
+
+<p><code>ssh2http -s</code> 就是将 http(s) 的转成 ssh。</p>
+
+<p><code>ssh2http -hs</code> 就是将 ssh 的转成 https。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback">childprocess</a></li>
+	<li><a href="https://docs.npmjs.com/cli/v8/commands/npm-link">npm-link</a></li>
+	<li><a href="https://docs.npmjs.com/cli/v8/configuring-npm/package-json#bin">package-json#bin</a></li>
+</ol>
+
+</body>
+</html>
+
