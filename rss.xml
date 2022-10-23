@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>代码上传 ssh/http 互转的小工具</title>
+    <link>/src/2022/ssh2http-cli/index.html</link>
+    <description>nodejs cli</description>
+    <pubDate>Sun Oct 23 2022 00:00:00 GMT+0800 (China Standard Time)</pubDate>
+    <lastBuildDate>Sun Oct 23 2022 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
+  </item><item>
     <title>vite vs wepback</title>
     <link>/src/2022/vite-vs-webpack/index.html</link>
     <description>why vite is fast?</description>
