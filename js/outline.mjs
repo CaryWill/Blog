@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "代码上传 ssh/http 互转的小工具",
+        desc: "nodejs cli",
+        date: "Oct 23, 2022",
+        href: "/src/2022/ssh2http-cli/index.html",
+      },
+      {
         title: "vite vs wepback",
         desc: "why vite is fast?",
         date: "Oct 12, 2022",
