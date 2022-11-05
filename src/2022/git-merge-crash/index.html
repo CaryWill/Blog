@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>复盘一次 git 进程挂掉导致的 merge 问题</title>
+	</head>
+<body>
+<h1>复盘一次 git 进程挂掉导致的 merge 问题</h1>
+
+<p><strong>2022.10.31</strong></p>
+
+<p>虽然合并导致代码<strong>丢失</strong>了，但是不要慌，代码肯定是不会丢的，只要你提交了 commit 那么东西就还在，可以通过 <code>git reflog</code> 等命令来找回。</p>
+
+<p>TLDR；重新做一次 merge 就行了。</p>
+
+<p>复盘开始，</p>
+
+<p>一开始的操作，<code>git log</code> 看了下日志，</p>
+
+<figure><img src="IMG_4586.jpeg"/></figure>
+
+<p>测试了下，发现 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 这个 commit 上没有自己的代码，<code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 这个 commit 上有自己的代码，而且还有一个 merge commit 确实合并了上面这两个 commit，那么切换到 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 这个有自己的代码的 commit 然后和 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 这个 commit 重新做一次 merge 不就可以了？然后后面 cherry-pick 其他的 commit 就好了（当时没有意识到，其实结论就是重新做一次合并就行了，然后弄来弄去又是 soft reset 的，又是 merge 的，花了 2 个多小时才将代码找回来，还是不熟练。。。 不过也学到了很多关于 git 的知识 ；）</p>
+
+<p><code>git log</code> 是将所有提交的 commit 按照时间顺序倒排，我一开始切换到这个 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> bad commit 的时候，我又 <code>git log</code> 了一下，发现最新的 commit 竟然不是 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code>，后面才意识到 git 的历史提交记录不是线性的，只是按照时间顺序排了个序。。。（拍额头</p>
+
+<p>虽然问题的解决办法就是重新合并一下，但是我们其实可以抽象出几个问题，</p>
+
+<ol>
+	<li>如何找到那个 bad commit</li>
+	<li>如何解决这个 bad commit 导致的问题</li>
+</ol>
+
+<h2>如何看 git 的提交历史的树形图</h2>
+
+<p>为了更好的回答上面的问题，我们先来学习下如何看 git commit 的提交历史的树形图，如果知道怎么看的朋友可以直接跳过到下一个部分即可，</p>
+
+<p>我在自己的仓库里 <code>git log --graph</code> 得到了下图，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-keyword">*</span>   <span class="syntax-all syntax-parameter">commit</span> <span class="syntax-all syntax-variable">b2822a395a82c705bf6132</span> (<span class="syntax-all syntax-constant">HEAD</span> <span class="syntax-all syntax-keyword">-&gt;</span> <span class="syntax-all syntax-parameter">b2</span>)
+<span class="syntax-all syntax-keyword">|</span>\  <span class="syntax-all syntax-string">Merge</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">c9825899</span> <span class="syntax-all syntax-constant">30</span><span class="syntax-all syntax-parameter">af97eb</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-string">Author</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">cary</span> <span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">CaryWill</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">K</span>@<span class="syntax-all syntax-tag">gmail</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">com</span><span class="syntax-all syntax-keyword">&gt;</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-string">Date</span><span class="syntax-all syntax-constant">:</span>   <span class="syntax-all syntax-parameter">Sun</span> <span class="syntax-all syntax-parameter">Oct</span> <span class="syntax-all syntax-constant">30</span> <span class="syntax-all syntax-constant">20</span>:<span class="syntax-all syntax-constant">16</span>:<span class="syntax-all syntax-constant">39</span> <span class="syntax-all syntax-constant">2022</span> <span class="syntax-all syntax-constant">+0800</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span>     <span class="syntax-all syntax-parameter">Merge</span> <span class="syntax-all syntax-parameter">branch</span> <span class="syntax-all syntax-string">&#39;b1&#39;</span> <span class="syntax-all syntax-parameter">into</span> <span class="syntax-all syntax-parameter">b2</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">*</span> <span class="syntax-all syntax-parameter">commit</span> <span class="syntax-all syntax-constant">30</span><span class="syntax-all syntax-variable">af97eba09d813e809611e54b</span> (<span class="syntax-all syntax-parameter">b1</span>)
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-string">Author</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">cary</span> <span class="syntax-all syntax-keyword">&lt;</span><span class="syntax-all syntax-parameter">CaryWill</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">K</span>@<span class="syntax-all syntax-tag">gmail</span><span class="syntax-all syntax-keyword">.</span><span class="syntax-all syntax-parameter">com</span><span class="syntax-all syntax-keyword">&gt;</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-string">Date</span><span class="syntax-all syntax-constant">:</span>   <span class="syntax-all syntax-parameter">Sun</span> <span class="syntax-all syntax-parameter">Oct</span> <span class="syntax-all syntax-constant">30</span> <span class="syntax-all syntax-constant">20</span>:<span class="syntax-all syntax-constant">15</span>:<span class="syntax-all syntax-constant">47</span> <span class="syntax-all syntax-constant">2022</span> <span class="syntax-all syntax-constant">+0800</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span>     <span class="syntax-all syntax-string">fix</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">b1</span>
+<span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-keyword">|</span>
+<span class="syntax-all syntax-keyword">*</span> <span class="syntax-all syntax-keyword">|</span> <span class="syntax-all syntax-parameter">commit</span> <span class="syntax-all syntax-parameter">c9825899e46db7ccf8cfc84061</span>
+<span class="syntax-all syntax-keyword">|</span><span class="syntax-all syntax-string">/  Author: cary &lt;CaryWill.K@gmail.com&gt;
+</span><span class="syntax-all syntax-string">|   Date:   Sun Oct 30 20:16:26 2022 +0800
+</span><span class="syntax-all syntax-string">|
+</span><span class="syntax-all syntax-string">|       fix: then b2
+</span></code></pre>
+
+<p>来看下上图发生了什么，最左侧的线是 b2 分支，也就是我们当前所在的分支，可以从顶部看到那个最新的 commit <code>b2822a395a82c705bf6132</code> 可以看到。</p>
+
+<p>首先 cary 创建了个 <code>c9825899e46db7ccf8cfc84061</code> commit 并提交到了 b2 分支上，在创建这个 commit 之前， cary 创建了一个 b1 分支，并在 <code>c9825899e46db7ccf8cfc84061</code> 这个 commit 之前在 b1 分支上提交了一个 commit，从时间上可以看到， b1 上的这个<code>30af97eba09d813e809611e54b</code> commit 提交时间是 20:15:47，比 b2 上的那个 <code>c9825899e46db7ccf8cfc84061</code> commit 的时间 20:16:26 还要早，然后就是 b1 分支所在的线合并到了 b2 分支所在的线，cary 创建了一个新的 merge commit <code>b2822a395a82c705bf6132</code> 并将其合并到了 b2 上，这个 merge commit 的 message 里写着，<code>Merge branch &#39;b1&#39; into b2</code>。</p>
+
+<p><code>git log</code> 默认按<a href="https://git-scm.com/docs/git-log#_commit_ordering">时间顺序倒排</a>，最新的在最前面，最旧的在最后面。</p>
+
+<p>再回到案发现场的这张图片，</p>
+
+<figure><img src="IMG_4586-1.jpeg"/></figure>
+
+<p>因为是按时间顺序排的，你可能会以为 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 的上一个 commit 是 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code>，只能说有可能，但实际这里不是，通过 <code>git log --pretty=raw</code> 打印如下图，</p>
+
+<figure><img src="IMG_4588.jpeg"/></figure>
+
+<p>你会发现<code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 它的 parent commit 是 <code>c32bdad48ed4a2a0d4b535120052e8fe285680ea</code>，然后你搜一下你就会发现，这个 commit 是 26 号提交的，</p>
+
+<pre><code class="code-highlighted code-js"><span class="syntax-all syntax-parameter">commit</span> <span class="syntax-all syntax-parameter">c32bdad48ed4a2a0d4b535120052e8fe285680ea</span>
+<span class="syntax-all syntax-string">Author</span><span class="syntax-all syntax-constant">:</span> 暁羽
+<span class="syntax-all syntax-string">Date</span><span class="syntax-all syntax-constant">:</span>   <span class="syntax-all syntax-parameter">Wed</span> <span class="syntax-all syntax-parameter">Oct</span> <span class="syntax-all syntax-constant">26</span> <span class="syntax-all syntax-constant">11</span>:<span class="syntax-all syntax-constant">16</span>:<span class="syntax-all syntax-constant">30</span> <span class="syntax-all syntax-constant">2022</span> <span class="syntax-all syntax-constant">+0800</span>
+
+    <span class="syntax-all syntax-string">feat</span><span class="syntax-all syntax-constant">:</span> <span class="syntax-all syntax-parameter">categoryId</span> <span class="syntax-all syntax-constant">Number</span></code></pre>
+
+<p>也就是说，<code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 这个 commit 提交合并到主分支（最左边那条线）的时候，其他人都没有合并代码到主分支，但是显然不是的，虽然 <code>git log</code> 说的是这个情况，</p>
+
+<figure><img src="IMG_4590.jpeg"/></figure>
+
+<p>但是实际我知道 26 号 - 27 号很多人提交了代码到主分支，即便是这样这里也没有问题，这里其实就说明了一个情况，提交 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 的人，26 - 27 号两天内没有从远程拉取代码，然后在 28 号的时候拉了下远程的分支进行了代码合并，也就是下面的这个 <code>c2fd55f0092f11a0ae9fbfcbac41ebb1ad4d0ad8</code> merge commit，对 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 和 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 这个 commit 做了一次合并，但是，在这个 commit 之后我发现自己应该有的代码都没有了，一开始还只是用脚趾头想了下，应该是谁合并的时候冲突了，不小心看错了，抛弃了我的代码（in coming change），保留了他自己的代码，后面听说还有 A，B，C 的代码也丢了，我还是天真的以为是不是那个人点击了 use ours 导致的，结果问了下才发现不是。</p>
+
+<p>听他说他是在合并代码的时候报错了，于是按照网上的教程操作了一遍，</p>
+
+<figure><img src="B514C87C-94D8-4851-B19F-06B4EB3DDD74.png"/></figure>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<figure><img src="DraggedImage.tiff" alt="参考了这个"/><figcaption>参考了这个</figcaption></figure>
+
+<p>要是是我可能也会这样做吧，这也不好说什么，感觉这个时候也没什么好的办法验证自己是否合并对了。</p>
+
+<p>不过事后，觉得可以 reset 掉到自己的 commit 上然后重新 <code>git pull</code> 一下再重新进行一次合并这样应该就没问题了。</p>
+
+<h2>找到那个 bad commit</h2>
+
+<p>像遇到这次的这个代码合没了的问题，我粗略的看了下 <code>git log</code> 然后快速不断的 checkout 到某几个 commit 上，来确定哪个 commit 有我的代码，哪个没有，来排查出那个有问题的 commit。</p>
+
+<p>自己查找的方式有点像二叉树查找，比如查看某一个 commit 看有没有自己的代码，然后再往前 10 个 commit 看，如果有自己的，那么就确定了自己的代码在前 10 个 commit 里面，而 git 提供一个 <code>git bisect</code> 命令做的就是二叉树查找你的那个有问题的 commit。</p>
+
+<p>这里介绍下这个命令的使用（也可以看下这个<a href="https://youtu.be/u9-toShXbBE">视频</a>），首先使用 <code>git bisect start</code> 开始二叉树查找，你可以启动你的 dev server 打开平常调试的网页用来查看你的代码是否包含了包含了那个 bad commit，执行完 <code>git bisect start</code> 命令之后，你需要划定一个二叉树的范围，你现在位于该分支的 <code>HEAD</code>，然后你确认页面是否是好的，如果是坏的，那么使用 <code>git bisect bad</code>，来标记范围的一侧，然后你先找到一个好的 commit（就随便 checkout 下 commit 确认一个肯定是好的的一个 commit，然后记录下它的 commit hash），还是上面的例子，这个 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 就是好的，然后使用 <code>git bisect good ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 来标记二叉树的另一侧，这样二叉树的查找范围就确定了， 然后你将会得到一个返回值，</p>
+
+<pre><code class="code-highlighted code-git">❯ git bisect good ddfa95fbcda74480b0e1cacc46657fe4c490d3ef
+Bisecting: 2 revisions left to test after this (roughly 1 step)
+[c2fd55f0092f11a0ae9fbfcbac41ebb1ad4d0ad8] fix</code></pre>
+
+<p>然后 git 会 checkout 到 <code>c2fd55f0092f11a0ae9fbfcbac41ebb1ad4d0ad8</code> 这个 commit 身上，你对照页面后，确定了这个还是一个 bad commit，那么使用 <code>git bad</code> 对其进行标记，</p>
+
+<pre><code class="code-highlighted code-git">❯ git bisect bad
+Bisecting: 0 revisions left to test after this (roughly 0 steps)
+[f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7] 联调</code></pre>
+
+<p>之后你将切换到 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 这个 commit 上，你对照起起来的页面，发现这个还是一个 bad commit，于是你对其进行了标记，因为你的二叉树区间已经被缩小到了左右两个 commit 上了，所以不用再进行二叉树查找了，于是 git 返回了你要的那个 bad commit，</p>
+
+<pre><code class="code-highlighted code-git">❯ git bisect bad
+f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7 is the first bad commit
+commit f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7
+Author: xxxxxxx
+Date:   Fri Oct 28 11:55:40 2022 +0800
+
+    联调
+
+ .../components/Fitness/FitnessToolbar.tsx          |  9 ++-
+ .../components/Fitness/api/index.ts                | 86 ++++++++++++++++------
+ .../WorkShiftDetail/components/Fitness/index.tsx   | 48 ++++++------
+ .../components/Fitness/table/MonthFitnessTable.tsx |  7 +-
+ .../components/Fitness/table/WeekFitnessTable.tsx  | 15 ++--
+ 5 files changed, 106 insertions(+), 59 deletions(-)</code></pre>
+
+<p>然后你就可以使用 <code>git bisect reset</code> 退出二叉树查找了。</p>
+
+<h2>找到 bad commit 之后</h2>
+
+<p>在找到从哪一个 commit 开始引入了 bug（代码合没了）之后，我们就需要对其进行修正了。其实你可以后面可以发现 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 这个 commit 只是没有我的代码，原因其实是两天没拉代码而已。</p>
+
+<p>然后我用 <code>git log --pretty --graph</code> 查看了下，</p>
+
+<figure><img src="IMG_4592.jpeg"/></figure>
+
+<p>黄色标记的这个是有问题的 commit，而 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 这个 commit 是一开始我们标记为 good commit 的 commit，而 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> commit 之后的一个 commit 是一个 merge commit，这个 commit 将 <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 这个好的 commit 和 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 这个 bad commit 进行了一次合并，那就说明这个 merge 出了问题，然后我的做法可以是checkout 到 <code>f439aad7fdf8a5069484180f0bc7b0a3e4e5ded7</code> 这个 bad commit 上，然后 merge <code>ddfa95fbcda74480b0e1cacc46657fe4c490d3ef</code> 这个 commit，然后重新来一次 merge，解决冲突，然后 git push 到我们的主分支上就行了。</p>
+
+<h2>其他</h2>
+
+<ol>
+	<li>what is TREESAME in git？</li>
+</ol>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://stackoverflow.com/a/5382742/10190407">How to read git log graph</a></li>
+	<li><a href="https://git-scm.com/docs/git-bisect">git-bisect</a></li>
+	<li><a href="https://stackoverflow.com/a/14733866">What&#39;s the difference between ~ and ^ in git</a></li>
+	<li><a href="https://git-scm.com/docs/gitrevisions.html">gitrevisions - Specifying revisions and ranges for Git</a></li>
+</ol>
+
+</body>
+</html>
+

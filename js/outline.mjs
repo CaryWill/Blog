@@ -3,6 +3,12 @@ export const outline = [
   {
     2022: [
       {
+        title: "复盘一次 git 进程挂掉导致的 merge 问题",
+        desc: "git merge crash",
+        date: "Oct 31, 2022",
+        href: "/src/2022/git-merge-crash/index.html",
+      },
+      {
         title: "代码上传 ssh/http 互转的小工具",
         desc: "nodejs cli",
         date: "Oct 23, 2022",
