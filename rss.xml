@@ -6,7 +6,7 @@
     <description>暂无描述</description>
    <item>
     <title>同一个视频在 Chrome 里可以播放，在 Safari 里不行？</title>
-    <link>/src/2023/video-streaming-server/index.html</link>
+    <link>/src/2023/video-stream-server/index.html</link>
     <description>什么是 Range 请求？</description>
     <pubDate>Sat Jan 07 2023 00:00:00 GMT+0800 (China Standard Time)</pubDate>
     <lastBuildDate>Sat Jan 07 2023 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
