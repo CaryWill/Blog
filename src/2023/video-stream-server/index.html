@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>同一个视频在 Chrome 里可以播放，在 Safari 里不行？</title>
+	</head>
+<body>
+<h1>同一个视频在 Chrome 里可以播放，在 Safari 里不行？</h1>
+
+<p><strong>2023.01.07</strong></p>
+
+<p>背景：私有化部署的时候，因为 OSS 直传被替换成了两个接口，IM 端（即时聊天工具的一个 H5 页面）在 safari 里面上传完视频不能播放，虽然 chrome 可以。</p>
+
+<p>以下是出问题的页面的截图，</p>
+
+<figure><img src="DraggedImage.png" alt="静态资源的形式"/><figcaption>静态资源的形式</figcaption></figure>
+
+<figure><img src="DraggedImage-1.png" alt="Chrome 可以"/><figcaption>Chrome 可以</figcaption></figure>
+
+<figure><img src="DraggedImage-2.png" alt="静态资源 safari mac 不行"/><figcaption>静态资源 safari mac 不行</figcaption></figure>
+
+<figure><img src="DraggedImage-3.png" alt="静态资源 safari ios 不行"/><figcaption>静态资源 safari ios 不行</figcaption></figure>
+
+<p>然后我按照上面返回的响应头，去掉 <code>cookie</code> 相关的，你会发现就下面那么几个了，然后我就起了个静态资源的服务器，在返回视频的时候去掉了一些响应头和下面保持一致了。</p>
+
+<pre><code class="code-highlighted code-PlainText">Connection: keep-alive
+Content-Type: video/mp4
+Date: Sat, 07 Jan 2023 14:30:47 GMT
+Strict-Transport-Security: max-age=15724800; includeSubDomains
+Transfer-Encoding: chunked</code></pre>
+
+<p>果然，上面这种情况下，chrome 可以正常播放视频，但是 safari 无论是 mac 还是 ios 都不能正常播放。但是呢，你只要在下面的响应头里面多加一个 <code>Content-Length</code> 字段，那么就可以播放了，这个估计得看规范了。</p>
+
+<h2>结论</h2>
+
+<p>Safari 需要服务器支持 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests">Range 请求</a>，你需要在响应头里返回 <code>Content-Length</code>, <code>Content-Range</code>, <code>Accept-Ranges</code>，这种情况下服务器需要给一个 206 的响应头表示服务器会接受 <code>Range</code> 请求头，会发送部分的数据回来。</p>
+
+<p><strong>那么有什么好处呢？</strong></p>
+
+<figure><img src="Screenshot%202023-01-08%20at%2010.34.44.png"/></figure>
+
+<p>上面第一个和第三个视频一样都支持 range 请求，第二个不支持 range 请求。</p>
+
+<p>支持 range 请求的视频，可以边加载边播放，不然就只能等待视频加载完才能播放，看到中间那个黑色的视频没，它就是需要等待整个视频加载完成才能播放。Safari 看上去只支持 range 请求的视频。</p>
+
+<figure><img src="DraggedImage-4.png"/></figure>
+
+<hr />
+
+<p>在 <a href="https://github.com/CaryWill/video-streaming-service">这里</a> 可以看到本文用来测试的代码，使用 <code>npm i</code> 然后使用 <code>npm start</code> 就可以启动页面在 <code>http://localhost:8000/</code> 看到效果了。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://github.com/expressjs/express/issues/2326">how to remove headers in express static server</a></li>
+	<li><a href="https://zhuanlan.zhihu.com/p/404924260?utm_id=0">深入浅出 Express 中间件 serve-static</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range">Range</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Cheatsheet">Regular expression syntax cheat sheet</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length">Content-Length</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range">Content-Range</a></li>
+	<li><a href="https://blog.logrocket.com/streaming-video-in-safari/">Streaming video in Safari: Why is it so difficult?</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests">HTTP range requests</a></li>
+</ol>
+
+</body>
+</html>
+
