@@ -6,7 +6,7 @@ export const outline = [
         title: "同一个视频在 Chrome 里可以播放，在 Safari 里不行？",
         desc: "什么是 Range 请求？",
         date: "Jan 07, 2023",
-        href: "/src/2023/video-streaming-server/index.html",
+        href: "/src/2023/video-stream-server/index.html",
       },
     ],
   },
