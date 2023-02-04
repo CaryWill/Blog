@@ -3,6 +3,12 @@ export const outline = [
   {
     2023: [
       {
+        title: "IPA 是什么，它的作用是什么？",
+        desc: "以程序员思维带大家了解国际音标出现的背景和作用",
+        date: "Feb 04, 2023",
+        href: "/src/2023/what-is-IPA/index.html",
+      },
+      {
         title: "同一个视频在 Chrome 里可以播放，在 Safari 里不行？",
         desc: "什么是 Range 请求？",
         date: "Jan 07, 2023",
