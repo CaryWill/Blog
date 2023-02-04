@@ -9,6 +9,12 @@ export const outline = [
         href: "/src/2023/what-is-IPA/index.html",
       },
       {
+        title: "WebSocket 断线重连",
+        desc: "断线重连的时机？",
+        date: "Jan 15, 2023",
+        href: "/src/2023/websocket-reconnect/index.html",
+      },
+      {
         title: "同一个视频在 Chrome 里可以播放，在 Safari 里不行？",
         desc: "什么是 Range 请求？",
         date: "Jan 07, 2023",

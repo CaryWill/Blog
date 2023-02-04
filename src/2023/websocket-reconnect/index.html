@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>WebSocket 断线重连</title>
+	</head>
+<body>
+<h1>WebSocket 断线重连</h1>
+
+<p><strong>2023.01.15</strong></p>
+
+<p><a href="https://github.com/CaryWill/chat-app-demo">demo 仓库</a></p>
+
+<p>由于不是很懂 TCP 协议相关的东西，这里就不介绍了。总之断网的时候前端的 <code>ws.onclose</code> 事件在某些情况下是不会立刻触发的，比如，WebSocket 建立成功后关闭 WIFI，你再发送消息，你可以看到控制台里的网络请求 panel 仍旧可以看到你发出去的 ws 消息。这样前端就只能一直等着这个事件触发，可能不会触发，或者永远不会触发，这样前端就没办法断线重连了。</p>
+
+<p>所以前端就有了<strong>心跳机制</strong>，你和后端约定，当你发送 <code>ping</code> 的消息的时候，后端会立马发送一个 <code>pong</code> 的消息给你来表示收到你的请求了，来表示服务端现在是可用的，（当然发什么都可以，只要你们约定好，比如前端发 <code>hb</code>，后端回一个 <code>hb</code>），如果服务端没有在指定的时间内返回的话，那么前端认为后端服务不可用了（当然这个时候也可能是前端断网了，比如上面的那个关 WIFI 的情况，这个时候当然也可以配合浏览器提供的网络状态的 API <code>navigator.onLine</code>），这个时候前端可以断线重连。</p>
+
+<p>前端的心跳机制不仅可以用来判断后端服务<a href="https://www.rfc-editor.org/rfc/rfc6455#section-5.5.2">是否可用，还可以用来保活</a>，因为如果前后端在建立连接后一直没有数据交换，后端可能会断开连接。（比如<a href="https://developer.aliyun.com/article/636357">使用了 nginx 代理</a>，如果配置了 <code>proxy_read_timeout</code> 超时时间，那么一直没有数据交换就会自动断开 ws 连接）</p>
+
+<p>当然上面的心跳机制只是前端的用来检测后端服务是否可用的情况，后端也需要有心跳机制来判断前端是否可用来主动断开连接来节省服务器资源。其实，WebSocket 规范里面规定了心跳，也就是一方发送一个 <code>ping</code> <a href="https://www.rfc-editor.org/rfc/rfc6455#section-5.5.2">帧</a>，另一方需要发送一个 <code>pong</code> 帧，这个 <code>ping</code> 帧不是前端的<code>websocket.send(&quot;ping&quot;)</code>，前端通过 <code>websocket.send</code> 接口发送的都是所谓的数据帧（<a href="https://www.rfc-editor.org/rfc/rfc6455#section-5.4">data frames</a>），上面提到的 <code>ping</code> 帧和 <code>pong</code> 帧，以及 ws 关闭的时候会发送的 <code>close</code> 帧都是所谓的控制帧（<a href="https://www.rfc-editor.org/rfc/rfc6455#section-5.5">control frames</a>）。但是前端目前浏览器还没有暴露接口直接发送这些控制帧，所以前端如果想要实现心跳那么就得像上面一样通过数据帧的方式，后端的话，一般的包都提供了 API 可以直接发送控制帧，比如 <code>ws</code> 这个 nodejs 包，所以后端一般不需要直接实现心跳，直接调用 API 就行了，后端发送一个 <code>ping</code> 帧，正常网络下浏览器会自动返回一个 <code>pong</code> 帧，来告诉后端前后端的通信是正常的。</p>
+
+<p>为了保护通信的稳定性，前后端一般会建立一个约定，以免后端发送的消息丢失了可以重发，比如前后端约定，后端推送给前端消息的时候，前端需要在收到消息的时候回复给后端一个 <code>我收到了</code> 的消息来表示消息送达至前端了，否则后端在比如 5秒内没收到这条 <code>我收到了</code> 的消息，后端会重新发送一遍这条消息。</p>
+
+<p>根据浏览器测试，在刷新页面后关闭 WIFI，然后触发一个 <code>.close()</code> ，然后打印其 readyState，发现是 2(CLOSING)，但是一直没有触发 onclose 事件，直到重新开启 WIFI，说明即便你调用了 <code>.close()</code> 方法，也不一定会立马出发 onclose 事件，还有就是浏览器底层应该是会发送一个 <code>close</code> frame，根据 ws 规范，前端发送 <code>close</code> frame 后，后端也要发一个 <code>close</code> frame 到前端，之后 readyState 才会变成 3(CLOSED).</p>
+
+<h2>断线重连</h2>
+
+<blockquote>
+<p> Abnormal closures may be caused by any number of reasons. Such closures could be the result of a transient error, in which case reconnecting may lead to a good connection and a resumption of normal operations. Such closures may also be the result of a nontransient problem, in which case if each deployed client experiences an abnormal closure and immediately and persistently tries to reconnect, the server may experience what amounts to a denial-of-service attack by a large number of clients trying to reconnect. The end result of such a scenario could be that the service is unable to recover in a timely manner or recovery is made much more difficult.</p>
+</blockquote>
+
+<p>摘自来自 <a href="https://www.rfc-editor.org/rfc/rfc6455#section-7.2.3">RFC 6455</a>，讲的是在异常情况下，很多 clients 和一台服务器进行 ws 连接的时候，如果所有连接中的 clients 都遇到了断线的情况，如果所有 clients 都立即重连的话那么将会向后端发起类似 DDos 的攻击，会让场面更加的棘手。</p>
+
+<p>文档里其实也给出了解决办法，就是首次重连，每个 clients 都<strong>随机</strong>从 0-5秒内选一个值，（0-5秒是一个比较推荐的值）。如果再连接不成功的话，接下来的重连时间应该延长的越来越长，比如使用<a href="https://juejin.cn/post/6982032399580266510">截断二进制指数退避法</a>。</p>
+
+<figure><img src="DraggedImage.png"/></figure>
+
+<h2>问题</h2>
+
+<ol>
+	<li></li>
+	<li>如何用 wireshark 抓下 websocket 的包？</li>
+	<li></li>
+	<li></li>
+</ol>
+
+<h2>总结</h2>
+
+<p>前端能做的就是增加一个心跳机制（需要后端配合），并且利用这个心跳机制实现断线重连。</p>
+
+<h2>参考</h2>
+
+<ol>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket">WebSocket Web API</a></li>
+	<li><a href="https://novu.co/blog/building-a-chat-app-with-socket-io-and-react/">Building a chat app with Socket.io and React</a></li>
+	<li><a href="https://www.zhihu.com/question/21094303">为什么WebSocket建立成功后关闭wifi，server不能立即响应onclose事件呢？</a></li>
+	<li><a href="https://www.rfc-editor.org/rfc/rfc6455#section-5.5">WebSocket RFC6455</a></li>
+	<li><a href="https://zhuanlan.zhihu.com/p/162808604?utm_id=0">细说websocket快速重连机制</a></li>
+	<li><a href="https://segmentfault.com/a/1190000042570362?utm_source=sf-similar-article">前端使用 WebSocket 的四大注意事项（线上踩坑，含泪分享）</a></li>
+	<li><a href="https://levelup.gitconnected.com/websockets-demystified-part-1-understanding-the-protocol-fccca2ca75eb">WebSockets Demystified, Part 1: Understanding the Protocol</a></li>
+	<li><a href="https://stackoverflow.com/questions/10585355/sending-websocket-ping-pong-frame-from-browser">Sending websocket ping/pong frame from browser</a></li>
+	<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers">Writing WebSocket servers</a></li>
+	<li><a href="https://javascript.info/websocket">WebSocket JavaScript.Info</a></li>
+	<li><a href="https://cloud.google.com/memorystore/docs/redis/exponential-backoff?hl=zh-cn">指数退避算法</a></li>
+	<li><a href="https://stackoverflow.com/questions/35820885/why-do-many-websocket-libraries-implement-their-own-application-level-heartbeats">Why do many websocket libraries implement their own application-level heartbeats?</a></li>
+	<li><a href="https://github.com/websockets/ws">ws: a Node.js WebSocket library</a></li>
+</ol>
+
+</body>
+</html>
+
