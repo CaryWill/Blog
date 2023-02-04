@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>IPA 是什么，它的作用是什么？</title>
+    <link>/src/2023/what-is-IPA/index.html</link>
+    <description>以程序员思维带大家了解国际音标出现的背景和作用</description>
+    <pubDate>Sat Feb 04 2023 00:00:00 GMT+0800 (China Standard Time)</pubDate>
+    <lastBuildDate>Sat Feb 04 2023 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
+  </item><item>
     <title>同一个视频在 Chrome 里可以播放，在 Safari 里不行？</title>
     <link>/src/2023/video-stream-server/index.html</link>
     <description>什么是 Range 请求？</description>
