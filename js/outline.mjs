@@ -3,6 +3,12 @@ export const outline = [
   {
     2023: [
       {
+        title: "git merge origin/branch 要不要先 git fetch",
+        desc: "不要以为 origin/branch 就不用先 fetch 了，merge 是不会先 git fetch 的",
+        date: "Feb 28, 2023",
+        href: "/src/2023/git-merge-origin-branch/index.html",
+      },
+      {
         title: "IPA 是什么，它的作用是什么？",
         desc: "以程序员思维带大家了解国际音标出现的背景和作用",
         date: "Feb 04, 2023",
