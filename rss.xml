@@ -5,6 +5,12 @@
     <link>https://carytalk.netlify.app/</link>
     <description>暂无描述</description>
    <item>
+    <title>git merge origin/branch 要不要先 git fetch</title>
+    <link>/src/2023/git-merge-origin-branch/index.html</link>
+    <description>不要以为 origin/branch 就不用先 fetch 了，merge 是不会先 git fetch 的</description>
+    <pubDate>Tue Feb 28 2023 00:00:00 GMT+0800 (China Standard Time)</pubDate>
+    <lastBuildDate>Tue Feb 28 2023 00:00:00 GMT+0800 (China Standard Time)</lastBuildDate>
+  </item><item>
     <title>IPA 是什么，它的作用是什么？</title>
     <link>/src/2023/what-is-IPA/index.html</link>
     <description>以程序员思维带大家了解国际音标出现的背景和作用</description>
